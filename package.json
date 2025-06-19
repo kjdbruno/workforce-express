@@ -1,0 +1,53 @@
+{
+  "name": "unipay-express",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "ncc build src/index.js -o dist -m --no-source-map --asset-base-url ./ --copy-files --target node --external sequelize --external pg --external pg-hstore --asset-base-url ./dist",
+    "build-with-models": "ncc build src/app.js -o dist -m --no-source-map --asset-base-url ./ --copy-files --target node",
+    "start": "node dist/index.js",
+    "dev": "nodemon server.js"
+  },
+  "ncc": {
+    "copy": [
+      "models/**/*",
+      "config/**/*"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "handlebars": "^4.7.8",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "multer": "^2.0.0",
+    "mysql2": "^3.13.0",
+    "nodemailer": "^7.0.3",
+    "pug": "^3.0.3",
+    "puppeteer": "^24.10.1",
+    "sequelize": "^6.37.6",
+    "sharp": "^0.34.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.27.3",
+    "@babel/preset-env": "^7.27.2",
+    "@vercel/ncc": "^0.38.3",
+    "babel-loader": "^10.0.0",
+    "nodemon": "^3.1.9",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-middleware": "^7.4.2",
+    "webpack-hot-middleware": "^2.26.1",
+    "webpack-node-externals": "^3.0.0"
+  }
+}
