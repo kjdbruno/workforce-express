@@ -14,11 +14,26 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   BloodType.init({
-    name: DataTypes.STRING,
-    isActive: DataTypes.BOOLEAN
+    Id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    IsActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'BloodType',
+    tableName: 'bloodtypes',
+    timestamps: true,
   });
   return BloodType;
 };

@@ -14,12 +14,31 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Region.init({
-    code: DataTypes.STRING,
-    name: DataTypes.STRING,
-    isActive: DataTypes.BOOLEAN
+    Id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    regionCode: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true, // Ensure regionCode is unique
+    },
+    IsActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'Region',
+    tableName: 'regions', // Specify the table name
+    timestamps: true, // Enable timestamps if needed
   });
   return Region;
 };

@@ -14,12 +14,35 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Barangay.init({
-    townId: DataTypes.INTEGER,
-    name: DataTypes.STRING,
-    isActive: DataTypes.BOOLEAN
+    Id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    TownCode: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    BarangayCode: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true, // Ensure BarangayCode is unique
+    },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    IsActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'Barangay',
+    tableName: 'barangays',
+    timestamps: true,
   });
   return Barangay;
 };

@@ -15,11 +15,11 @@ module.exports = {
      * }], {});
     */
     await queryInterface.bulkInsert('Barangays', barangays.map(b => ({
-      townCode: b.citymunCode, // Assuming barangay.json has a town code field
-      barangayCode: b.brgyCode, // Assuming barangay.json has a barangay code field
-      name: b.brgyDesc, // Assuming barangay.json has a barangay
-      createdAt: new Date(),
-      updatedAt: new Date()
+      TownCode: b.citymunCode, // Assuming barangay.json has a town code field
+      BarangayCode: b.brgyCode, // Assuming barangay.json has a barangay code field
+      Name: b.brgyDesc, // Assuming barangay.json has a barangay
+      CreatedAt: new Date(),
+      UpdatedAt: new Date()
     })), {});
   },
 

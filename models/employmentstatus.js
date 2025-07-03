@@ -14,11 +14,26 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   EmploymentStatus.init({
-    name: DataTypes.STRING,
-    isActive: DataTypes.BOOLEAN
+    Id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    IsActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'EmploymentStatus',
+    tableName: 'employmentstatuses',
+    timestamps: true,
   });
   return EmploymentStatus;
 };

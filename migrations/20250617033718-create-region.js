@@ -3,27 +3,27 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Regions', {
-      id: {
+      Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      regionCode: {
+      RegionCode: {
         type: Sequelize.STRING
       },
-      name: {
+      Name: {
         type: Sequelize.STRING
       },
-      isActive: {
+      IsActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true // Default value for isActive
       },
-      createdAt: {
+      CreatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      updatedAt: {
+      UpdatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }

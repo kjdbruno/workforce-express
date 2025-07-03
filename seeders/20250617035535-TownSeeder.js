@@ -15,11 +15,11 @@ module.exports = {
      * }], {});
     */
    await queryInterface.bulkInsert('Towns', towns.map(t => ({
-      provinceCode: t.provCode, // Assuming muncity.json has a province code field
-      townCode: t.citymunCode, // Assuming muncity.json has a town code field
-      name: t.citymunDesc, // Assuming muncity.json has a town description field
-      createdAt: new Date(),
-      updatedAt: new Date()
+      ProvinceCode: t.provCode, // Assuming muncity.json has a province code field
+      TownCode: t.citymunCode, // Assuming muncity.json has a town code field
+      Name: t.citymunDesc, // Assuming muncity.json has a town description field
+      CreatedAt: new Date(),
+      UpdatedAt: new Date()
     })), {});
   },
 

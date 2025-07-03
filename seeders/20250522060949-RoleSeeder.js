@@ -13,9 +13,15 @@ module.exports = {
      * }], {});
     */
     await queryInterface.bulkInsert('Roles', [
-      { name: 'Super Administrator', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Administrator', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Encoder', createdAt: new Date(), updatedAt: new Date() },
+      { Name: 'Super Administrator', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Administrator', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Human Resource: Training', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Human Resource: Performance', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Human Resource: Administration', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Human Resource: Leave Management', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Human Resource: Recruitment and Selection', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Finance: Payroll', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Employee', CreatedAt: new Date(), UpdatedAt: new Date() },
     ]);
   },
 

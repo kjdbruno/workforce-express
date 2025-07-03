@@ -14,11 +14,34 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Position.init({
-    name: DataTypes.STRING,
-    isActive: DataTypes.BOOLEAN
+    Id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    SalaryGradeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'SalaryGrades', // Assuming SalaryGrades is the table name
+        key: 'Id',
+      },
+    },
+    IsActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'Position',
+    tableName: 'positions', // Specify the table name
+    timestamps: true, // Enable timestamps if needed
   });
   return Position;
 };

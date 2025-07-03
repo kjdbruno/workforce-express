@@ -13,14 +13,14 @@ module.exports = {
      * }], {});
     */
    await queryInterface.bulkInsert('BloodTypes', [
-      { name: 'A+', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'A-', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'B+', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'B-', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'AB+', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'AB-', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'O+', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'O-', createdAt: new Date(), updatedAt: new Date() },
+      { Name: 'A+', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'A-', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'B+', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'B-', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'AB+', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'AB-', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'O+', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'O-', CreatedAt: new Date(), UpdatedAt: new Date() },
     ]);
   },
 

@@ -15,10 +15,10 @@ module.exports = {
      * }], {});
     */
    await queryInterface.bulkInsert('Regions', regions.map(r => ({
-      regionCode: r.regCode, // Assuming region.json has a region code field
-      name: r.regDesc,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      RegionCode: r.regCode, // Assuming region.json has a region code field
+      Name: r.regDesc,
+      CreatedAt: new Date(),
+      UpdatedAt: new Date()
     })), {});
   },
 

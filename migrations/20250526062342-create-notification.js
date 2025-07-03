@@ -3,33 +3,33 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Notifications', {
-      id: {
+      Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      receiverId: {
+      ReceiverId: {
         type: Sequelize.INTEGER,
         references: {
           model: 'Users',
-          key: 'id'
+          key: 'Id'
         },
         onUpdate: 'SET NULL',
         onDelete: 'SET NULL'
       },
-      content: {
+      Content: {
         type: Sequelize.TEXT('long')
       },
-      isRead: {
+      IsRead: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },
-      createdAt: {
+      CreatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      updatedAt: {
+      UpdatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }

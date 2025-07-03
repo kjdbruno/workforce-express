@@ -5,33 +5,29 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTION EXPORT
   class Notification extends Model {
     static associate(models) {
-      Notification.belongsTo(models.User, {
-        foreignKey: 'receiverId',
-        as: 'user',
-        onDelete: 'CASCADE',
-      });
+      // define association here
     }
   }
   Notification.init({
-    id: {
+    Id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
     },
-    receiverId: {
+    ReceiverId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'Users',
-        key: 'id',
+        key: 'Id',
       }
     },
-    content: {
+    Content: {
       type: DataTypes.TEXT('long'),
       allowNull: false,
     },
-    isRead: {
+    IsRead: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
       allowNull: false,

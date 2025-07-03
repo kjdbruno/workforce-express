@@ -3,30 +3,30 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Barangays', {
-      id: {
+      Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      townCode: {
+      TownCode: {
         type: Sequelize.STRING,
       },
-      barangayCode: {
+      BarangayCode: {
         type: Sequelize.STRING
       },
-      name: {
+      Name: {
         type: Sequelize.STRING
       },
-      isActive: {
+      IsActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true // Default value for isActive
       },
-      createdAt: {
+      CreatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      updatedAt: {
+      UpdatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }

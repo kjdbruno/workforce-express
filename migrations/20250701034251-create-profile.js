@@ -3,50 +3,50 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Profiles', {
-      id: {
+      Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      firstname: {
+      Firstname: {
         type: Sequelize.STRING
       },
-      middlename: {
+      Middlename: {
         type: Sequelize.STRING
       },
-      lastname: {
+      Lastname: {
         type: Sequelize.STRING
       },
-      suffix: {
+      Suffix: {
         type: Sequelize.STRING
       },
-      sexId: {
+      SexId: {
         type: Sequelize.INTEGER
       },
-      civilStatusId: {
+      CivilStatusId: {
         type: Sequelize.INTEGER
       },
-      birthdate: {
+      Birthdate: {
         type: Sequelize.DATE
       },
-      birthplace: {
+      Birthplace: {
         type: Sequelize.STRING
       },
-      weight: {
+      Weight: {
+        type: Sequelize.FLOAT
+      },
+      Height: {
+        type: Sequelize.FLOAT
+      },
+      BloodTypeId: {
         type: Sequelize.INTEGER
       },
-      height: {
-        type: Sequelize.INTEGER
-      },
-      bloodTypeId: {
-        type: Sequelize.INTEGER
-      },
-      createdAt: {
+      CreatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      updatedAt: {
+      UpdatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }

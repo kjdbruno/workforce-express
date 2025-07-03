@@ -2,30 +2,36 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Positions', {
-      id: {
+    await queryInterface.createTable('Rates', {
+      Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      name: {
-        type: Sequelize.STRING
+      SalaryClassId: {
+        type: Sequelize.INTEGER
       },
-      isActive: {
+      SalaryGradeId: {
+        type: Sequelize.INTEGER
+      },
+      IncreaseInDay: {
+        type: Sequelize.FLOAT
+      },
+      IsActive: {
         type: Sequelize.BOOLEAN
       },
-      createdAt: {
+      CreatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      updatedAt: {
+      UpdatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Positions');
+    await queryInterface.dropTable('Rates');
   }
 };

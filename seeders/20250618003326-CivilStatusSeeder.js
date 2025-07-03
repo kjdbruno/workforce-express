@@ -13,10 +13,10 @@ module.exports = {
      * }], {});
     */
    await queryInterface.bulkInsert('CivilStatuses', [
-      { name: 'Single', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Married', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Separated', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Widowed', createdAt: new Date(), updatedAt: new Date() },
+      { Name: 'Single', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Married', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Separated', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Widowed', CreatedAt: new Date(), UpdatedAt: new Date() },
     ]);
   },
 

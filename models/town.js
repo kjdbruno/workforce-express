@@ -14,12 +14,31 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Town.init({
-    provinceId: DataTypes.INTEGER,
-    name: DataTypes.STRING,
-    isActive: DataTypes.BOOLEAN
+    Id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    TownCode: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true, // Ensure TownCode is unique
+    },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    IsActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'Town',
+    tableName: 'towns', // Specify the table name
+    timestamps: true, // Enable timestamps if needed
   });
   return Town;
 };

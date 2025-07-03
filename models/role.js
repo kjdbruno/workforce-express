@@ -5,20 +5,17 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTION EXPORT
   class Role extends Model {
     static associate(models) {
-      Role.hasMany(models.UserDetail, {
-        foreignKey: 'roleId',
-        as: 'userDetails',
-      });
+      
     }
   }
   Role.init({
-    id: {
+    Id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
     },
-    name: {
+    Name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,

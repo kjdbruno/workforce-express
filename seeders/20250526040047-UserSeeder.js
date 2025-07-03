@@ -13,7 +13,7 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    const hashedPassword = await bcrypt.hash('ITdepSFC!TY98', 10);
+    const hashedPassword = await bcrypt.hash('Workforce@2025', 10);
 
     // await queryInterface.bulkInsert('Users', [
     //   { name: 'Super Administrator', username: 'SuperAdministrator', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },

@@ -13,8 +13,8 @@ module.exports = {
      * }], {});
     */
    await queryInterface.bulkInsert('Sexes', [
-      { name: 'Male', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Female', createdAt: new Date(), updatedAt: new Date() },
+      { Name: 'Male', CreatedAt: new Date(), UpdatedAt: new Date() },
+      { Name: 'Female', CreatedAt: new Date(), UpdatedAt: new Date() },
     ]);
   },
 

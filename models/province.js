@@ -14,11 +14,35 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Province.init({
-    name: DataTypes.STRING,
-    isActive: DataTypes.BOOLEAN
+    Id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    RegionCode: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    ProvinceCode: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true, // Ensure ProvinceCode is unique
+    },
+    IsActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'Province',
+    tableName: 'provinces', // Specify the table name
+    timestamps: true, // Enable timestamps if needed
   });
   return Province;
 };
