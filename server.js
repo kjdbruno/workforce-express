@@ -51,22 +51,6 @@ const AuthController = require('./controllers/AuthController');
 const Auth = AuthController(io);
 app.use('/api', AuthRoutes(Auth));
 
-app.use('/api/preference/user', require('./routes/UserRoutes'));
-app.use('/api/preference/office', require('./routes/OfficeRoutes'));
-app.use('/api/feedback', require('./routes/FeedbackRoutes'))
-
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
-
-const ComplaintRoutes = require('./routes/ComplaintRoutes');
-const ComplaintController = require('./controllers/ComplaintController');
-const Complaint = ComplaintController(io);
-app.use('/api/complaint', ComplaintRoutes(Complaint));
-
-const KioskRatingRoutes = require('./routes/KioskRatingRoutes');
-const KioskRatingController = require('./controllers/KioskRatingController');
-const KioskRating = KioskRatingController(io);
-app.use('/api/rating', KioskRatingRoutes(KioskRating));
-
 require('./sockets')(io);
 
 // Assuming your 'backend' folder is a direct sibling of 'frontend' within 'my-app/'

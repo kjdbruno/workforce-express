@@ -1,6 +1,6 @@
 const { Sequelize } = require('sequelize');
 const jwt = require('jsonwebtoken'); // Need jwt for socket auth
-const { User, UserDetail, UserLog, Office, Notification } = require("../models");
+// const { User, UserDetail, UserLog, Office, Notification } = require("../models");
 
 const userSocketMap = new Map(); // userId -> socketId
 const onlineUsers = {};

@@ -2,7 +2,6 @@ const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const os = require("os");
-const { User, Office } = require("../models");
 
 let io;
 
@@ -11,55 +10,55 @@ module.exports = (_io) => {
 
     return {
         login: async (req, res) => {
-            const { username, password } = req.body;
-            try {
-                const user = await User.findOne({
-                    where: { 
-                        username: username 
-                    },
-                    include: {
-                        model: UserDetail,
-                        as: 'profile',
-                        include: {
-                            model: Office,
-                            as: 'office'
-                        }
-                    }
-                });
-                if (!user) {
-                    return res.status(404).json({
-                        errors: [
-                            {
-                                type: "field",
-                                value: "",
-                                msg: "User not found",
-                                path: "username",
-                                location: "body",
-                            },
-                        ],
-                    });
-                }
-                const isMatch = await bcrypt.compare(password, user.password);
-                if (!isMatch) {
-                    return res.status(401).json({
-                        errors: [
-                            {
-                                type: "field",
-                                value: "",
-                                msg: "Invalid credentials!",
-                                path: "username",
-                                location: "body",
-                            },
-                        ],
-                    });
-                }
-                // The 'expiresIn' property handles token expiration
-                const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "4h" }); // Token expires in 8 hours
-                res.json({ user, token });
-            } catch (error) {
-                console.error("Login error:", error); // Log the error for debugging
-                res.status(500).json({ error: error.message || "An unexpected error occurred during login." }); // Use 500 for server errors
-            }
+            // const { username, password } = req.body;
+            // try {
+            //     const user = await User.findOne({
+            //         where: { 
+            //             username: username 
+            //         },
+            //         include: {
+            //             model: UserDetail,
+            //             as: 'profile',
+            //             include: {
+            //                 model: Office,
+            //                 as: 'office'
+            //             }
+            //         }
+            //     });
+            //     if (!user) {
+            //         return res.status(404).json({
+            //             errors: [
+            //                 {
+            //                     type: "field",
+            //                     value: "",
+            //                     msg: "User not found",
+            //                     path: "username",
+            //                     location: "body",
+            //                 },
+            //             ],
+            //         });
+            //     }
+            //     const isMatch = await bcrypt.compare(password, user.password);
+            //     if (!isMatch) {
+            //         return res.status(401).json({
+            //             errors: [
+            //                 {
+            //                     type: "field",
+            //                     value: "",
+            //                     msg: "Invalid credentials!",
+            //                     path: "username",
+            //                     location: "body",
+            //                 },
+            //             ],
+            //         });
+            //     }
+            //     // The 'expiresIn' property handles token expiration
+            //     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "4h" }); // Token expires in 8 hours
+            //     res.json({ user, token });
+            // } catch (error) {
+            //     console.error("Login error:", error); // Log the error for debugging
+            //     res.status(500).json({ error: error.message || "An unexpected error occurred during login." }); // Use 500 for server errors
+            // }
         },
         // New logout endpoint for JWT (optional but good practice)
         // For JWTs, logout is primarily client-side token deletion.
