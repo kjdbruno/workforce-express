@@ -54,6 +54,11 @@ db.Relationship = require('./relationship')(sequelize, Sequelize.DataTypes);
 db.EmployeeDependent = require('./employeedependent')(sequelize, Sequelize.DataTypes);
 db.EmployeeEducation = require('./employeeeducation')(sequelize, Sequelize.DataTypes);
 db.EmployeeEligibility = require('./employeeeligibility')(sequelize, Sequelize.DataTypes);
+db.Training = require('./training')(sequelize, Sequelize.DataTypes);
+db.EmployeeTraining = require('./employeetraining')(sequelize, Sequelize.DataTypes);
+db.EmploymentHistory = require('./employmenthistory')(sequelize, Sequelize.DataTypes);
+db.EmploymentLogs = require('./employmentlogs')(sequelize, Sequelize.DataTypes);
+db.EmployeeLeaveCredit = require('./employeeleavecredit')(sequelize, Sequelize.DataTypes);
 // ... add all your models here explicitly
 
 // Run associations for all loaded models
