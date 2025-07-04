@@ -32,6 +32,9 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL'
       },
+      Classification: {
+        type: Sequelize.ENUM('Management', 'Employee')
+      },
       IsActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     },
     EmployeeNo: {
       type: DataTypes.STRING,
-      allowNull: false, // Assuming EmployeeNo is a required field
+      allowNull: true, // Assuming EmployeeNo is an optional field
       unique: true // Assuming EmployeeNo should be unique
     },
     Name: {
@@ -66,6 +66,9 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       },
       onUpdate: 'CASCADE',
       onDelete: 'SET NULL',
+    },
+    Classification: {
+      type: DataTypes.ENUM('Management', 'Employee')
     },
     IsActive: {
       type: DataTypes.BOOLEAN,
