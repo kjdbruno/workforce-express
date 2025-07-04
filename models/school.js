@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming School has many EmployeeEducation
+      // This allows you to access the EmployeeEducation associated with a School instance
+      School.hasMany(models.EmployeeEducation, {
+        foreignKey: 'SchoolId',
+        as: 'EmployeeEducation',
+      });
     }
   }
   School.init({

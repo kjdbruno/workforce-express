@@ -9,6 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      SenderId: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'Users',
+          key: 'Id'
+        },
+        onUpdate: 'SET NULL',
+        onDelete: 'SET NULL'
+      },
       ReceiverId: {
         type: Sequelize.INTEGER,
         references: {

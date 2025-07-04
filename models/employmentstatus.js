@@ -11,6 +11,21 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming EmploymentStatus has a foreign key EmploymentStatusId in EmploymentInformation
+      // This allows you to access the EmploymentInformation associated with an EmploymentStatus instance
+      EmploymentStatus.hasOne(models.EmploymentInformation, {
+        foreignKey: 'EmploymentStatusId',
+        as: 'EmploymentInformation',
+      });
+
+      // Assuming EmploymentStatus has many EmploymentHistories
+      // This allows you to access the EmploymentHistories associated with an EmploymentStatus instance
+      EmploymentStatus.hasMany(models.EmploymentHistory, {
+        foreignKey: 'EmploymentStatusId', 
+        as: 'EmploymentHistories',
+      });
+      
     }
   }
   EmploymentStatus.init({

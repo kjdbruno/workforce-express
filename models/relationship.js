@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming Relationship has a foreign key EmployeeDependentId in EmployeeDependent
+      // This allows you to access the EmployeeDependents associated with a Relationship instance 
+      Relationship.hasMany(models.EmployeeDependent, {
+        foreignKey: 'RelationshipId',
+        as: 'EmployeeDependents',
+      });
     }
   }
   Relationship.init({

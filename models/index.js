@@ -59,6 +59,10 @@ db.EmployeeTraining = require('./employeetraining')(sequelize, Sequelize.DataTyp
 db.EmploymentHistory = require('./employmenthistory')(sequelize, Sequelize.DataTypes);
 db.EmploymentLogs = require('./employmentlogs')(sequelize, Sequelize.DataTypes);
 db.EmployeeLeaveCredit = require('./employeeleavecredit')(sequelize, Sequelize.DataTypes);
+db.EmployeeLeaveApplication = require('./employeeleaveapplication')(sequelize, Sequelize.DataTypes);
+db.EmployeePerformance = require('./employeeperformance')(sequelize, Sequelize.DataTypes);
+db.PerformanceCriteria = require('./performancecriteria')(sequelize, Sequelize.DataTypes);
+db.EmployeeScore = require('./employeescore')(sequelize, Sequelize.DataTypes);
 // ... add all your models here explicitly
 
 // Run associations for all loaded models

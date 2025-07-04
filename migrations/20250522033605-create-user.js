@@ -18,6 +18,15 @@ module.exports = {
       Password: {
         type: Sequelize.STRING
       },
+      RoleId: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'Roles', // Assuming you have a Roles table
+          key: 'Id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
       IsActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

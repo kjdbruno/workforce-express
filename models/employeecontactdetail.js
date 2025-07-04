@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming EmployeeContactDetail has a foreign key ProfileId in Profile
+      // This allows you to access the Profile associated with an EmployeeContactDetail instance
+      EmployeeContactDetail.belongsTo(models.Profile, {
+        foreignKey: 'ProfileId',
+        as: 'Profile',
+      });
     }
   }
   EmployeeContactDetail.init({

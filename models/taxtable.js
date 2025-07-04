@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming TaxTable has a foreign key TaxTableId in EmploymentInformation
+      // This allows you to access the EmploymentInformation associated with a TaxTable instance
+      TaxTable.hasMany(models.EmploymentInformation, {
+        foreignKey: 'TaxTableId',
+        as: 'EmploymentInformation',
+      });
     }
   }
   TaxTable.init({

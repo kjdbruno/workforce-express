@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming PerformanceCriteria has many EmployeeScores
+      // This allows you to access the EmployeeScores associated with a PerformanceCriteria instance
+      PerformanceCriteria.hasMany(models.EmployeeScore, {
+        foreignKey: 'CriteriaId',
+        as: 'EmployeeScores',
+      });
     }
   }
   PerformanceCriteria.init({

@@ -9,14 +9,10 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      EmploymentId: {
-        type: Sequelize.INTEGER,
-        reference: {
-          model: 'EmploymentInformations', // Assuming you have a EmploymentInformations table
-          key: 'Id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+      BiometricNo: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true, // Ensure BiometricId is unique
       },
       LogDate: {
         type: Sequelize.DATEONLY, // Use DATEONLY for date without time

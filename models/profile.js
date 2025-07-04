@@ -11,6 +11,104 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming Profile has a foreign key ProfileId in Application
+      // This allows you to access the Applications associated with a Profile instance
+      Profile.hasMany(models.Application, {
+        foreignKey: 'ProfileId',
+        as: 'Applications',
+      });
+
+      // Assuming Profile belongs to Sex
+      // and Profile has a foreign key SexId that references
+      Profile.belongsTo(models.Sex, {
+        foreignKey: 'SexId',
+        as: 'Sex',
+      });
+
+      // Assuming Profile belongs to CivilStatus
+      // and Profile has a foreign key CivilStatusId that references CivilStatus's Id
+      Profile.belongsTo(models.CivilStatus, {
+        foreignKey: 'CivilStatusId',
+        as: 'CivilStatus',
+      });
+
+      // Assuming Profile has a foreign key BloodTypeId in BloodType
+      // This allows you to access the BloodType associated with a Profile instance
+      Profile.belongsTo(models.BloodType, {
+        foreignKey: 'BloodTypeId',
+        as: 'BloodType',
+      });
+
+      // Assuming Profile has one EmploymentInformation
+      // This allows you to access the EmploymentInformation associated with a Profile instance
+      Profile.hasOne(models.EmploymentInformation, {
+        foreignKey: 'ProfileId',
+        as: 'EmploymentInformation',
+      });
+
+      // Assuming Profile has many EmployeeContactDetails
+      // This allows you to access the EmployeeContactDetails associated with a Profile instance
+      Profile.hasOne(models.EmployeeContactDetail, {
+        foreignKey: 'ProfileId',
+        as: 'EmployeeContactDetails',
+      });
+
+      // Assuming Profile has many EmployeeDependents
+      // This allows you to access the EmployeeDependents associated with a Profile instance
+      Profile.hasMany(models.EmployeeDependent, {
+        foreignKey: 'ProfileId',
+        as: 'EmployeeDependents',
+      });
+
+      // Assuming Profile has many EmployeeEducations
+      // This allows you to access the EmployeeEducations associated with a Profile instance
+      Profile.hasMany(models.EmployeeEducation, {
+        foreignKey: 'ProfileId',
+        as: 'EmployeeEducations',
+      });
+
+      // Assuming Profile has many EmployeeEligibilities
+      // This allows you to access the EmployeeEligibilities associated with a Profile instance
+      Profile.hasMany(models.EmployeeEligibility, {
+        foreignKey: 'ProfileId',
+        as: 'Eligibilities',
+      });
+
+      // Assuming Profile has many EmployeeLeaveApplications
+      // This allows you to access the EmployeeLeaveApplications associated with a Profile instance
+      Profile.hasMany(models.EmployeeLeaveApplication, {
+        foreignKey: 'ProfileId',
+        as: 'LeaveApplications',
+      });
+
+      // Assuming Profile has many EmployeeLeaveCredits
+      // This allows you to access the EmployeeLeaveCredits associated with a Profile instance
+      Profile.hasMany(models.EmployeeLeaveCredit, {
+        foreignKey: 'ProfileId',
+        as: 'LeaveCredits',
+      });
+
+      // Assuming Profile has many Evaluations
+      // This allows you to access the Evaluations associated with a Profile instance
+      Profile.hasMany(models.Evaluation, {
+        foreignKey: 'ProfileId',
+        as: 'Evaluations',
+      });
+
+      // Assuming Profile has many Evaluator
+      // This allows you to access the Evaluators associated with a Profile instance
+      Profile.hasMany(models.Evaluator, {
+        foreignKey: 'ReviewerId',
+        as: 'Evaluators',
+      });
+
+      // Assuming Profile has many EmployeeTrainings 
+      // This allows you to access the EmployeeTrainings associated with a Profile instance
+      Profile.hasMany(models.EmployeeTraining, {
+        foreignKey: 'ProfileId',
+        as: 'EmployeeTrainings',
+      });
     }
   }
   Profile.init({

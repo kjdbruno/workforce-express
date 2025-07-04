@@ -11,6 +11,20 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming EmployeeLeaveApplication has a foreign key ProfileId in Profile
+      // This allows you to access the Profile associated with an EmployeeLeaveApplication instance
+      EmployeeLeaveApplication.belongsTo(models.Profile, {
+        foreignKey: 'ProfileId',
+        as: 'Profile',
+      });
+
+      // Assuming EmployeeLeaveApplication has a foreign key LeaveTypeId in LeaveType
+      // This allows you to access the LeaveType associated with an EmployeeLeaveApplication instance
+      EmployeeLeaveApplication.belongsTo(models.LeaveType, {
+        foreignKey: 'LeaveTypeId',
+        as: 'LeaveType',
+      });
     }
   }
   EmployeeLeaveApplication.init({

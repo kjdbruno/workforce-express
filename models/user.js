@@ -5,7 +5,32 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTION EXPORT
   class User extends Model {
     static associate(models) {
-      // define association here
+      // Define associations here
+
+      // Assuming User belongs to Role
+      // and User has a foreign key RoleId that references Role's Id
+      User.belongsTo(models.Role, {
+        foreignKey: 'RoleId',
+        as: 'Role', // Optional: used for eager loading (e.g., user.getRole())
+      });
+      // Assuming User has many UserLogs
+      // and UserLog has a foreign key UserId that references User's Id
+      User.hasOne(models.UserLog, {
+        foreignKey: 'UserId',
+        as: 'UserLog',
+      });
+
+      //
+      User.hasMany(models.Notification, {
+        foreignKey: 'SenderId',
+        as: 'SentNotifications',
+      });
+      
+      //
+      User.hasMany(models.Notification, {
+        foreignKey: 'ReceiverId',
+        as: 'ReceivedNotifications',
+      });
     }
   }
   User.init({
@@ -27,6 +52,15 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     Password: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    RoleId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Roles', // Assuming you have a Roles table
+        key: 'Id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL',
     },
     IsActive: {
       type: DataTypes.BOOLEAN,

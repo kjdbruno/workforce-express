@@ -11,6 +11,27 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming Application belongs to Profile
+      // and Application has a foreign key ProfileId that references Profile's Id
+      Application.belongsTo(models.Profile, {
+        foreignKey: 'ProfileId',
+        as: 'Profile',
+      });
+
+      // Assuming Application belongs to Position
+      // and Application has a foreign key PositionId that references Position's Id
+      Application.belongsTo(models.Position, {
+        foreignKey: 'PositionId',
+        as: 'Position',
+      });
+
+      // Assuming Application has many ApplicationDocuments
+      // This allows you to access the ApplicationDocuments associated with an Application instance
+      Application.hasMany(models.ApplicationDocument, {
+        foreignKey: 'ApplicationId',
+        as: 'Documents',
+      });
     }
   }
   Application.init({

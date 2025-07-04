@@ -20,15 +20,10 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       allowNull: false,
     },
-    EmploymentId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'EmploymentInformations', // Assuming you have an EmploymentInformations table
-        key: 'Id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    BiometricNo: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true, // Ensure BiometricId is unique
     },
     LogDate: {
       type: DataTypes.DATEONLY, // Use DATEONLY for date without time

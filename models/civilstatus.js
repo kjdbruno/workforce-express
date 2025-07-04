@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming CivilStatus has a foreign key CivilStatusId in Profile
+      // This allows you to access the Profiles associated with a CivilStatus instance
+      CivilStatus.hasMany(models.Profile, {
+        foreignKey: 'CivilStatusId',
+        as: 'Profiles',
+      });
     }
   }
   CivilStatus.init({

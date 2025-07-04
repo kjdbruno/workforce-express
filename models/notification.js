@@ -6,6 +6,17 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
   class Notification extends Model {
     static associate(models) {
       // define association here
+
+      // A
+      Notification.belongsTo(models.User, {
+        foreignKey: 'SenderId',
+        as: 'Sender',
+      });
+
+      Notification.belongsTo(models.User, {
+        foreignKey: 'ReceiverId',
+        as: 'Receiver',
+      });
     }
   }
   Notification.init({
@@ -14,6 +25,14 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
+    },
+    SenderId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'Id',
+      }
     },
     ReceiverId: {
       type: DataTypes.INTEGER,

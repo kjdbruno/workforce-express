@@ -11,6 +11,34 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming EmployeeEducation has a foreign key ProfileId in Profile
+      // This allows you to access the Profile associated with an EmployeeEducation instance
+      EmployeeEducation.belongsTo(models.Profile, {
+        foreignKey: 'ProfileId',
+        as: 'Profile',
+      });
+
+      // Assuming EmployeeEducation has a foreign key SchoolLevelId in SchoolLevel
+      // This allows you to access the SchoolLevel associated with an EmployeeEducation instance
+      EmployeeEducation.belongsTo(models.SchoolLevel, {
+        foreignKey: 'SchoolLevelId',
+        as: 'SchoolLevel',
+      });
+
+      // Assuming EmployeeEducation has a foreign key SchoolId in School
+      // This allows you to access the School associated with an EmployeeEducation instance
+      EmployeeEducation.belongsTo(models.School, {
+        foreignKey: 'SchoolId',
+        as: 'School',
+      });
+
+      // Assuming EmployeeEducation has a foreign key CourseId in Course
+      // This allows you to access the Course associated with an EmployeeEducation instance
+      EmployeeEducation.belongsTo(models.Course, {
+        foreignKey: 'CourseId',
+        as: 'Course',
+      });
     }
   }
   EmployeeEducation.init({

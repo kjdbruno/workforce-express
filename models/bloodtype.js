@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming BloodType has a foreign key BloodTypeId in Profile
+      // This allows you to access the Profiles associated with a BloodType instance
+      BloodType.hasMany(models.Profile, {
+        foreignKey: 'BloodTypeId',
+        as: 'Profiles',
+      });
     }
   }
   BloodType.init({

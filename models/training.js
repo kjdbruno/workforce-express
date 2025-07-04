@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assuming Training has many EmployeeTraining
+      // This allows you to access the EmployeeTraining associated with a Training instance
+      Training.hasMany(models.EmployeeTraining, {
+        foreignKey: 'TrainingId',
+        as: 'EmployeeTrainings',
+      });
     }
   }
   Training.init({
