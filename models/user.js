@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
         foreignKey: 'SenderId',
         as: 'SentNotifications',
       });
-      
+
       //
       User.hasMany(models.Notification, {
         foreignKey: 'ReceiverId',
@@ -39,6 +39,11 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
+    },
+    EmployeeNo: {
+      type: DataTypes.STRING,
+      allowNull: false, // Assuming EmployeeNo is a required field
+      unique: true // Assuming EmployeeNo should be unique
     },
     Name: {
       type: DataTypes.STRING,

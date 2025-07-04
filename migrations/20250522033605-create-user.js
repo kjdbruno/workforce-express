@@ -9,6 +9,11 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      EmployeeNo: {
+        type: Sequelize.STRING,
+        allowNull: false, // Assuming EmployeeNo is a required field
+        unique: true // Assuming EmployeeNo should be unique
+      },
       Name: {
         type: Sequelize.STRING
       },
