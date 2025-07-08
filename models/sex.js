@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
   }, {
     sequelize,
     modelName: 'Sex',
-    tableName: 'sexes',
+    tableName: 'Sexes',
     timestamps: false, // Sex types usually don't need timestamps
   });
   return Sex;
