@@ -70,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
 
       // Assuming EmploymentInformation has many EmployeeDocuments
       // This allows you to access the EmployeeDocuments associated with an EmploymentInformation instance
-      EmploymentInformation.hasMany(models.EmployeeDocument, {
+      EmploymentInformation.hasMany(models.EmploymentDocument, {
         foreignKey: 'EmploymentId',
         as: 'EmployeeDocuments',
       });

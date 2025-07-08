@@ -15,11 +15,11 @@ module.exports = {
     */
     const hashedPassword = await bcrypt.hash('Workforce@2025', 10);
 
-    // await queryInterface.bulkInsert('Users', [
-    //   { name: 'Super Administrator', username: 'SuperAdministrator', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-    //   { name: 'Administrator', username: 'Administrator', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-    //   { name: 'Encoder', username: 'Encoder', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-    // ]);
+    await queryInterface.bulkInsert('Users', [
+      { name: 'Super Administrator', username: 'SuperAdministrator', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+      { name: 'Administrator', username: 'Administrator', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+      { name: 'Encoder', username: 'Encoder', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+    ]);
   },
 
   async down (queryInterface, Sequelize) {

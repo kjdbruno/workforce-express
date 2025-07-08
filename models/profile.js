@@ -91,14 +91,14 @@ module.exports = (sequelize, DataTypes) => {
 
       // Assuming Profile has many Evaluations
       // This allows you to access the Evaluations associated with a Profile instance
-      Profile.hasMany(models.Evaluation, {
+      Profile.hasMany(models.Profile, {
         foreignKey: 'ProfileId',
         as: 'Evaluations',
       });
 
       // Assuming Profile has many Evaluator
       // This allows you to access the Evaluators associated with a Profile instance
-      Profile.hasMany(models.Evaluator, {
+      Profile.hasMany(models.Profile, {
         foreignKey: 'ReviewerId',
         as: 'Evaluators',
       });

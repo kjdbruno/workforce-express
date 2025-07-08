@@ -53,23 +53,6 @@ app.use('/api', AuthRoutes(Auth));
 
 require('./sockets')(io);
 
-// Assuming your 'backend' folder is a direct sibling of 'frontend' within 'my-app/'
-// and this server.js/app.js is directly within 'backend/' or 'backend/dist/'
-const frontendBuildPath = path.join(__dirname, '..', '..', 'feedback-internal-quasar', 'dist', 'spa'); // Adjust as necessary
-
-// If 'app.js' is inside 'backend/dist/', then it's two levels up:
-// const frontendBuildPath = path.join(__dirname, '..', '..', 'frontend', 'build');
-
-console.log(`Serving frontend static files from: ${frontendBuildPath}`);
-app.use(express.static(frontendBuildPath));
-
-// --- Handle Frontend Client-Side Routing (e.g., React Router) ---
-// For any unhandled requests, serve the main index.html file
-// This allows client-side routing to take over for paths like /about, /dashboard, etc.
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendBuildPath, 'index.html'));
-});
-
 // Start server
 server.listen(process.env.PORT, () => {
   console.log(`Server is running on http://localhost:${process.env.PORT}`);
