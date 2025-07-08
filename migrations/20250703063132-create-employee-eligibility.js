@@ -23,7 +23,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Eligibilitytypes', // Assuming you have an Eligibilities table
+          model: 'EligibilityTypes', // Assuming you have an Eligibilities table
           key: 'Id' // Adjust the key based on your Eligibilities table definition  
         },
         onUpdate: 'CASCADE',
