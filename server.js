@@ -51,6 +51,8 @@ const AuthController = require('./controllers/AuthController');
 const Auth = AuthController(io);
 app.use('/api', AuthRoutes(Auth));
 
+app.use('/api/preference/sex', require('./routes/SexRoutes'));
+
 require('./sockets')(io);
 
 // Start server

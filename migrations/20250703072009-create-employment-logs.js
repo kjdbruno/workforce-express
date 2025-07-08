@@ -10,7 +10,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       BiometricNo: {
-        type: DataTypes.STRING,
+        type: Sequelize.STRING,
         allowNull: true,
         unique: true, // Ensure BiometricId is unique
       },
