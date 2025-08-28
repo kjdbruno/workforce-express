@@ -2,24 +2,72 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Profiles', {
+    await queryInterface.createTable('Vacancies', {
       Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      Firstname: {
-        type: Sequelize.STRING
+      PositionId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Positions',
+          key: 'Id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      Middlename: {
-        type: Sequelize.STRING
+      CompanyId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Companies',
+          key: 'Id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      Lastname: {
-        type: Sequelize.STRING
+      DepartmentId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Departments',
+          key: 'Id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      Suffix: {
-        type: Sequelize.STRING
+      ScheduleId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'ScheduleClasses',
+          key: 'Id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      DateNeeded: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      Location: {
+        type: Sequelize.TEXT('long'),
+        allowNull: false
+      },
+      Movement: {
+        type: Sequelize.ENUM('Addition', 'Replacement'),
+        allowNull: false
+      },
+      Justification: {
+        type: Sequelize.TEXT('long'),
+        allowNull: true
+      },
+      NeedBackgroundCheck: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false
       },
       SexId: {
         type: Sequelize.INTEGER,
@@ -31,88 +79,35 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      CivilStatusId: {
+      AgeRange: {
+        type: Sequelize.STRING
+      },
+      EducationId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'CivilStatuses',
+          model: 'Courses',
           key: 'Id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Birthdate: {
-        type: Sequelize.DATEONLY,
-        allowNull: false
-      },
-      Birthplace: {
-        type: Sequelize.TEXT('long'),
-        allowNull: false
-      },
-      Weight: {
-        type: Sequelize.FLOAT,
-        allowNull: false
-      },
-      Height: {
-        type: Sequelize.FLOAT,
-        allowNull: false
-      },
-      BloodTypeId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'BloodTypes',
-          key: 'Id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      RegionId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Regions',
-          key: 'Id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      ProvinceId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Provinces',
-          key: 'Id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      TownId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Towns',
-          key: 'Id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      BarangayId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Barangays',
-          key: 'Id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      ZipCode: {
+      YearExperience: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      StreetAddress: {
-        type: Sequelize.TEXT('long'),
+      AppointmentId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'AppointmentStatuses',
+          key: 'Id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      Status: {
+        type: Sequelize.ENUM('Vacant', 'Requested', 'Approved', 'Rejected', 'Filled'),
         allowNull: false
       },
       CreatedAt: {
@@ -126,6 +121,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Profiles');
+    await queryInterface.dropTable('Vacancies');
   }
 };

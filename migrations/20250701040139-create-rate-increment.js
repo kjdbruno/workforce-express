@@ -2,42 +2,48 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeEligibilities', {
+    await queryInterface.createTable('RateIncrements', {
       Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      RateId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Profiles', // Assuming you have a Profiles table
-          key: 'Id' // Adjust the key based on your Profiles table definition
+          model: 'Rates',
+          key: 'Id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      EligibilityId: {
+      IncrementId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'EligibilityTypes', // Assuming you have an Eligibilities table
-          key: 'Id' // Adjust the key based on your Eligibilities table definition  
+          model: 'Increments',
+          key: 'Id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      ExaminationDate: {
-        type: Sequelize.DATEONLY, // Use DATEONLY for date without time
+      MonthlyCompensation: {
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
-      Rating: {
-        type: Sequelize.FLOAT
+      DailyCompensation: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
       },
-      LicenseNo: {
-        type: Sequelize.STRING
+      HourlyCompensation: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
+      },
+      IsActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
       CreatedAt: {
         allowNull: false,
@@ -50,6 +56,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeEligibilities');
+    await queryInterface.dropTable('RateIncrements');
   }
 };

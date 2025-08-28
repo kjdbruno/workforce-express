@@ -11,12 +11,15 @@ module.exports = {
       },
       RegionCode: {
         type: Sequelize.STRING,
+        allowNull: false
       },
       ProvinceCode: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       Name: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,

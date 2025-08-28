@@ -1,11 +1,8 @@
 'use strict';
-
-const { Profile } = require('../models');
-
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeDependents', {
+    await queryInterface.createTable('ProfileDependents', {
       Id: {
         allowNull: false,
         autoIncrement: true,
@@ -14,39 +11,47 @@ module.exports = {
       },
       ProfileId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
           model: 'Profiles',
           key: 'Id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       RelationshipId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
           model: 'Relationships',
           key: 'Id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       Firstname: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       Middlename: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       Lastname: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       Suffix: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: true
       },
       Birthdate: {
-        type: Sequelize.DATEONLY // Use DATEONLY for date without time
+        type: Sequelize.DATEONLY,
+        allowNull: false
       },
       IsActive: {
-        type: Sequelize.BOOLEAN
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
       CreatedAt: {
         allowNull: false,
@@ -59,6 +64,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeDependents');
+    await queryInterface.dropTable('ProfileDependents');
   }
 };

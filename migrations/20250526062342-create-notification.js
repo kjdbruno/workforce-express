@@ -28,7 +28,8 @@ module.exports = {
         onDelete: 'SET NULL'
       },
       Content: {
-        type: Sequelize.TEXT('long')
+        type: Sequelize.TEXT('long'),
+        allowNull: false
       },
       IsRead: {
         type: Sequelize.BOOLEAN,

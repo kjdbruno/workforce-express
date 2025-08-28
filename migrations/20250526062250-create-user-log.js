@@ -19,7 +19,8 @@ module.exports = {
         onDelete: 'SET NULL'
       },
       SocketId: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: true
       },
       IsOnline: {
         type: Sequelize.BOOLEAN,

@@ -10,10 +10,12 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       Name: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT('long'),
+        allowNull: false
       },
       Alias: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,

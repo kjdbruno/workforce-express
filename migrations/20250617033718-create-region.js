@@ -10,10 +10,12 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       RegionCode: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       Name: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,

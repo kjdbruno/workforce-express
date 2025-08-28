@@ -14,28 +14,31 @@ module.exports = {
       },
       ProfileId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'Profiles', // Assuming you have a Profiles table
+          model: 'Profiles',
           key: 'Id'
         },
         onUpdate: 'SET NULL',
         onDelete: 'SET NULL'
       },
-      PositionId: {
+      VacancyId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'Positions', // Assuming you have a Position model
+          model: 'Vacancies',
           key: 'Id'
         },
         onUpdate: 'SET NULL',
         onDelete: 'SET NULL'
       },
       Status: {
-        type: Sequelize.ENUM('Pooling', 'Hired', 'Rejected', 'Withdrawn'),
-        defaultValue: 'Pooling' // Default status for new applications
+        type: Sequelize.ENUM('Pooling', 'Shorlisted', 'Interview', 'Hired', 'Rejected', 'Withdrawn'),
+        defaultValue: 'Pooling'
       },
       IsActive: {
-        type: Sequelize.BOOLEAN
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
       CreatedAt: {
         allowNull: false,

@@ -2,28 +2,23 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Towns', {
+    await queryInterface.createTable('Positions', {
       Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProvinceCode: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      TownCode: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       Name: {
         type: Sequelize.STRING,
         allowNull: false
       },
+      Description: {
+        type: Sequelize.TEXT('long'),
+        allowNull: false
+      },
       IsActive: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true // Default value for isActive
+        type: Sequelize.BOOLEAN
       },
       CreatedAt: {
         allowNull: false,
@@ -36,6 +31,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Towns');
+    await queryInterface.dropTable('Positions');
   }
 };

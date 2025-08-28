@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeContactDetails', {
+    await queryInterface.createTable('ProfileExperiences', {
       Id: {
         allowNull: false,
         autoIncrement: true,
@@ -11,18 +11,29 @@ module.exports = {
       },
       ProfileId: {
         type: Sequelize.INTEGER,
-        reference: {
-          model: 'Profiles', // Assuming you have a Profile model
+        allowNull: false,
+        references: {
+          model: 'Profiles',
           key: 'Id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      ContactNo: {
-        type: Sequelize.STRING
+      Position: {
+        type: Sequelize.TEXT('long'),
+        allowNull: false
       },
-      Email: {
-        type: Sequelize.STRING
+      JobDescription: {
+        type: Sequelize.TEXT('long'),
+        allowNull: false
+      },
+      StartDate: {
+        type: Sequelize.DATEONLY,
+        allowNull: false
+      },
+      EndDate: {
+        type: Sequelize.DATEONLY,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,
@@ -39,6 +50,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeContactDetails');
+    await queryInterface.dropTable('ProfileExperiences');
   }
 };

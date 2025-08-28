@@ -32,7 +32,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL'
       },
-      Classification: {
+      Level: {
         type: Sequelize.ENUM('Management', 'Employee')
       },
       IsActive: {

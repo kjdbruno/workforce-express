@@ -2,21 +2,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Rates', {
+    await queryInterface.createTable('GovernmentAgencies', {
       Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      SalaryClassId: {
-        type: Sequelize.INTEGER
+      Name: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
-      SalaryGradeId: {
-        type: Sequelize.INTEGER
-      },
-      IncreaseInDay: {
-        type: Sequelize.FLOAT
+      Alias: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN
@@ -32,6 +31,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Rates');
+    await queryInterface.dropTable('GovernmentAgencies');
   }
 };

@@ -11,12 +11,15 @@ module.exports = {
       },
       TownCode: {
         type: Sequelize.STRING,
+        allowNull: false
       },
       BarangayCode: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       Name: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,

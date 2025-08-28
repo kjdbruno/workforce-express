@@ -9,14 +9,21 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      Nane: {
-        type: Sequelize.STRING
+      Name: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       Credit: {
-        type: Sequelize.FLOAT
+        type: Sequelize.FLOAT,
+        allowNull: false
       },
-      InDay: {
-        type: Sequelize.FLOAT
+      Accrual: {
+        type: Sequelize.ENUM('Yearly', 'Monthly', 'Daily'),
+        allowNull: false
+      },
+      CarryOver: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,

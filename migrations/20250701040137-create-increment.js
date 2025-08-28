@@ -2,28 +2,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('TaxTables', {
+    await queryInterface.createTable('Increments', {
       Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      IncomeStart: {
-        type: Sequelize.FLOAT
-      },
-      IncomeEnd: {
-        type: Sequelize.FLOAT
-      },
-      AdditionalAmount: {
-        type: Sequelize.FLOAT
-      },
-      Percentage: {
-        type: Sequelize.FLOAT
+      Name: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,
-        defaultValue: true // Default value for IsActive
+        defaultValue: true
       },
       CreatedAt: {
         allowNull: false,
@@ -36,6 +28,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('TaxTables');
+    await queryInterface.dropTable('Increments');
   }
 };

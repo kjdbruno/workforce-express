@@ -2,33 +2,36 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmploymentDocuments', {
+    await queryInterface.createTable('ProfileDocuments', {
       Id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      EmploymentId: {
+      ProfileId: {
         type: Sequelize.INTEGER,
-        references: {
-          model: 'EmploymentInformations', // Assuming you have an Employment model
+        allowNull: false,
+        references:  {
+          model: 'Profiles',
           key: 'Id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      DocumentTypeId: {
+      DocumentId: {
         type: Sequelize.INTEGER,
-        references: {
-          model: 'DocumentTypes', // Assuming you have a DocumentType model
+        allowNull: false,
+        references:  {
+          model: 'DocumentTypes',
           key: 'Id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       File: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT('long'),
+        allowNull: false
       },
       IsActive: {
         type: Sequelize.BOOLEAN,
@@ -45,6 +48,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmploymentDocuments');
+    await queryInterface.dropTable('ProfileDocuments');
   }
 };
