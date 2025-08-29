@@ -11,16 +11,61 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assocition with Profile
+      ProfileDocument.belongsTo(models.Profile, {
+        foreignKey: 'profileId',
+        as: 'profile'
+      });
+
+      // Association with DocumentType
+      ProfileDocument.belongsTo(models.DocumentType, {
+        foreignKey: 'documentId',
+        as: 'documentType'
+      });
+
     }
   }
   ProfileDocument.init({
-    ProfileId: DataTypes.INTEGER,
-    DocumentId: DataTypes.INTEGER,
-    File: DataTypes.STRING,
-    IsActive: DataTypes.BOOLEAN
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    profileId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references:  {
+        model: 'Profiles',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    documentId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references:  {
+        model: 'DocumentTypes',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    file: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
   }, {
     sequelize,
     modelName: 'ProfileDocument',
+    tableName: 'ProfileDocuments',
+    timestamps: true
   });
   return ProfileDocument;
 };

@@ -3,31 +3,33 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('ScheduleClasses', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      Name: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('ScheduleClasses', ['name']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('ScheduleClasses', ['name']);
     await queryInterface.dropTable('ScheduleClasses');
   }
 };

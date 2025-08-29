@@ -11,18 +11,69 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Association with Rate
+      RateIncrement.belongsTo(models.Rate, {
+        foreignKey: 'rateId',
+        as: 'rate'
+      });
+
+      // Association with Increment
+      RateIncrement.belongsTo(models.Increment, {
+        foreignKey: 'incrementId',
+        as: 'increment'
+      });
+      
     }
   }
   RateIncrement.init({
-    RateId: DataTypes.INTEGER,
-    IncrementId: DataTypes.INTEGER,
-    MonthlyCompensation: DataTypes.FLOAT,
-    DailyCompensation: DataTypes.FLOAT,
-    HourlyCompensation: DataTypes.FLOAT,
-    IsActive: DataTypes.BOOLEAN
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    rateId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Rates',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    incrementId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Increments',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    monthlyCompensation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    dailyCompensation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    hourlyCompensation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
   }, {
     sequelize,
     modelName: 'RateIncrement',
+    tableName: 'RateIncrements',
+    timestamps: true
   });
   return RateIncrement;
 };

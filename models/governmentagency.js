@@ -14,11 +14,29 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   GovernmentAgency.init({
-    Name: DataTypes.STRING,
-    IsActive: DataTypes.BOOLEAN
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    alias: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
   }, {
     sequelize,
     modelName: 'GovernmentAgency',
+    tableName: 'GovernmentAgencies',
+    timestamps: true
   });
   return GovernmentAgency;
 };

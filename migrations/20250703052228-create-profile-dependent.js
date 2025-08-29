@@ -3,67 +3,73 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('ProfileDependents', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Profiles',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      RelationshipId: {
+      relationshipId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Relationships',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Firstname: {
+      firstname: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      Middlename: {
+      middlename: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      Lastname: {
+      lastname: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      Suffix: {
+      suffix: {
         type: Sequelize.STRING,
         allowNull: true
       },
-      Birthdate: {
+      birthdate: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('ProfileDependents', ['firstname']);
+    await queryInterface.addIndex('ProfileDependents', ['middlename']);
+    await queryInterface.addIndex('ProfileDependents', ['lastname']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('ProfileDependents', ['firstname']);
+    await queryInterface.removeIndex('ProfileDependents', ['middlename']);
+    await queryInterface.removeIndex('ProfileDependents', ['lastname']);
     await queryInterface.dropTable('ProfileDependents');
   }
 };

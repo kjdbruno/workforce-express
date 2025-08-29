@@ -7,11 +7,10 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     static associate(models) {
       // define association here
 
-      // Assuming Sex has a foreign key SexId in Profile
-      // This allows you to access the Profiles associated
+      // Association with Profile
       Sex.hasMany(models.Profile, {
-        foreignKey: 'SexId',
-        as: 'Profiles',
+        foreignKey: 'sexId',
+        as: 'profiles'
       });
     }
   }
@@ -22,16 +21,20 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       autoIncrement: true,
       allowNull: false,
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    }
   }, {
     sequelize,
     modelName: 'Sex',
     tableName: 'Sexes',
-    timestamps: false, // Sex types usually don't need timestamps
+    timestamps: true
   });
   return Sex;
 };

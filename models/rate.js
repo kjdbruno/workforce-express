@@ -12,51 +12,45 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // 
-      Rate.belongsTo(models.SalaryGrade, {
-        foreignKey: 'SalaryGradeId',
-        as: 'SalaryGrade',
+      // Association with Position
+      Rate.belongsTo(models.Position, {
+        foreignKey: 'positionId',
+        as: 'position'
       });
 
-      //
-      Rate.belongsTo(models.SalaryClass, {
-        foreignKey: 'SalaryClassId',
-        as: 'SalaryClass',
+      // Associaiton with RateIncrement
+      Rate.hasMany(models.RateIncrement, {
+        foreignKey: 'rateId',
+        as: 'rateIncrements'
       });
     }
   }
   Rate.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    SalaryGradeId: {
+    positionId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'SalaryGrades', // Assuming SalaryGrades is the table name
-        key: 'Id',
+        model: 'Positions',
+        key: 'id'
       },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    SalaryClassId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'SalaryClasses', // Assuming SalaryClasses is the table name
-        key: 'Id',
-      },
-    },
-    IncreaseInDay: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'Rate',
-    tableName: 'rates', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'Rates',
+    timestamps: true
   });
   return Rate;
 };

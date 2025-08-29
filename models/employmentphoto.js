@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class PositionQualification extends Model {
+  class EmploymentPhoto extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -12,31 +12,31 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Asssociation with Position
-      PositionQualification.belongsTo(models.Position, {
-        foreignKey: 'positionId',
-        as: 'position'
+      // Association with Profile
+      EmploymentPhoto.belongsTo(models.Profile, {
+        foreignKey: 'profileId',
+        as: 'profile'
       });
     }
   }
-  PositionQualification.init({
+  EmploymentPhoto.init({
     id: {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    positionId: {
+    profileId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Positions',
+        model: 'Profiles',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    qualification: {
+    file: {
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
@@ -46,9 +46,9 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'PositionQualification',
-    tableName: 'PositionQualifications',
+    modelName: 'EmploymentPhoto',
+    tableName: 'EmploymentPhotos',
     timestamps: true
   });
-  return PositionQualification;
+  return EmploymentPhoto;
 };

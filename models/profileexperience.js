@@ -11,18 +11,56 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Association with Profile
+      ProfileExperience.belongsTo(models.Profile, {
+        foreignKey: 'profileId',
+        as: 'profile'
+      });
     }
   }
   ProfileExperience.init({
-    ProfileId: DataTypes.INTEGER,
-    Position: DataTypes.STRING,
-    JobDescription: DataTypes.STRING,
-    StartDate: DataTypes.DATE,
-    EndDate: DataTypes.DATE,
-    IsActive: DataTypes.BOOLEAN
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    profileId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Profiles',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    position: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    jobDescription: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    startDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    endDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
   }, {
     sequelize,
     modelName: 'ProfileExperience',
+    tableName: 'ProfileExperiences',
+    timestamps: true
   });
   return ProfileExperience;
 };

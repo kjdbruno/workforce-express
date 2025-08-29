@@ -3,124 +3,128 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Vacancies', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      PositionId: {
+      positionId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Positions',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      CompanyId: {
+      companyId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Companies',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      DepartmentId: {
+      departmentId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Departments',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      ScheduleId: {
+      scheduleId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'ScheduleClasses',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      DateNeeded: {
+      dateNeeded: {
         type: Sequelize.DATE,
         allowNull: false
       },
-      Location: {
+      location: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      Movement: {
+      movement: {
         type: Sequelize.ENUM('Addition', 'Replacement'),
         allowNull: false
       },
-      Justification: {
+      justification: {
         type: Sequelize.TEXT('long'),
         allowNull: true
       },
-      NeedBackgroundCheck: {
+      needBackgroundCheck: {
         type: Sequelize.BOOLEAN,
         allowNull: false
       },
-      SexId: {
+      sexId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Sexes',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      AgeRange: {
+      ageRange: {
         type: Sequelize.STRING
       },
-      EducationId: {
+      educationId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Courses',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      YearExperience: {
+      yearExperience: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      AppointmentId: {
+      appointmentId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'AppointmentStatuses',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Status: {
+      status: {
         type: Sequelize.ENUM('Vacant', 'Requested', 'Approved', 'Rejected', 'Filled'),
         allowNull: false
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('Vacancies', ['location']);
+    await queryInterface.addIndex('Vacancies', ['movement']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('Vacancies', ['location']);
+    await queryInterface.removeIndex('Vacancies', ['movement']);
     await queryInterface.dropTable('Vacancies');
   }
 };

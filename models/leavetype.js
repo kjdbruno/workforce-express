@@ -11,51 +11,40 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
-      // Assuming LeaveType has many EmployeeLeaveApplications
-      // This allows you to access the EmployeeLeaveApplications associated with a LeaveType instance
-      LeaveType.hasMany(models.EmployeeLeaveApplication, {
-        foreignKey: 'LeaveTypeId',
-        as: 'EmployeeLeaveApplications',
-      });
-
-      // Assuming LeaveType has many EmployeeLeaveCredits
-      // This allows you to access the EmployeeLeaveCredits associated with a LeaveType instance
-      LeaveType.hasMany(models.EmployeeLeaveCredit, {
-        foreignKey: 'LeaveTypeId',
-        as: 'EmployeeLeaveCredits',
-      });
     }
   }
   LeaveType.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    Credit: {
+    credit: {
       type: DataTypes.FLOAT,
-      allowNull: false,
+      allowNull: false
     },
-    InDay: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
+    accrual: {
+      type: DataTypes.ENUM('Yearly', 'Monthly', 'Daily'),
+      allowNull: false
     },
-    IsActive: {
+    carryOver: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true, // Default value for IsActive
-      allowNull: false,
+      allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'LeaveType',
-    tableName: 'leavetypes', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'LeaveTypes',
+    timestamps: true
   });
   return LeaveType;
 };

@@ -3,59 +3,65 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('RateIncrements', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      RateId: {
+      rateId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Rates',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      IncrementId: {
+      incrementId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Increments',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      MonthlyCompensation: {
+      monthlyCompensation: {
         type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
-      DailyCompensation: {
+      dailyCompensation: {
         type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
-      HourlyCompensation: {
+      hourlyCompensation: {
         type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('RateIncrements', ['monthlyCompensation']);
+    await queryInterface.addIndex('RateIncrements', ['dailyCompensation']);
+    await queryInterface.addIndex('RateIncrements', ['hourlyCompensation']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('RateIncrements', ['monthlyCompensation']);
+    await queryInterface.removeIndex('RateIncrements', ['dailyCompensation']);
+    await queryInterface.removeIndex('RateIncrements', ['hourlyCompensation']);
     await queryInterface.dropTable('RateIncrements');
   }
 };

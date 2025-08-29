@@ -6,114 +6,117 @@ const { Profile } = require('../models');
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('EmploymentInformations', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'Profiles', // Assuming the Profile model exists
-          key: 'Id'
+          model: 'Profiles',
+          key: 'id'
         },
-        onDelete: 'SET NULL', // Optional: define behavior on delete
-        onUpdate: 'SET NULL' // Optional: define behavior on update
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
-      EmployeeNo: {
+      employeeNo: {
         type: Sequelize.STRING,
-        allowNull: false, // Assuming EmployeeNo is a required field
-        unique: true // Assuming EmployeeNo should be unique
+        allowNull: false,
+        unique: true
       },
-      BiometricNo: {
+      biometricNo: {
         type: Sequelize.STRING,
-        allowNull: true, // Assuming BiometricNo is optional
-        unique: true // Assuming BiometricNo should be unique
+        allowNull: true,
+        unique: true
       },
-      DateHired: {
-        type: Sequelize.DATE
+      dateHired: {
+        type: Sequelize.DATEONLY,
+        allowNull: false
       },
-      Tin: {
-        type: Sequelize.STRING
+      tin: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
-      SSSNo: {
-        type: Sequelize.STRING
+      sssNo: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
-      PhilhealthNo: {
-        type: Sequelize.STRING
+      philhealthNo: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
-      PagibigNo: {
-        type: Sequelize.STRING
+      pagibigNo: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
-      BankAcountNo: {
-        type: Sequelize.STRING
-      },
-      TaxCodeId: {
+      taxCodeId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'TaxCodes', // Assuming the TaxCodes table exists
-          key: 'Id'
+          model: 'TaxCodes',
+          key: 'id'
         },
-        onDelete: 'SET NULL', // Optional: define behavior on delete
-        onUpdate: 'SET NULL' // Optional: define behavior on update
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
-      TaxTableId: {
+      departmentId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'TaxTables', // Assuming the TaxTables table exists
-          key: 'Id'
+          model: 'Departments',
+          key: 'id'
         },
-        onDelete: 'SET NULL', // Optional: define behavior on delete 
-        onUpdate: 'SET NULL' // Optional: define behavior on update
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
-      DepartmentId: {
+      positionId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'Departments', // Assuming the Departments table exists
-          key: 'Id'
+          model: 'Positions',
+          key: 'id'
         },
-        onDelete: 'SET NULL', // Optional: define behavior on delete
-        onUpdate: 'SET NULL' // Optional: define behavior on update
+        onDelete: 'CASACDE',
+        onUpdate: 'CASACDE'
       },
-      PositionId: {
+      employmentId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'Positions', // Assuming the Positions table exists
-          key: 'Id'
+          model: 'EmploymentStatuses',
+          key: 'id'
         },
-        onDelete: 'SET NULL', // Optional: define behavior on delete
-        onUpdate: 'SET NULL' // Optional: define behavior on update
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
-      EmploymentStatusId: {
+      appointmentId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'EmploymentStatuses', // Assuming the EmploymentStatuses table exists
-          key: 'Id'
+          model: 'AppointmentStatuses',
+          key: 'id'
         },
-        onDelete: 'SET NULL', // Optional: define behavior on delete
-        onUpdate: 'SET NULL' // Optional: define behavior on update
+        onDelete: 'CASDCADE',
+        onUpdate: 'CASDCADE'
       },
-      AppointmentStatusId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'AppointmentStatuses', // Assuming the AppointmentStatuses table exists
-          key: 'Id'
-        },
-        onDelete: 'SET NULL', // Optional: define behavior on delete
-        onUpdate: 'SET NULL' // Optional: define behavior on update
-      },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('EmploymentInformations', ['employeeNo']);
+    await queryInterface.addIndex('EmploymentInformations', ['biometricNo']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('EmploymentInformations', ['employeeNo']);
+    await queryInterface.removeIndex('EmploymentInformations', ['biometricNo']);
     await queryInterface.dropTable('EmploymentInformations');
   }
 };

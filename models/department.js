@@ -12,43 +12,37 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming Department has a foreign key DepartmentId in EmploymentInformation
-      // This allows you to access the EmploymentInformation associated with a Department instance
-      Department.hasOne(models.EmploymentInformation, {
-        foreignKey: 'DepartmentId',
-        as: 'EmploymentInformation',
+      // Association with EmploymentInformation
+      Department.hasMany(models.EmploymentInformation, {
+        foreignKey: 'departmentId',
+        as: 'employmentInformations'
       });
-
-      // Assuming Department has many EmploymentHistories
-      // This allows you to access the EmploymentHistories associated with a Department instance
-      Department.hasMany(models.EmploymentHistory, {
-        foreignKey: 'DepartmentId',
-        as: 'EmploymentHistories',
-      });
-      
     }
   }
   Department.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    alias: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'Deoartment',
-    tableName: 'departments',
-    timestamps: true,
+    tableName: 'Departments',
+    timestamps: true
   });
   return Department;
 };

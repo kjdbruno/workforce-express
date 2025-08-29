@@ -3,129 +3,139 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Profiles', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      Firstname: {
-        type: Sequelize.STRING
+      firstname: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
-      Middlename: {
-        type: Sequelize.STRING
+      middlename: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
-      Lastname: {
-        type: Sequelize.STRING
+      lastname: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
-      Suffix: {
-        type: Sequelize.STRING
+      suffix: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
-      SexId: {
+      sexId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Sexes',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      CivilStatusId: {
+      civilStatusId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'CivilStatuses',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Birthdate: {
+      birthdate: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      Birthplace: {
+      birthplace: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      Weight: {
+      weight: {
         type: Sequelize.FLOAT,
         allowNull: false
       },
-      Height: {
+      height: {
         type: Sequelize.FLOAT,
         allowNull: false
       },
-      BloodTypeId: {
+      bloodTypeId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'BloodTypes',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      RegionId: {
+      regionId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Regions',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      ProvinceId: {
+      provinceId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Provinces',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      TownId: {
+      townId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Towns',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      BarangayId: {
+      barangayId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Barangays',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      ZipCode: {
+      zipCode: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      StreetAddress: {
+      streetAddress: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('Profiles', ['firstname']);
+    await queryInterface.addIndex('Profiles', ['middlename']);
+    await queryInterface.addIndex('Profiles', ['lastname']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('Profiles', ['firstname']);
+    await queryInterface.removeIndex('Profiles', ['middlename']);
+    await queryInterface.removeIndex('Profiles', ['lastname']);
     await queryInterface.dropTable('Profiles');
   }
 };

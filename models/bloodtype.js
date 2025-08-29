@@ -12,35 +12,34 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming BloodType has a foreign key BloodTypeId in Profile
-      // This allows you to access the Profiles associated with a BloodType instance
+      // Association with Profile
       BloodType.hasMany(models.Profile, {
-        foreignKey: 'BloodTypeId',
-        as: 'Profiles',
+        foreignKey: 'bloodTypeId',
+        as: 'profiles'
       });
+
     }
   }
   BloodType.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'BloodType',
-    tableName: 'bloodtypes',
-    timestamps: true,
+    tableName: 'BloodTypes',
+    timestamps: true
   });
   return BloodType;
 };

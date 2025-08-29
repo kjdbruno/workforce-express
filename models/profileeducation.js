@@ -11,21 +11,104 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Association with Profile
+      ProfileEducation.belongsTo(models.Profile, {
+        foreignKey: 'profileId',
+        as: 'profile'
+      });
+
+      // Association with School
+      ProfileEducation.belongsTo(models.SchoolLevel, {
+        foreignKey: 'levelId',
+        as: 'level'
+      });
+
+      // Association with SchoolLevel
+      ProfileEducation.belongsTo(models.School, {
+        foreignKey: 'schoolId',
+        as: 'school'
+      });
+
+      // Association with Course
+      ProfileEducation.belongsTo(models.Course, {
+        foreignKey: 'courseId',
+        as: 'course'
+      });
     }
   }
   ProfileEducation.init({
-    ProfileId: DataTypes.INTEGER,
-    LevelId: DataTypes.INTEGER,
-    SchooldId: DataTypes.INTEGER,
-    CourseId: DataTypes.INTEGER,
-    Rating: DataTypes.FLOAT,
-    StartDate: DataTypes.DATE,
-    EndDate: DataTypes.DATE,
-    Graduated: DataTypes.INTEGER,
-    IsActive: DataTypes.BOOLEAN
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    profileId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Profiles',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    levelId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'SchoolLevels',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    schooldId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Schools',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    courseId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Courses',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    rating: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    startDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    endDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    graduated: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultvalue: true 
+    },
   }, {
     sequelize,
     modelName: 'ProfileEducation',
+    tableName: 'ProfileEducations',
+    timestamps: true
   });
   return ProfileEducation;
 };

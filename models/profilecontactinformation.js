@@ -11,16 +11,48 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Association with Profile
+      ProfileContactInformation.belongsTo(models.Profile, {
+        foreignKey: 'profileId',
+        as: 'profile'
+      });
     }
   }
   ProfileContactInformation.init({
-    ProfileId: DataTypes.INTEGER,
-    ContactNo: DataTypes.STRING,
-    Email: DataTypes.STRING,
-    IsActive: DataTypes.BOOLEAN
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    profileId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Profiles',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    contactNo: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
   }, {
     sequelize,
     modelName: 'ProfileContactInformation',
+    tableName: 'ProfileContactInformations',
+    timestamps: true
   });
   return ProfileContactInformation;
 };

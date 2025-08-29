@@ -12,191 +12,146 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming EmploymentInformation has a foreign key ProfileId in Profile
-      // This allows you to access the Profile associated with an EmploymentInformation instance
+      // Belongs to Profile
       EmploymentInformation.belongsTo(models.Profile, {
-        foreignKey: 'ProfileId',
-        as: 'Profile',
+        foreignKey: 'profileId',
+        as: 'profile'
       });
 
-      // Assuming EmploymentInformation has a foreign key TaxCodeId in TaxCode
-      // This allows you to access the TaxCode associated with an EmploymentInformation instance
+      // Belongs to TaxCode
       EmploymentInformation.belongsTo(models.TaxCode, {
-        foreignKey: 'TaxCodeId',
-        as: 'TaxCode',
+        foreignKey: 'taxCodeId',
+        as: 'taxCode'
       });
 
-      // Assuming EmploymentInformation has a foreign key TaxTableId in TaxTable
-      // This allows you to access the TaxTable associated with an EmploymentInformation instance
-      EmploymentInformation.belongsTo(models.TaxTable, {
-        foreignKey: 'TaxTableId',
-        as: 'TaxTable',
-      });
-
-      // Assuming EmploymentInformation has a foreign key DepartmentId in Department
-      // This allows you to access the Department associated with an EmploymentInformation instance
+      // Belongs to Department
       EmploymentInformation.belongsTo(models.Department, {
-        foreignKey: 'DepartmentId',
-        as: 'Department',
+        foreignKey: 'departmentId',
+        as: 'department'
       });
 
-      // Assuming EmploymentInformation has a foreign key PositionId in Position
-      // This allows you to access the Position associated with an EmploymentInformation instance
+      // Belongs to Position
       EmploymentInformation.belongsTo(models.Position, {
-        foreignKey: 'PositionId',
-        as: 'Position',
+        foreignKey: 'positionId',
+        as: 'position'
       });
 
-      // Assuming EmploymentInformation has a foreign key EmploymentStatusId in EmploymentStatus
-      // This allows you to access the EmploymentStatus associated with an EmploymentInformation instance
+      // Belongs to EmploymentStatus
       EmploymentInformation.belongsTo(models.EmploymentStatus, {
-        foreignKey: 'EmploymentStatusId',
-        as: 'EmploymentStatus',
+        foreignKey: 'employmentId',
+        as: 'employmentStatus'
       });
 
-      // Assuming EmploymentInformation has a foreign key AppointmentStatusId in AppointmentStatus
-      // This allows you to access the AppointmentStatus associated with an EmploymentInformation instance
+      // Belongs to AppointmentStatus
       EmploymentInformation.belongsTo(models.AppointmentStatus, {
-        foreignKey: 'AppointmentStatusId',
-        as: 'AppointmentStatus',
+        foreignKey: 'appointmentId',
+        as: 'appointmentStatus'
       });
-
-      // Assuming EmploymentInformation has many EmploymentHistories
-      // This allows you to access the EmploymentHistories associated with an EmploymentInformation instance
-      EmploymentInformation.hasMany(models.EmploymentHistory, {
-        foreignKey: 'EmploymentId',
-        as: 'EmploymentHistories',
-      });
-
-      // Assuming EmploymentInformation has many EmployeeDocuments
-      // This allows you to access the EmployeeDocuments associated with an EmploymentInformation instance
-      EmploymentInformation.hasMany(models.EmploymentDocument, {
-        foreignKey: 'EmploymentId',
-        as: 'EmployeeDocuments',
-      });
+      
     }
   }
   EmploymentInformation.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
+    id: {
       allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    ProfileId: {
+    profileId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Profiles', // Assuming Profiles is the table name
-        key: 'Id',
+        model: 'Profiles',
+        key: 'id'
       },
-      onDelete: 'SET NULL', // Optional: define behavior on delete
-      onUpdate: 'SET NULL', // Optional: define behavior on update
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     },
     employeeNo: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true, // Ensure employeeNo is unique
+      unique: true
     },
-    BiometricNo: {
+    biometricNo: {
       type: DataTypes.STRING,
       allowNull: true,
-      unique: true, // Ensure BiometricId is unique
+      unique: true
     },
-    DateHired: {
-      type: DataTypes.DATE,
+    dateHired: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    tin: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    sssNo: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    philhealthNo: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    pagibigNo: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    taxCodeId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-    },
-    Tin: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Ensure Tin is unique
-    },
-    PagIbigNo: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Ensure PagIbigNo is unique
-    },
-    PhilHealthNo: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Ensure PhilHealthNo is unique
-    },
-    SSSNo: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Ensure SssNo is unique
-    },
-    BankAccountNo: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Ensure BankAccountNo is unique
-    },
-    TaxCodeId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
       references: {
-        model: 'TaxCodes', // Assuming TaxCodes is the table name
-        key: 'Id',
+        model: 'TaxCodes',
+        key: 'id'
       },
-      onDelete: 'SET NULL', // Optional: define behavior on delete
-      onUpdate: 'SET NULL', // Optional: define behavior on update
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     },
-    TaxTableId: {
+    departmentId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: 'TaxTables', // Assuming TaxTables is the table name
-        key: 'Id',
+        model: 'Departments',
+        key: 'id'
       },
-      onDelete: 'SET NULL', // Optional: define behavior on delete
-      onUpdate: 'SET NULL', // Optional: define behavior on update
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     },
-    DepartmentId: {
+    positionId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: 'Departments', // Assuming Departments is the table name
-        key: 'Id',
+        model: 'Positions',
+        key: 'id'
       },
-      onDelete: 'SET NULL', // Optional: define behavior on delete
-      onUpdate: 'SET NULL', // Optional: define behavior on update
+      onDelete: 'CASACDE',
+      onUpdate: 'CASACDE'
     },
-    PositionId: {
+    employmentId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: 'Positions', // Assuming Positions is the table name
-        key: 'Id',
+        model: 'EmploymentStatuses',
+        key: 'id'
       },
-      onDelete: 'SET NULL', // Optional: define behavior on delete
-      onUpdate: 'SET NULL', // Optional: define behavior on update
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     },
-    EmploymentStatusId: {
+    appointmentId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: 'EmploymentStatuses', // Assuming EmploymentStatuses is the table name
-        key: 'Id',
+        model: 'AppointmentStatuses',
+        key: 'id'
       },
-      onDelete: 'SET NULL', // Optional: define behavior on delete
-      onUpdate: 'SET NULL', // Optional: define behavior on update
-    },
-    AppointmentStatusId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'AppointmentStatuses', // Assuming AppointmentStatuses is the table name
-        key: 'Id',
-      },
-      onDelete: 'SET NULL', // Optional: define behavior on delete
-      onUpdate: 'SET NULL', // Optional: define behavior on update
+      onDelete: 'CASDCADE',
+      onUpdate: 'CASDCADE'
     },
   }, {
     sequelize,
     modelName: 'EmploymentInformation',
-    tableName: 'employmentinformations', // Specify the table name
-    timestamps: true, // Enable timestamps
+    tableName: 'EmploymentInformations',
+    timestamps: true
   });
   return EmploymentInformation;
 };

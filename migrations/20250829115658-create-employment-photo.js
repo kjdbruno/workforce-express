@@ -2,30 +2,30 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('UserLogs', {
+    await queryInterface.createTable('EmploymentPhotos', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
+      profileId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Users',
+          model: 'Profiles',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      socketId: {
-        type: Sequelize.STRING,
-        allowNull: true
+      file: {
+        type: Sequelize.TEXT('long'),
+        allowNull: false
       },
-      isOnline: {
+      isActive: {
         type: Sequelize.BOOLEAN,
-        defaultValue: false
+        defaultValue: true
       },
       createdAt: {
         allowNull: false,
@@ -36,10 +36,10 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('UserLogs', ['socketId']);
+    await queryInterface.addIndex('EmploymentPhotos', ['file']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('UserLogs', ['socketId']);
-    await queryInterface.dropTable('UserLogs');
+    await queryInterface.removeIndex('EmploymentPhotos', ['file']);
+    await queryInterface.dropTable('EmploymentPhotos');
   }
 };

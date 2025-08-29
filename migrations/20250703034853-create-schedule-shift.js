@@ -3,45 +3,49 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('ScheduleShifts', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ClassId: {
+      classId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'ScheduleClasses',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      TimeStart: {
+      timeStart: {
         type: Sequelize.TIME,
         allowNull: false
       },
-      TimeEnd: {
+      timeEnd: {
         type: Sequelize.TIME,
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('ScheduleShifts', ['timeStart']);
+    await queryInterface.addIndex('ScheduleShifts', ['timeEnd']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('ScheduleShifts', ['timeStart']);
+    await queryInterface.removeIndex('ScheduleShifts', ['timeEnd']);
     await queryInterface.dropTable('ScheduleShifts');
   }
 };

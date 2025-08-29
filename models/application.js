@@ -12,66 +12,66 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming Application belongs to Profile
-      // and Application has a foreign key ProfileId that references Profile's Id
+      // Association with Profile
       Application.belongsTo(models.Profile, {
-        foreignKey: 'ProfileId',
-        as: 'Profile',
+        foreignKey: 'profileId',
+        as: 'profile'
       });
 
-      // Assuming Application belongs to Position
-      // and Application has a foreign key PositionId that references Position's Id
-      Application.belongsTo(models.Position, {
-        foreignKey: 'PositionId',
-        as: 'Position',
-      });
-
-      // Assuming Application has many ApplicationDocuments
-      // This allows you to access the ApplicationDocuments associated with an Application instance
-      Application.hasMany(models.ApplicationDocument, {
-        foreignKey: 'ApplicationId',
-        as: 'Documents',
+      // Association with Vacancy
+      Application.belongsTo(models.Vacancy, {
+        foreignKey: 'vacancyId',
+        as: 'vacancy'
       });
     }
   }
   Application.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
+    id: {
       allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    ProfileId: {
+    profileId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
-        model: 'Profiles', // Assuming you have a Profiles table
-        key: 'Id',
+        model: 'Profiles',
+        key: 'id'
       },
-      onUpdate: 'SET NULL',
-      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    PositionId: {
+    vacancyId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
-        model: 'Positions', // Assuming you have a Positions table
-        key: 'Id',
+        model: 'Vacancies',
+        key: 'id'
       },
-      onUpdate: 'SET NULL',
-      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    Status: {
-      type: DataTypes.ENUM('Pooling', 'Hired', 'Rejected', 'Withdrawn'),
-      defaultValue: 'Pooling', // Default status for new applications
+    status: {
+      type: DataTypes.ENUM(
+        'Pooling', 
+        'Shorlisted', 
+        'Interview', 
+        'Hired', 
+        'Rejected', 
+        'Withdrawn'
+      ),
+      defaultValue: 'Pooling'
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true, // Default value for IsActive
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'Application',
-    tableName: 'applications', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'Applications',
+    timestamps: true
   });
   return Application;
 };

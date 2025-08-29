@@ -12,42 +12,32 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming EmploymentStatus has a foreign key EmploymentStatusId in EmploymentInformation
-      // This allows you to access the EmploymentInformation associated with an EmploymentStatus instance
-      EmploymentStatus.hasOne(models.EmploymentInformation, {
-        foreignKey: 'EmploymentStatusId',
-        as: 'EmploymentInformation',
+      // Assciation with EmploymentInformation
+      EmploymentStatus.hasMany(models.EmploymentInformation, {
+        foreignKey: 'employmentId',
+        as: 'employmentInformations'
       });
-
-      // Assuming EmploymentStatus has many EmploymentHistories
-      // This allows you to access the EmploymentHistories associated with an EmploymentStatus instance
-      EmploymentStatus.hasMany(models.EmploymentHistory, {
-        foreignKey: 'EmploymentStatusId', 
-        as: 'EmploymentHistories',
-      });
-      
     }
   }
   EmploymentStatus.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'EmploymentStatus',
-    tableName: 'employmentstatuses',
+    tableName: 'EmploymentStatuses',
     timestamps: true,
   });
   return EmploymentStatus;

@@ -12,35 +12,34 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming CivilStatus has a foreign key CivilStatusId in Profile
-      // This allows you to access the Profiles associated with a CivilStatus instance
+      // Association with Profile
       CivilStatus.hasMany(models.Profile, {
-        foreignKey: 'CivilStatusId',
-        as: 'Profiles',
+        foreignKey: 'civilStatusId',
+        as: 'profiles'
       });
+
     }
   }
   CivilStatus.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'CivilStatus',
-    tableName: 'civilstatuses',
-    timestamps: true,
+    tableName: 'CivilStatuses',
+    timestamps: true
   });
   return CivilStatus;
 };

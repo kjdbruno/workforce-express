@@ -3,49 +3,53 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Notifications', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      SenderId: {
+      senderId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
           model: 'Users',
-          key: 'Id'
+          key: 'id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      ReceiverId: {
+      receiverId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
           model: 'Users',
-          key: 'Id'
+          key: 'id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      Content: {
+      content: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      IsRead: {
+      isRead: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('Notifications', ['content']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('Notifications', ['content']);
     await queryInterface.dropTable('Notifications');
   }
 };

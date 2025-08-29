@@ -12,173 +12,232 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming Profile has a foreign key ProfileId in Application
-      // This allows you to access the Applications associated with a Profile instance
+      // Association with Apllication
       Profile.hasMany(models.Application, {
-        foreignKey: 'ProfileId',
-        as: 'Applications',
+        foreignKey: 'profileId',
+        as: 'applications'
       });
 
-      // Assuming Profile belongs to Sex
-      // and Profile has a foreign key SexId that references
-      Profile.belongsTo(models.Sex, {
-        foreignKey: 'SexId',
-        as: 'Sex',
-      });
-
-      // Assuming Profile belongs to CivilStatus
-      // and Profile has a foreign key CivilStatusId that references CivilStatus's Id
-      Profile.belongsTo(models.CivilStatus, {
-        foreignKey: 'CivilStatusId',
-        as: 'CivilStatus',
-      });
-
-      // Assuming Profile has a foreign key BloodTypeId in BloodType
-      // This allows you to access the BloodType associated with a Profile instance
-      Profile.belongsTo(models.BloodType, {
-        foreignKey: 'BloodTypeId',
-        as: 'BloodType',
-      });
-
-      // Assuming Profile has one EmploymentInformation
-      // This allows you to access the EmploymentInformation associated with a Profile instance
+      // Profile has one EmploymentInformation
       Profile.hasOne(models.EmploymentInformation, {
-        foreignKey: 'ProfileId',
-        as: 'EmploymentInformation',
+        foreignKey: 'profileId',
+        as: 'employmentInformation'
       });
 
-      // Assuming Profile has many EmployeeContactDetails
-      // This allows you to access the EmployeeContactDetails associated with a Profile instance
-      Profile.hasOne(models.EmployeeContactDetail, {
-        foreignKey: 'ProfileId',
-        as: 'EmployeeContactDetails',
+      // Association with EmploymentPhoto
+      Profile.hasMany(models.EmploymentPhoto, {
+        foreignKey: 'profileId',
+        as: 'employmentPhotos'
       });
 
-      // Assuming Profile has many EmployeeDependents
-      // This allows you to access the EmployeeDependents associated with a Profile instance
-      Profile.hasMany(models.EmployeeDependent, {
-        foreignKey: 'ProfileId',
-        as: 'EmployeeDependents',
+      // Assciation with EmploymentSchedule
+      Profile.hasMany(models.EmploymentSchedule, {
+        foreignKey: 'profileId',
+        as: 'employmentSchedules'
       });
 
-      // Assuming Profile has many EmployeeEducations
-      // This allows you to access the EmployeeEducations associated with a Profile instance
-      Profile.hasMany(models.EmployeeEducation, {
-        foreignKey: 'ProfileId',
-        as: 'EmployeeEducations',
+      // Association with Sex
+      Profile.belongsTo(models.Sex, {
+        foreignKey: 'sexId',
+        as: 'sex'
+      });
+      
+      // Association with CivilStatus
+      Profile.belongsTo(models.CivilStatus, {
+        foreignKey: 'civilStatusId',
+        as: 'civilStatus'
       });
 
-      // Assuming Profile has many EmployeeEligibilities
-      // This allows you to access the EmployeeEligibilities associated with a Profile instance
-      Profile.hasMany(models.EmployeeEligibility, {
-        foreignKey: 'ProfileId',
-        as: 'Eligibilities',
+      // Association with BloodType
+      Profile.belongsTo(models.BloodType, {
+        foreignKey: 'bloodTypeId',
+        as: 'bloodType'
       });
 
-      // Assuming Profile has many EmployeeLeaveApplications
-      // This allows you to access the EmployeeLeaveApplications associated with a Profile instance
-      Profile.hasMany(models.EmployeeLeaveApplication, {
-        foreignKey: 'ProfileId',
-        as: 'LeaveApplications',
+      // Association with Region
+      Profile.belongsTo(models.Region, {
+        foreignKey: 'regionId',
+        as: 'region'
       });
 
-      // Assuming Profile has many EmployeeLeaveCredits
-      // This allows you to access the EmployeeLeaveCredits associated with a Profile instance
-      Profile.hasMany(models.EmployeeLeaveCredit, {
-        foreignKey: 'ProfileId',
-        as: 'LeaveCredits',
+      // Association with Province
+      Profile.belongsTo(models.Province, {
+        foreignKey: 'provinceId',
+        as: 'province'
       });
 
-      // Assuming Profile has many Evaluations
-      // This allows you to access the Evaluations associated with a Profile instance
-      Profile.hasMany(models.Profile, {
-        foreignKey: 'ProfileId',
-        as: 'Evaluations',
+      // Association with Town
+      Profile.belongsTo(models.Town, {
+        foreignKey: 'townId',
+        as: 'town'
       });
 
-      // Assuming Profile has many Evaluator
-      // This allows you to access the Evaluators associated with a Profile instance
-      Profile.hasMany(models.Profile, {
-        foreignKey: 'ReviewerId',
-        as: 'Evaluators',
+      // Association with Barangay
+      Profile.belongsTo(models.Barangay, {
+        foreignKey: 'barangayId',
+        as: 'barangay'
       });
 
-      // Assuming Profile has many EmployeeTrainings 
-      // This allows you to access the EmployeeTrainings associated with a Profile instance
-      Profile.hasMany(models.EmployeeTraining, {
-        foreignKey: 'ProfileId',
-        as: 'EmployeeTrainings',
+      // Association with ProfileContactInformation
+      Profile.hasMany(models.ProfileContactInformation, {
+        foreignKey: 'profileId',
+        as: 'contactInformations'
       });
+
+      // Association with ProfileDependent
+      Profile.hasMany(models.ProfileDependent, {
+        foreignKey: 'profileId',
+        as: 'dependents'
+      });
+      
+      // Association with ProfileDocument
+      Profile.hasMany(models.ProfileDocument, {
+        foreignKey: 'profileId',
+        as: 'documents'
+      });
+
+      // Association with ProfileEducation
+      Profile.hasMany(models.ProfileEducation, {
+        foreignKey: 'profileId',
+        as: 'educations'
+      });
+
+      // Association with ProfileExperience
+      Profile.hasMany(models.ProfileExperience, {
+        foreignKey: 'profileId',
+        as: 'experiences'
+      });
+
+      // Association with ProfileTraining
+      Profile.hasMany(models.ProfileTraining, {
+        foreignKey: 'profileId',
+        as: 'trainings'
+      });
+
     }
   }
   Profile.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    FirstName: {
+    firstname: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    MiddleName: {
+    middlename: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false
     },
-    LastName: {
+    lastname: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    Suffix: {
+    suffix: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
-    BirthDate: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    SexId: {
+    sexId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Sexes', // Assuming Sexes is the table name
-        key: 'Id',
+        model: 'Sexes',
+        key: 'id'
       },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    CivilStatusId: {
+    civilStatusId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: 'CivilStatuses', // Assuming CivilStatuses is the table name
-        key: 'Id',
+        model: 'CivilStatuses',
+        key: 'id'
       },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    BirthPlace: {
-      type: DataTypes.STRING,
-      allowNull: true,
+    birthdate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
     },
-    Weight: {
+    birthplace: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    weight: {
       type: DataTypes.FLOAT,
-      allowNull: true,
+      allowNull: false
     },
-    Height: {
+    height: {
       type: DataTypes.FLOAT,
-      allowNull: true,
+      allowNull: false
     },
-    BloodTypeId: {
+    bloodTypeId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: 'BloodTypes', // Assuming BloodTypes is the table name
-        key: 'Id',
+        model: 'BloodTypes',
+        key: 'id'
       },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    regionId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Regions',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    provinceId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Provinces',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    townId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Towns',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    barangayId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Barangays',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    zipCode: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    streetAddress: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
     },
   }, {
     sequelize,
     modelName: 'Profile',
-    tableName: 'profiles', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'Profiles',
+    timestamps: true
   });
   return Profile;
 };

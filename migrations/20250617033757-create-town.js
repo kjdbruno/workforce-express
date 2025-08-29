@@ -3,39 +3,45 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Towns', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProvinceCode: {
+      provinceCode: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      TownCode: {
+      townCode: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      Name: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
-        defaultValue: true // Default value for isActive
+        defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('Towns', ['provinceCode']);
+    await queryInterface.addIndex('Towns', ['townCode']);
+    await queryInterface.addIndex('Towns', ['name']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('Towns', ['provinceCode']);
+    await queryInterface.removeIndex('Towns', ['townCode']);
+    await queryInterface.removeIndex('Towns', ['name']);
     await queryInterface.dropTable('Towns');
   }
 };

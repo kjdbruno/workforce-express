@@ -3,41 +3,43 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('PositionQualifications', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      PositionId: {
+      positionId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Positions',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Qualification: {
+      qualification: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('PositionQualifications', ['qualification']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('PositionQualifications', ['qualification']);
     await queryInterface.dropTable('PositionQualifications');
   }
 };

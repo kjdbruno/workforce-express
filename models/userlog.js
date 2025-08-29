@@ -6,44 +6,44 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
   class UserLog extends Model {
     static associate(models) {
       // Assuming UserLog belongs to User
-      // and UserLog has a foreign key UserId that references User's Id
-      // This allows you to access the User associated with a UserLog instance
+
+      // Association with User 
       UserLog.belongsTo(models.User, {
-        foreignKey: 'UserId',
+        foreignKey: 'userId',
         as: 'User' 
       });
+
     }
   }
   UserLog.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    UserId: {
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true,
       references: {
         model: 'Users',
-        key: 'Id',
-      }
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    SocketId: {
+    socketId: {
       type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Assuming only one active socket ID per user at a time
+      allowNull: true
     },
-    IsOnline: {
+    isOnline: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false,
+      defaultValue: false
     },
   }, {
     sequelize,
     modelName: 'UserLog',
-    tableName: 'userlogs',
+    tableName: 'UserLogs',
     timestamps: true,
   });
   return UserLog;

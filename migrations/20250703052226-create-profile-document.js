@@ -3,51 +3,53 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('ProfileDocuments', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references:  {
           model: 'Profiles',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      DocumentId: {
+      documentId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references:  {
           model: 'DocumentTypes',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      File: {
+      file: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('ProfileDocuments', ['file']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('ProfileDocuments', ['file']);
     await queryInterface.dropTable('ProfileDocuments');
   }
 };

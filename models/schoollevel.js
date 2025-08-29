@@ -12,37 +12,33 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming SchoolLevel has many EmployeeEducation
-      // This allows you to access the EmployeeEducation associated with a SchoolLevel instance
-      SchoolLevel.hasMany(models.EmployeeEducation, {
-        foreignKey: 'SchoolLevelId',
-        as: 'EmployeeEducation',
+      // Association with ProfileEducation
+      SchoolLevel.hasMany(models.ProfileEducation, {
+        foreignKey: 'levelId',
+        as: 'profileEducations'
       });
-      
     }
   }
   SchoolLevel.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true, // Ensure Name is unique
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'SchoolLevel',
-    tableName: 'schoollevels', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'SchoolLevels', 
+    timestamps: true
   });
   return SchoolLevel;
 };

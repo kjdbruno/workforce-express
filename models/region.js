@@ -11,34 +11,38 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Assciation with Profile
+      Region.hasMany(models.Profile, {
+        foreignKey: 'regionId',
+        as: 'profiles'
+      });
     }
   }
   Region.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
-    },
-    Name: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
     regionCode: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true, // Ensure regionCode is unique
+      allowNull: false
     },
-    IsActive: {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'Region',
-    tableName: 'regions', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'Regions',
+    timestamps: true
   });
   return Region;
 };

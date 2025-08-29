@@ -2,45 +2,48 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeLeaveCredits', {
-      Id: {
+    await queryInterface.createTable('EmploymentSchedules', {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'Profiles', // Assuming you have a Profiles table
-          key: 'Id'
+          model: 'Profiles',
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      LeaveTypeId: {
+      shiftId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: 'LeaveTypes', // Assuming you have a LeaveTypes table
-          key: 'Id'
+          model: 'Shifts',
+          key: 'id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      Credit: {
-        type: Sequelize.FLOAT
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeLeaveCredits');
+    await queryInterface.dropTable('EmploymentSchedules');
   }
 };

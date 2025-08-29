@@ -7,55 +7,60 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     static associate(models) {
       // define association here
 
-      // A
+      // Association with User (senderId)
       Notification.belongsTo(models.User, {
-        foreignKey: 'SenderId',
+        foreignKey: 'senderId',
         as: 'Sender',
       });
 
+      // Association with User (receiverId)
       Notification.belongsTo(models.User, {
-        foreignKey: 'ReceiverId',
+        foreignKey: 'receiverId',
         as: 'Receiver',
       });
+
     }
   }
   Notification.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    SenderId: {
+    senderId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'Users',
-        key: 'Id',
-      }
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    ReceiverId: {
+    receiverId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'Users',
-        key: 'Id',
-      }
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
-    Content: {
+    content: {
       type: DataTypes.TEXT('long'),
-      allowNull: false,
+      allowNull: false
     },
-    IsRead: {
+    isRead: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false,
+      defaultValue: false
     },
   }, {
     sequelize,
     modelName: 'Notification',
-    tableName: 'notifications',
-    timestamps: true,
+    tableName: 'Notifications',
+    timestamps: true
   });
   return Notification;
 };

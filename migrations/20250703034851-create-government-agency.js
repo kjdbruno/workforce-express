@@ -3,34 +3,37 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('GovernmentAgencies', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      Name: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      Alias: {
+      alias: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      IsActive: {
-        type: Sequelize.BOOLEAN
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('GovernmentAgencies', ['name']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('GovernmentAgencies', ['name']);
     await queryInterface.dropTable('GovernmentAgencies');
   }
 };

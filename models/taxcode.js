@@ -12,40 +12,37 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming TaxCode has a foreign key TaxCodeId in EmploymentInformation
-      // This allows you to access the EmploymentInformation associated with a TaxCode instance
+      // Association with EmploymentInformation
       TaxCode.hasMany(models.EmploymentInformation, {
-        foreignKey: 'TaxCodeId',
-        as: 'EmploymentInformation',
+        foreignKey: 'taxCodeId',
+        as: 'employmentInformations'
       });
     }
   }
   TaxCode.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    alias: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true, // Ensure Name is unique
+      allowNull: false
     },
-    Alias: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true, // Default value for IsActive
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'TaxCode',
-    tableName: 'taxcodes', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'TaxCodes',
+    timestamps: true
   });
   return TaxCode;
 };

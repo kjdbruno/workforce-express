@@ -12,39 +12,37 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming Course has many EmployeeEducation
-      // This allows you to access the EmployeeEducation associated with a Course instance
-      Course.hasMany(models.EmployeeEducation, {
-        foreignKey: 'CourseId',
-        as: 'EmployeeEducation',
+      // Association with ProfileEducation
+      Course.hasMany(models.ProfileEducation, {
+        foreignKey: 'courseId',
+        as: 'profileEducations'
       });
     }
   }
   Course.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    alias: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    Alias: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'Course',
-    tableName: 'courses', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'Courses',
+    timestamps: true
   });
   return Course;
 };

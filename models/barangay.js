@@ -11,38 +11,42 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Association with Profile
+      Barangay.hasMany(models.Profile, {
+        foreignKey: 'barangayId',
+        as: 'profiles'
+      });
     }
   }
   Barangay.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    TownCode: {
+    townCode: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    BarangayCode: {
+    barangayCode: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true, // Ensure BarangayCode is unique
+      allowNull: false
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'Barangay',
-    tableName: 'barangays',
-    timestamps: true,
+    tableName: 'Barangays',
+    timestamps: true
   });
   return Barangay;
 };

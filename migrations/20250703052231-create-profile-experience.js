@@ -3,53 +3,57 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('ProfileExperiences', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Profiles',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Position: {
+      position: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      JobDescription: {
+      jobDescription: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      StartDate: {
+      startDate: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      EndDate: {
+      endDate: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('ProfileExperiences', ['position']);
+    await queryInterface.addIndex('ProfileExperiences', ['jobDescription']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('ProfileExperiences', ['position']);
+    await queryInterface.removeIndex('ProfileExperiences', ['jobDescription']);
     await queryInterface.dropTable('ProfileExperiences');
   }
 };

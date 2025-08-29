@@ -12,43 +12,33 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming DocumentType has a foreign key DocumentTypeId in ApplicationDocument
-      // This allows you to access the ApplicationDocuments associated with a DocumentType instance
-      DocumentType.hasMany(models.ApplicationDocument, {
-        foreignKey: 'DocumentTypeId',
-        as: 'ApplicationDocuments',
-      });
-
-      // Assuming DocumentType has many EmploymentDocuments
-      // This allows you to access the EmploymentDocuments associated with a DocumentType instance
-      DocumentType.hasMany(models.EmploymentDocument, {
-        foreignKey: 'DocumentTypeId',
-        as: 'EmploymentDocuments',
+      // Association with ProfileDocument
+      DocumentType.hasMany(models.ProfileDocument, {
+        foreignKey: 'documentId',
+        as: 'profileDocuments'
       });
     }
   }
   DocumentType.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true, // Ensure Name is unique
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true, // Default value for IsActive
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'DocumentType',
-    tableName: 'documenttypes', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'DocumentTypes',
+    timestamps: true
   });
   return DocumentType;
 };

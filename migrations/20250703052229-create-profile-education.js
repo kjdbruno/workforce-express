@@ -3,69 +3,69 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('ProfileEducations', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Profiles',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      LevelId: {
+      levelId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'SchoolLevels',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      SchooldId: {
+      schooldId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Schools',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      CourseId: {
+      courseId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Courses',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Rating: {
+      rating: {
         type: Sequelize.FLOAT,
         allowNull: true
       },
-      StartDate: {
+      startDate: {
         type: Sequelize.DATEONLY,
         allowNull: true
       },
-      EndDate: {
+      endDate: {
         type: Sequelize.DATEONLY,
         allowNull: true
       },
-      Graduated: {
+      graduated: {
         type: Sequelize.INTEGER,
         allowNull: true
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultvALUE: TRUE
       },

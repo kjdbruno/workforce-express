@@ -3,34 +3,38 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Positions', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      Name: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      Description: {
+      description: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('Positions', ['name']);
+    await queryInterface.addIndex('Positions', ['description']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('Positions', ['name']);
+    await queryInterface.removeIndex('Positions', ['description']);
     await queryInterface.dropTable('Positions');
   }
 };

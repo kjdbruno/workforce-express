@@ -12,36 +12,33 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Assuming Relationship has a foreign key EmployeeDependentId in EmployeeDependent
-      // This allows you to access the EmployeeDependents associated with a Relationship instance 
-      Relationship.hasMany(models.EmployeeDependent, {
-        foreignKey: 'RelationshipId',
-        as: 'EmployeeDependents',
+      // Association with ProfileDependent
+      Relationship.hasMany(models.ProfileDependent, {
+        foreignKey: 'relationshipId',
+        as: 'dependents'
       });
     }
   }
   Relationship.init({
-    Id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
+    id: {
+      allowNull: false,
       autoIncrement: true,
-      allowNull: false,
+      primaryKey: true,
+      type: DataTypes.INTEGER
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true, // Ensure Name is unique
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true, // Default value for IsActive
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'Relationship',
-    tableName: 'relationships', // Specify the table name
-    timestamps: true, // Enable timestamps if needed
+    tableName: 'Relationships',
+    timestamps: true
   });
   return Relationship;
 };

@@ -14,12 +14,29 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Company.init({
-    Name: DataTypes.STRING,
-    Description: DataTypes.STRING,
-    IsActive: DataTypes.BOOLEAN
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    name: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    description: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
   }, {
     sequelize,
     modelName: 'Company',
+    tableName: 'Companies',
+    timestamps: true
   });
   return Company;
 };

@@ -6,51 +6,53 @@ const { Position } = require('../models');
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Applications', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Profiles',
-          key: 'Id'
+          key: 'id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      VacancyId: {
+      vacancyId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Vacancies',
-          key: 'Id'
+          key: 'id'
         },
-        onUpdate: 'SET NULL',
-        onDelete: 'SET NULL'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      Status: {
+      status: {
         type: Sequelize.ENUM('Pooling', 'Shorlisted', 'Interview', 'Hired', 'Rejected', 'Withdrawn'),
         defaultValue: 'Pooling'
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('Applications', ['status']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('Applications', ['status']);
     await queryInterface.dropTable('Applications');
   }
 };

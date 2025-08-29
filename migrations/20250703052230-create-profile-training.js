@@ -3,39 +3,39 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('ProfileTrainings', {
-      Id: {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      ProfileId: {
+      profileId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'Profiles',
-          key: 'Id'
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      Title: {
+      title: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      StartDate: {
+      startDate: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      EndDate: {
+      endDate: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      Hour: {
+      hour: {
         type: Sequelize.FLOAT,
         allowNull: false
       },
-      Type: {
+      type: {
         type: Sequelize.ENUM(
           'Technical',        // job-related skills
           'Managerial',       // supervisory / leadership
@@ -48,29 +48,35 @@ module.exports = {
         ),
         allowNull: false
       },
-      ConductedBy: {
+      conductedBy: {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      File: {
+      file: {
         type: Sequelize.TEXT('long'),
-        allowNull: false
+        allowNull: true
       },
-      IsActive: {
+      isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
-      CreatedAt: {
+      createdAt: {
         allowNull: false,
         type: Sequelize.DATE
       },
-      UpdatedAt: {
+      updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
       }
     });
+    await queryInterface.addIndex('ProfileTrainings', ['title']);
+    await queryInterface.addIndex('ProfileTrainings', ['type']);
+    await queryInterface.addIndex('ProfileTrainings', ['condectedBy']);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('ProfileTrainings', ['title']);
+    await queryInterface.removeIndex('ProfileTrainings', ['type']);
+    await queryInterface.removeIndex('ProfileTrainings', ['condectedBy']);
     await queryInterface.dropTable('ProfileTrainings');
   }
 };

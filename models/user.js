@@ -7,78 +7,79 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     static associate(models) {
       // Define associations here
 
-      // Assuming User belongs to Role
-      // and User has a foreign key RoleId that references Role's Id
+      // Association with Role
       User.belongsTo(models.Role, {
-        foreignKey: 'RoleId',
-        as: 'Role', // Optional: used for eager loading (e.g., user.getRole())
+        foreignKey: 'roleId',
+        as: 'Role'
       });
-      // Assuming User has many UserLogs
-      // and UserLog has a foreign key UserId that references User's Id
+
+      // Association with UserLog
       User.hasOne(models.UserLog, {
-        foreignKey: 'UserId',
+        foreignKey: 'userId',
         as: 'UserLog',
       });
 
-      //
+      // Association with Notification (SenderId)
       User.hasMany(models.Notification, {
-        foreignKey: 'SenderId',
+        foreignKey: 'senderId',
         as: 'SentNotifications',
       });
 
-      //
+      // Association with Notification (ReceiverId)
       User.hasMany(models.Notification, {
-        foreignKey: 'ReceiverId',
+        foreignKey: 'receiverId',
         as: 'ReceivedNotifications',
       });
+
     }
   }
   User.init({
-    Id: {
+    id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
     },
-    EmployeeNo: {
+    employeeNo: {
       type: DataTypes.STRING,
-      allowNull: true, // Assuming EmployeeNo is an optional field
-      unique: true // Assuming EmployeeNo should be unique
+      allowNull: true, 
+      unique: true 
     },
-    Name: {
+    name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    Username: {
+    username: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
-    Password: {
+    password: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    RoleId: {
+    roleId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
-        model: 'Roles', // Assuming you have a Roles table
-        key: 'Id',
+        model: 'Roles',
+        key: 'id',
       },
       onUpdate: 'CASCADE',
-      onDelete: 'SET NULL',
+      onDelete: 'CASCADE',
     },
-    Classification: {
-      type: DataTypes.ENUM('Management', 'Employee')
+    level: {
+      type: DataTypes.ENUM('Management', 'Employee'),
+      allowNull: false
     },
-    IsActive: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      allowNull: false,
+      defaultValue: true
     },
   }, {
     sequelize,
     modelName: 'User',
-    tableName: 'users',
+    tableName: 'Users',
     timestamps: true,
   });
   return User;
