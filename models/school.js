@@ -27,10 +27,26 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER
     },
     name: {
-      type: DataTypes.TEXT('long'),
+      type: DataTypes.STRING,
       allowNull: false
     },
-    alias: {
+    type: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    province: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    town: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    website: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    contactNo: {
       type: DataTypes.STRING,
       allowNull: false
     },

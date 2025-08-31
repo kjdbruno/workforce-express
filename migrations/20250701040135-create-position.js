@@ -30,11 +30,9 @@ module.exports = {
       }
     });
     await queryInterface.addIndex('Positions', ['name']);
-    await queryInterface.addIndex('Positions', ['description']);
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.removeIndex('Positions', ['name']);
-    await queryInterface.removeIndex('Positions', ['description']);
     await queryInterface.dropTable('Positions');
   }
 };

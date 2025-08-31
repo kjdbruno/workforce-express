@@ -13,6 +13,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      description: {
+        type: Sequelize.TEXT('long'),
+        allowNull: false
+      },
       isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

@@ -48,12 +48,8 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('ProfileExperiences', ['position']);
-    await queryInterface.addIndex('ProfileExperiences', ['jobDescription']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('ProfileExperiences', ['position']);
-    await queryInterface.removeIndex('ProfileExperiences', ['jobDescription']);
     await queryInterface.dropTable('ProfileExperiences');
   }
 };

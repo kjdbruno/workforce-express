@@ -1,5 +1,7 @@
 'use strict';
 
+const civilstatuses = require('./data/civilstatus.json')
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
@@ -12,12 +14,17 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-   await queryInterface.bulkInsert('CivilStatuses', [
-      { Name: 'Single', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Married', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Separated', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Widowed', CreatedAt: new Date(), UpdatedAt: new Date() },
-    ]);
+   
+    try {
+      await queryInterface.bulkInsert('CivilStatuses', civilstatuses.map(c => ({
+        name: c.name,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {

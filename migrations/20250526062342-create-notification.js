@@ -46,10 +46,8 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('Notifications', ['content']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('Notifications', ['content']);
     await queryInterface.dropTable('Notifications');
   }
 };

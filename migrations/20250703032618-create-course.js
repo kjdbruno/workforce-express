@@ -10,10 +10,6 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       name: {
-        type: Sequelize.TEXT('long'),
-        allowNull: false
-      },
-      alias: {
         type: Sequelize.STRING,
         allowNull: false
       },
@@ -31,11 +27,9 @@ module.exports = {
       }
     });
     await queryInterface.addIndex('Courses', ['name']);
-    await queryInterface.addIndex('Courses', ['alias']);
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.removeIndex('Courses', ['name']);
-    await queryInterface.removeIndex('Courses', ['alias']);
     await queryInterface.dropTable('Courses');
   }
 };

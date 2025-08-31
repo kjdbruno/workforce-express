@@ -46,10 +46,8 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('ProfileDocuments', ['file']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('ProfileDocuments', ['file']);
     await queryInterface.dropTable('ProfileDocuments');
   }
 };

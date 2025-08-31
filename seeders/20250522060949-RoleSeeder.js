@@ -1,5 +1,7 @@
 'use strict';
 
+const roles = require('./data/role.json')
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
@@ -12,17 +14,16 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    await queryInterface.bulkInsert('Roles', [
-      { Name: 'Super Administrator', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Administrator', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Human Resource: Training', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Human Resource: Performance', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Human Resource: Administration', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Human Resource: Leave Management', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Human Resource: Recruitment and Selection', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Finance: Payroll', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Employee', CreatedAt: new Date(), UpdatedAt: new Date() },
-    ]);
+    try {
+      await queryInterface.bulkInsert('Roles', roles.map(r => ({
+        name: r.name,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {

@@ -1,0 +1,20 @@
+[
+    { 
+        "name": "Single"
+    },
+    { 
+        "name": "Married"
+    },
+    { 
+        "name": "Widowed"
+    },
+    { 
+        "name": "Separated"
+    },
+    {
+        "name": "Divorced"
+    },
+    { 
+        "name": "Annulled"
+    }
+]

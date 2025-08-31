@@ -20,7 +20,7 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       qualification: {
-        type: Sequelize.TEXT('long'),
+        type: Sequelize.STRING,
         allowNull: false
       },
       isActive: {

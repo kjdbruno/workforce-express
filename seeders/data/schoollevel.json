@@ -1,0 +1,30 @@
+[
+    { 
+        "name": "Preschool", 
+        "description": "Daycare, Nursery, Kindergarten, or Early Childhood Education" 
+    },
+    { 
+        "name": "Elementary", 
+        "description": "Primary education from Grades 1 to 6" 
+    },
+    { 
+        "name": "Junior High School", 
+        "description": "Secondary education from Grades 7 to 10" 
+    },
+    { 
+        "name": "Senior High School", 
+        "description": "Secondary education from Grades 11 to 12" 
+    },
+    { 
+        "name": "Vocational / Technical", 
+        "description": "TESDA-accredited skills training and certification" 
+    },
+    { 
+        "name": "College / Undergraduate", 
+        "description": "Tertiary education leading to a bachelor’s degree" 
+    },
+    { 
+        "name": "Graduate Studies", 
+        "description": "Master’s and Doctorate programs" 
+    }
+]

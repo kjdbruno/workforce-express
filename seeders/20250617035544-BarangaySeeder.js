@@ -14,13 +14,19 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    await queryInterface.bulkInsert('Barangays', barangays.map(b => ({
-      TownCode: b.citymunCode, // Assuming barangay.json has a town code field
-      BarangayCode: b.brgyCode, // Assuming barangay.json has a barangay code field
-      Name: b.brgyDesc, // Assuming barangay.json has a barangay
-      CreatedAt: new Date(),
-      UpdatedAt: new Date()
-    })), {});
+    
+    try {
+      await queryInterface.bulkInsert('Barangays', barangays.map(b => ({
+        townCode: b.citymunCode,
+        barangayCode: b.brgyCode,
+        name: b.brgyDesc,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {

@@ -10,12 +10,28 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       name: {
-        type: Sequelize.TEXT('long'),
-        allowNull: false
-      },
-      alias: {
         type: Sequelize.STRING,
         allowNull: false
+      },
+      type: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      province: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      town: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      website: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      contactNo: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
       isActive: {
         type: Sequelize.BOOLEAN,
@@ -31,11 +47,9 @@ module.exports = {
       }
     });
     await queryInterface.addIndex('Schools', ['name']);
-    await queryInterface.addIndex('Schools', ['alias']);
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.removeIndex('Schools', ['name']);
-    await queryInterface.removeIndex('Schools', ['alias']);
     await queryInterface.dropTable('Schools');
   }
 };

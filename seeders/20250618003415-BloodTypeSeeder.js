@@ -1,5 +1,7 @@
 'use strict';
 
+const bloodtypes = require('./data/bloodtype.json')
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
@@ -12,16 +14,17 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-   await queryInterface.bulkInsert('BloodTypes', [
-      { Name: 'A+', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'A-', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'B+', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'B-', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'AB+', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'AB-', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'O+', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'O-', CreatedAt: new Date(), UpdatedAt: new Date() },
-    ]);
+   
+    try {
+      await queryInterface.bulkInsert('BloodTypes', bloodtypes.map(b => ({
+        name: b.name,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {

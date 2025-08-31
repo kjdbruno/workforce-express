@@ -1,5 +1,7 @@
 'use strict';
 
+const sexes = require('./data/sex.json')
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
@@ -12,10 +14,17 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-   await queryInterface.bulkInsert('Sexes', [
-      { Name: 'Male', CreatedAt: new Date(), UpdatedAt: new Date() },
-      { Name: 'Female', CreatedAt: new Date(), UpdatedAt: new Date() },
-    ]);
+   
+    try {
+      await queryInterface.bulkInsert('Sexes', sexes.map(s => ({
+        name: s.name, 
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {

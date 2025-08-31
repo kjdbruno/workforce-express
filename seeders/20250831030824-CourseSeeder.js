@@ -1,6 +1,6 @@
 'use strict';
 
-const towns = require('./data/town.json');
+const courses = require('./data/course.json')
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -16,10 +16,8 @@ module.exports = {
     */
    
     try {
-      await queryInterface.bulkInsert('Towns', towns.map(t => ({
-        provinceCode: t.provCode,
-        townCode: t.citymunCode,
-        name: t.citymunDesc,
+      await queryInterface.bulkInsert('Courses', courses.map(c => ({
+        name: c.name,
         createdAt: new Date(),
         updatedAt: new Date()
       })), {});
@@ -36,6 +34,6 @@ module.exports = {
      * Example:
      * await queryInterface.bulkDelete('People', null, {});
      */
-    await queryInterface.bulkDelete('Towns', null, {});
+    await queryInterface.bulkDelete('Courses', null, {});
   }
 };

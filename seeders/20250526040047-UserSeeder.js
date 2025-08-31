@@ -1,5 +1,7 @@
 'use strict';
+
 const bcrypt = require('bcrypt');
+const users = require('./data/user.json')
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -15,11 +17,21 @@ module.exports = {
     */
     const hashedPassword = await bcrypt.hash('Workforce@2025', 10);
 
-    // await queryInterface.bulkInsert('Users', [
-    //   { name: 'Super Administrator', username: 'SuperAdministrator', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-    //   { name: 'Administrator', username: 'Administrator', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-    //   { name: 'Encoder', username: 'Encoder', password: hashedPassword, isInternal: true, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-    // ]);
+    try {
+      await queryInterface.bulkInsert('Users', users.map(u => ({
+        employeeNo: u.employeeNo,
+        name: u.name,
+        username: u.username,
+        password: hashedPassword,
+        roleId: u.roleId,
+        level: u.level, 
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {
@@ -29,6 +41,6 @@ module.exports = {
      * Example:
      * await queryInterface.bulkDelete('People', null, {});
      */
-    // await queryInterface.bulkDelete('Users', null, {});
+    await queryInterface.bulkDelete('Users', null, {});
   }
 };

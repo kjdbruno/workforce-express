@@ -79,8 +79,8 @@ module.exports = {
           model: 'Positions',
           key: 'id'
         },
-        onDelete: 'CASACDE',
-        onUpdate: 'CASACDE'
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
       employmentId: {
         type: Sequelize.INTEGER,
@@ -99,8 +99,8 @@ module.exports = {
           model: 'AppointmentStatuses',
           key: 'id'
         },
-        onDelete: 'CASDCADE',
-        onUpdate: 'CASDCADE'
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
       createdAt: {
         allowNull: false,

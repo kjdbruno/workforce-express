@@ -1,0 +1,34 @@
+[
+    { 
+        "name": "New Hire", 
+        "description": "First appointment or entry to the company" 
+    },
+    { 
+        "name": "Promotion", 
+        "description": "Movement to a higher role or position with added responsibilities" 
+    },
+    { 
+        "name": "Transfer", 
+        "description": "Movement to another department or branch, same or similar level" 
+    },
+    { 
+        "name": "Demotion", 
+        "description": "Movement to a lower position due to performance or restructuring" 
+    },
+    { 
+        "name": "Reassignment", 
+        "description": "Change of position or location without change in rank" 
+    },
+    { 
+        "name": "End of Contract", 
+        "description": "Employment ended due to completion of contract period" 
+    },
+    { 
+        "name": "Regularization", 
+        "description": "Conversion from probationary to regular status" 
+    },
+    { 
+        "name": "Separation", 
+        "description": "Voluntary or involuntary termination from employment" 
+    }
+]

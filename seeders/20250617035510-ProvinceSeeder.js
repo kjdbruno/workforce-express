@@ -14,13 +14,19 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    await queryInterface.bulkInsert('Provinces', provinces.map(p => ({
-      RegionCode: p.regCode, // Assuming province.json has a region code field
-      ProvinceCode: p.provCode, // Assuming province.json has a province code field
-      Name: p.provDesc, // Assuming province.json has a province description field
-      CreatedAt: new Date(),
-      UpdatedAt: new Date()
-    })), {});
+    
+    try {
+      await queryInterface.bulkInsert('Provinces', provinces.map(p => ({
+        regionCode: p.regCode,
+        provinceCode: p.provCode,
+        name: p.provDesc,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {

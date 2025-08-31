@@ -1,0 +1,34 @@
+[
+    { 
+        "name": "Regular", 
+        "description": "Employee with security of tenure after probationary period" 
+    },
+    { 
+        "name": "Probationary", 
+        "description": "On trial period, usually 3–6 months, before regularization" 
+    },
+    { 
+        "name": "Contractual", 
+        "description": "Hired under a contract with a fixed term of employment" 
+    },
+    { 
+        "name": "Project-Based", 
+        "description": "Hired only for the duration of a specific project" 
+    },
+    { 
+        "name": "Seasonal", 
+        "description": "Employed only during peak or seasonal demand" 
+    },
+    { 
+        "name": "Casual", 
+        "description": "Hired for incidental work, not usually necessary to business operations" 
+    },
+    { 
+        "name": "Part-Time", 
+        "description": "Works fewer hours than regular employees" 
+    },
+    { 
+        "name": "Job Order / Freelance", 
+        "description": "Paid based on output or deliverables, no employer-employee relationship" 
+    }
+]

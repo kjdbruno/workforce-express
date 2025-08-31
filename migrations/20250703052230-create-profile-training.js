@@ -20,7 +20,7 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       title: {
-        type: Sequelize.TEXT('long'),
+        type: Sequelize.STRING,
         allowNull: false
       },
       startDate: {
@@ -71,12 +71,10 @@ module.exports = {
     });
     await queryInterface.addIndex('ProfileTrainings', ['title']);
     await queryInterface.addIndex('ProfileTrainings', ['type']);
-    await queryInterface.addIndex('ProfileTrainings', ['condectedBy']);
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.removeIndex('ProfileTrainings', ['title']);
     await queryInterface.removeIndex('ProfileTrainings', ['type']);
-    await queryInterface.removeIndex('ProfileTrainings', ['condectedBy']);
     await queryInterface.dropTable('ProfileTrainings');
   }
 };

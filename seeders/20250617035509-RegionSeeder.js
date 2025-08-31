@@ -14,12 +14,18 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-   await queryInterface.bulkInsert('Regions', regions.map(r => ({
-      RegionCode: r.regCode, // Assuming region.json has a region code field
-      Name: r.regDesc,
-      CreatedAt: new Date(),
-      UpdatedAt: new Date()
-    })), {});
+   
+    try {
+      await queryInterface.bulkInsert('Regions', regions.map(r => ({
+        regionCode: r.regCode,
+        name: r.regDesc,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
+    } catch (error) {
+      console.error('Seeder error:', error);
+      throw error;
+    }
   },
 
   async down (queryInterface, Sequelize) {

@@ -119,12 +119,8 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('Vacancies', ['location']);
-    await queryInterface.addIndex('Vacancies', ['movement']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('Vacancies', ['location']);
-    await queryInterface.removeIndex('Vacancies', ['movement']);
     await queryInterface.dropTable('Vacancies');
   }
 };
