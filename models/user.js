@@ -40,11 +40,6 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       autoIncrement: true,
       allowNull: false,
     },
-    employeeNo: {
-      type: DataTypes.STRING,
-      allowNull: true, 
-      unique: true 
-    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -70,6 +65,10 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     },
     level: {
       type: DataTypes.ENUM('Management', 'Employee'),
+      allowNull: false
+    },
+    avatar: {
+      type: DataTypes.STRING,
       allowNull: false
     },
     isActive: {

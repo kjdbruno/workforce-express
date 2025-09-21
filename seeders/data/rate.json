@@ -1,0 +1,85 @@
+[
+    { 
+        "classId": 1,
+        "gradeId": 1,
+        "rates": [
+            {
+                "salaryId": 1,
+                "stepId": 1,
+                "monthCompensation": "10000",
+                "dailyCompensation": "100",
+                "hourlyCompensation": "10"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 2,
+                "monthCompensation": "20000",
+                "dailyCompensation": "200",
+                "hourlyCompensation": "20"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 3,
+                "monthCompensation": "30000",
+                "dailyCompensation": "300",
+                "hourlyCompensation": "30"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 4,
+                "monthCompensation": "40000",
+                "dailyCompensation": "400",
+                "hourlyCompensation": "40"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 5,
+                "monthCompensation": "50000",
+                "dailyCompensation": "500",
+                "hourlyCompensation": "50"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 6,
+                "monthCompensation": "60000",
+                "dailyCompensation": "600",
+                "hourlyCompensation": "60"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 7,
+                "monthCompensation": "70000",
+                "dailyCompensation": "700",
+                "hourlyCompensation": "70"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 8,
+                "monthCompensation": "80000",
+                "dailyCompensation": "800",
+                "hourlyCompensation": "80"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 9,
+                "monthCompensation": "90000",
+                "dailyCompensation": "900",
+                "hourlyCompensation": "90"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 10,
+                "monthCompensation": "100000",
+                "dailyCompensation": "1000",
+                "hourlyCompensation": "100"
+            },
+            {
+                "salaryId": 1,
+                "stepId": 11,
+                "monthCompensation": "1100000",
+                "dailyCompensation": "1100",
+                "hourlyCompensation": "110"
+            }
+        ]
+    }
+]

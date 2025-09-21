@@ -19,12 +19,12 @@ module.exports = {
 
     try {
       await queryInterface.bulkInsert('Users', users.map(u => ({
-        employeeNo: u.employeeNo,
         name: u.name,
         username: u.username,
         password: hashedPassword,
         roleId: u.roleId,
         level: u.level, 
+        avatar: u.avatar,
         createdAt: new Date(),
         updatedAt: new Date()
       })), {});

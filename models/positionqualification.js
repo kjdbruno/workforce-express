@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    qualification: {
+    name: {
       type: DataTypes.TEXT('long'),
       allowNull: false
     },

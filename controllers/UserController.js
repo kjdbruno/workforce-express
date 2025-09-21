@@ -1,83 +1,97 @@
 const { Op } = require("sequelize");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { User, Role } = require("../models");
 
-exports.getAllUsers = async (req, res) => {
-    // try {
-    //     const users = await User.findAll({
-    //         include: {
-    //             model: UserDetail,
-    //             as: 'user_details',
-    //             include: [
-    //                 {
-    //                     model: Office,
-    //                     as: 'office'
-    //                 },
-    //                 {
-    //                     model: Role,
-    //                     as: 'role'
-    //                 }
-    //             ]
-    //         }
-    //     });
+exports.GetAllUsers = async (req, res) => {
+
+    const Page = parseInt(req.query.Page) || 1;
+    const Limit = parseInt(req.query.Limit) || 10;
+    const Offset = (Page - 1) * Limit;
+
+    try {
+        const { count, rows } = await User.findAndCountAll({
+            include: [
+                {
+                    model: Role,
+                    as: 'Role'
+                }
+            ],
+            limit: Limit,
+            offset: Offset,
+            order: [['createdAt', 'DESC']]
+        });
           
-    //     res.json(users);
-    // } catch (error) {
-    //     res.status(500).json({ error: error.message });
-    // }
+        res.json({
+            data: rows,
+            meta: {
+                TotalItems: count,
+                TotalPages: Math.ceil(count / Limit),
+                CurrentPage: Page
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
 exports.createUser = async (req, res) => {
-    // const { name, username, password, officeId, roleId, avatar } = req.body;
-    // try {
-    //     const userExist = await User.findOne({
-    //         where: { username: username }
-    //     });
-    //     if (userExist) {
-    //         return res.status(400).json({ error: "Username already exists!" });
-    //     }
-    //     const hashedPassword = await bcrypt.hash(password, 10);
 
-    //     const user = await User.create({
-    //         name, 
-    //         username, 
-    //         password: hashedPassword,
-    //         isInternal: true
-    //     });
-    //     const detail = await UserDetail.create({
-    //         userId: user.id, 
-    //         officeId, 
-    //         roleId,
-    //         avatar
-    //     });
-        
-    //     const created = await User.findOne({
-    //         where: {
-    //             id: user.id
-    //         },
-    //         include: {
-    //             model: UserDetail,
-    //             as: 'user_details',
-    //             include: [
-    //                 {
-    //                     model: Office,
-    //                     as: 'office'
-    //                 },
-    //                 {
-    //                     model: Role,
-    //                     as: 'role'
-    //                 }
-    //             ]
-    //         }
-    //     });
+    const { 
+        employeeNo,
+        name, 
+        username, 
+        password, 
+        roleId, 
+        level,
+        avatar 
+    } = req.body;
 
-    //     res.status(201).json({
-    //         message: "User created successfully!", 
-    //         user: created
-    //     });
-    // } catch (error) {
-    //     res.status(400).json({ error: error.message });
-    // }
+    try {
+
+        const userExist = await User.findOne({
+            where: { 
+                username 
+            }
+        });
+
+        if (userExist) {
+            return res.status(403).json({
+                errors: [{
+                    type: "manual",
+                    value: "",
+                    msg: "record already exists!",
+                    path: "name",
+                    location: "body",
+                }],
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = await User.create({
+            employeeNo,
+            name, 
+            username, 
+            password: hashedPassword, 
+            roleId, 
+            level,
+            avatar 
+        });
+
+        res.status(201).json({
+            message: "record saved!", 
+            user: user
+        });
+
+    } catch (error) {
+
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
 };
 
 exports.updateUser = async (req, res) => {

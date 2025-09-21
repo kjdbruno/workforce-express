@@ -17,6 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'employmentId',
         as: 'employmentInformations'
       });
+
+      // Association with Vacancy
+      EmploymentStatus.hasMany(models.Vacancy, {
+        foreignKey: 'employmentId',
+        as: 'vacancies'
+      });
     }
   }
   EmploymentStatus.init({
@@ -28,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     name: {
       type: DataTypes.STRING,
+      allowNull: false
+    },
+    description: {
+      type: DataTypes.TEXT('long'),
       allowNull: false
     },
     isActive: {

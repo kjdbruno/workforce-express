@@ -19,6 +19,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
+      stepId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Increments',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       companyId: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -39,11 +49,11 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      scheduleId: {
+      shiftId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'ScheduleClasses',
+          model: 'ScheduleShifts',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -82,11 +92,11 @@ module.exports = {
       ageRange: {
         type: Sequelize.STRING
       },
-      educationId: {
+      levelId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Courses',
+          model: 'SchoolLevels',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -96,11 +106,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      appointmentId: {
+      employmentId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'AppointmentStatuses',
+          model: 'EmploymentStatuses',
           key: 'id'
         },
         onUpdate: 'CASCADE',

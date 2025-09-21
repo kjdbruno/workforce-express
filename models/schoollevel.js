@@ -17,6 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'levelId',
         as: 'profileEducations'
       });
+
+      // Association with Vacancy
+      SchoolLevel.hasMany(models.Vacancy, {
+        foreignKey: 'levelId',
+        as: 'vacancies'
+      });
     }
   }
   SchoolLevel.init({
@@ -28,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     name: {
       type: DataTypes.STRING,
+      allowNull: false
+    },
+    description: {
+      type: DataTypes.TEXT('lonng'),
       allowNull: false
     },
     isActive: {

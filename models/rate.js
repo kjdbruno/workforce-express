@@ -12,16 +12,16 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Association with Position
-      Rate.belongsTo(models.Position, {
-        foreignKey: 'positionId',
-        as: 'position'
+      // Association with Salary
+      Rate.belongsTo(models.Salary, {
+        foreignKey: 'salaryId',
+        as: 'salary'
       });
 
-      // Associaiton with RateIncrement
-      Rate.hasMany(models.RateIncrement, {
-        foreignKey: 'rateId',
-        as: 'rateIncrements'
+      // Associaiton with Increment
+      Rate.belongsTo(models.Increment, {
+        foreignKey: 'stepId',
+        as: 'increment'
       });
     }
   }
@@ -32,15 +32,37 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    positionId: {
+    salaryId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Positions',
+        model: 'Salaries',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
+    },
+    stepId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Increments',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    monthlyCompensation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    dailyCompensation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    hourlyCompensation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
     },
     isActive: {
       type: DataTypes.BOOLEAN,

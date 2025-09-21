@@ -1,0 +1,17 @@
+[
+    { 
+        "name": "Regular Overtime"
+    },
+    { 
+        "name": "Weekend Overtime"
+    },
+    { 
+        "name": "Regula Holiday Overtime"
+    },
+    { 
+        "name": "Special Holiday Overtime"
+    },
+    { 
+        "name": "Night Differential"
+    }
+]

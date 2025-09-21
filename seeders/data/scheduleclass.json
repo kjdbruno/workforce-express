@@ -1,0 +1,11 @@
+[
+    { 
+        "name": "Regular Day Shift"
+    },
+    { 
+        "name": "Night Shift"
+    },
+    { 
+        "name": "Mid Shift"
+    }
+]

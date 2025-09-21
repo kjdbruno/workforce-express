@@ -9,11 +9,6 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      employeeNo: {
-        type: Sequelize.STRING,
-        allowNull: false, 
-        unique: true
-      },
       name: {
         type: Sequelize.STRING,
         allowNull: false
@@ -37,6 +32,10 @@ module.exports = {
       },
       level: {
         type: Sequelize.ENUM('Management', 'Employee'),
+        allowNull: false
+      },
+      avatar: {
+        type: Sequelize.STRING,
         allowNull: false
       },
       isActive: {

@@ -17,6 +17,54 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'vacancyId',
         as: 'applications'
       });
+
+      // Association with Position
+      Vacancy.belongsTo(models.Position, {
+        foreignKey: 'positionId',
+        as: 'position'
+      });
+
+      // Assocition with Company
+      Vacancy.belongsTo(models.Company, {
+        foreignKey: 'companyId',
+        as: 'company'
+      });
+
+      // Association with Department
+      Vacancy.belongsTo(models.Department, {
+        foreignKey: 'departmentId',
+        as: 'department'
+      });
+
+      // Assciation with ScheduleShift
+      Vacancy.belongsTo(models.ScheduleShift, {
+        foreignKey: 'shiftId',
+        as: 'shift'
+      });
+
+      // Association with Sex
+      Vacancy.belongsTo(models.Sex, {
+        foreignKey: 'sexId',
+        as: 'sex'
+      });
+
+      // Association with SchoolLevel
+      Vacancy.belongsTo(models.SchoolLevel, {
+        foreignKey: 'levelId',
+        as: 'schoolLevel'
+      });
+
+      // Association with EmploymentStatus
+      Vacancy.belongsTo(models.EmploymentStatus, {
+        foreignKey: 'employmentId',
+        as: 'employmentStatus'
+      });
+
+      // Association with Increment
+      Vacancy.belongsTo(models.Increment, {
+        foreignKey: 'stepId',
+        as: 'increment'
+      });
     }
   }
   Vacancy.init({
@@ -31,6 +79,16 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       references: {
         model: 'Positions',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    stepId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Increments',
         key: 'id'
       },
       onUpdate: 'CASCADE',
@@ -56,11 +114,11 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    scheduleId: {
+    shiftId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'ScheduleClasses',
+        model: 'ScheduleShifts',
         key: 'id'
       },
       onUpdate: 'CASCADE',
@@ -99,11 +157,11 @@ module.exports = (sequelize, DataTypes) => {
     ageRange: {
       type: DataTypes.STRING
     },
-    educationId: {
+    levelId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Courses',
+        model: 'SchoolLevels',
         key: 'id'
       },
       onUpdate: 'CASCADE',
@@ -113,11 +171,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    appointmentId: {
+    employmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'AppointmentStatuses',
+        model: 'EmploymentStatuses',
         key: 'id'
       },
       onUpdate: 'CASCADE',

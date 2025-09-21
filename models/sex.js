@@ -12,10 +12,16 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
         foreignKey: 'sexId',
         as: 'profiles'
       });
+
+      // Association with Vacancy
+      Sex.hasMany(models.Vacancy, {
+        foreignKey: 'sexId',
+        as: 'vacancies'
+      });
     }
   }
   Sex.init({
-    Id: {
+    id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,

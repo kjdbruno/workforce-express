@@ -23,6 +23,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'classId',
         as: 'class'
       });
+
+      // Association with Vacancy
+      ScheduleShift.hasMany(models.Vacancy, {
+        foreignKey: 'shiftId',
+        as: 'vacancies'
+      });
     }
   }
   ScheduleShift.init({

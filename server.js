@@ -51,7 +51,36 @@ const AuthController = require('./controllers/AuthController');
 const Auth = AuthController(io);
 app.use('/api', AuthRoutes(Auth));
 
-app.use('/api/preference/sex', require('./routes/SexRoutes'));
+app.use('/api/option', require('./routes/OptionRoutes'));
+app.use('/api/user', require('./routes/UserRoutes'));
+app.use('/api/sex', require('./routes/SexRoutes'));
+app.use('/api/relationship', require('./routes/RelationshipRoutes'));
+app.use('/api/bloodtype', require('./routes/BloodTypeRoutes'));
+app.use('/api/maritalstatus', require('./routes/MaritalStatusRoutes'));
+app.use('/api/department', require('./routes/DepartmentRoutes'));
+app.use('/api/employmentstatus', require('./routes/EmploymentStatusRoutes'));
+app.use('/api/appointmentstatus', require('./routes/AppointmentmentStatusRoutes'));
+app.use('/api/taxcode', require('./routes/TaxCodeRoutes'));
+app.use('/api/leavetype', require('./routes/LeaveTypeRoutes'));
+app.use('/api/governmentagency', require('./routes/GovernmentAgencyRoutes'));
+app.use('/api/company', require('./routes/CompanyRoutes'));
+app.use('/api/school', require('./routes/SchoolRoutes'));
+app.use('/api/schoollevel', require('./routes/SchoolLevelRoutes'));
+app.use('/api/course', require('./routes/CourseRoutes'));
+app.use('/api/position', require('./routes/PositionRoutes'));
+app.use('/api/salaryclass', require('./routes/SalaryClassRoutes'));
+app.use('/api/salarygrade', require('./routes/SalaryGradeRoutes'));
+app.use('/api/increment', require('./routes/IncrementRoutes'));
+app.use('/api/rate', require('./routes/RateRoutes'));
+app.use('/api/scheduleclass', require('./routes/ScheduleClassRoutes'));
+app.use('/api/scheduleshift', require('./routes/ScheduleShiftRoutes'));
+app.use('/api/premiumpay', require('./routes/PremiumPayRoutes'));
+app.use('/api/holiday', require('./routes/HolidayRoutes'));
+app.use('/api/incidentclass', require('./routes/IncidentClassRoutes'));
+app.use('/api/incidentrole', require('./routes/IncidentRoleRoutes'));
+app.use('/api/recruitment', require('./routes/RecruitmentRoutes'));
+
+app.use(express.static('public'));
 
 require('./sockets')(io);
 

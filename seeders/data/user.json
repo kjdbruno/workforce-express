@@ -1,44 +1,44 @@
 [
     { 
-        "employeeNo": "A12345",
         "name": "Super Administrator",
         "username": "SuperAdministrator",
         "roleId": 1,
-        "level": "Management"
+        "level": "Management",
+        "avatar": "avatar"
     },
     { 
-        "employeeNo": "B12345",
         "name": "Administrator",
         "username": "Administrator",
         "roleId": 2,
-        "level": "Management"
+        "level": "Management",
+        "avatar": "avatar"
     },
     { 
-        "employeeNo": "C12345",
         "name": "Supervisor",
         "username": "Supervisor",
         "roleId": 3,
-        "level": "Management"
+        "level": "Management",
+        "avatar": "avatar"
     },
     {
-        "employeeNo": "D12345",
         "name": "Human Resource",
         "username": "HumanResource",
         "roleId": 4,
-        "level": "Management"
+        "level": "Management",
+        "avatar": "avatar"
     },
     { 
-        "employeeNo": "E12345",
         "name": "Finance",
         "username": "Finance",
         "roleId": 5,
-        "level": "Management"
+        "level": "Management",
+        "avatar": "avatar"
     },
     { 
-        "employeeNo": "F12345",
         "name": "Employee",
         "username": "Employee",
         "roleId": 6,
-        "level": "Employee"
+        "level": "Employee",
+        "avatar": "avatar"
     }
 ]

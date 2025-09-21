@@ -1,0 +1,74 @@
+[
+    { 
+        "name": "Head" 
+    },
+    { 
+        "name": "Spouse" 
+    },
+    { 
+        "name": "Son" 
+    },
+    { 
+        "name": "Daughter" 
+    },
+    { 
+        "name": "Father" 
+    },
+    { 
+        "name": "Mother" 
+    },
+    { 
+        "name": "Brother" 
+    },
+    { 
+        "name": "Sister" 
+    },
+    { 
+        "name": "Grandfather" 
+    },
+    { 
+        "name": "Grandmother" 
+    },
+    { 
+        "name": "Grandson" 
+    },
+    { 
+        "name": "Granddaughter" 
+    },
+    { 
+        "name": "Uncle" 
+    },
+    { 
+        "name": "Aunt" 
+    },
+    { 
+        "name": "Nephew" 
+    },
+    { 
+        "name": "Niece" 
+    },
+    { 
+        "name": "Cousin" 
+    },
+    { 
+        "name": "Son-in-law" 
+    },
+    { 
+        "name": "Daughter-in-law" 
+    },
+    { 
+        "name": "Other Relative" 
+    },
+    { 
+        "name": "Non-relative" 
+    },
+    { 
+        "name": "Househelp" 
+    },
+    { 
+        "name": "Boarder" 
+    },
+    { 
+        "name": "Other Member" 
+    }
+]

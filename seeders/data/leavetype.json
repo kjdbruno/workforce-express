@@ -1,0 +1,50 @@
+[
+    { 
+        "name": "Vacation Leave", 
+        "credit": 1,
+        "accrual": "Monthly",
+        "carryOver": false
+    },
+    { 
+        "name": "Service Incentive Leave", 
+        "credit": 5,
+        "accrual": "Yearly",
+        "carryOver": false
+    },
+    { 
+        "name": "Maternity Leave", 
+        "credit": 105,
+        "accrual": "Yearly",
+        "carryOver": false
+    },
+    { 
+        "name": "Paternity Leave", 
+        "credit": 7,
+        "accrual": "Yearly",
+        "carryOver": false
+    },
+    { 
+        "name": "Parental Leave for Solo Parent", 
+        "credit": 7,
+        "accrual": "Yearly",
+        "carryOver": false
+    },
+    { 
+        "name": "Special Leave for Women (RA 9710)", 
+        "credit": 60,
+        "accrual": "Yearly",
+        "carryOver": false
+    },
+    { 
+        "name": "VAWC Leave", 
+        "credit": 10,
+        "accrual": "Yearly",
+        "carryOver": false
+    },
+    { 
+        "name": "Sick Leave", 
+        "credit": 1,
+        "accrual": "Monthly",
+        "carryOver": false
+    }
+]

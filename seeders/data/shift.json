@@ -1,0 +1,17 @@
+[
+    { 
+        "classId": 1,
+        "timeStart": "08:00",
+        "timeEnd": "17:00"
+    },
+    { 
+        "classId": 2,
+        "timeStart": "22:00",
+        "timeEnd": "07:00"
+    },
+    { 
+        "classId": 3,
+        "timeStart": "14:00",
+        "timeEnd": "23:00"
+    }
+]

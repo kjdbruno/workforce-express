@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-exports.verifyToken = (req, res, next) => {
+exports.VerifyToken = (req, res, next) => {
     // const token = req.headers['authorization'];
     // if (!token) return res.status(403).json({ error: 'No token provided' });
 
@@ -35,7 +35,7 @@ exports.verifyToken = (req, res, next) => {
     });
 };
 
-exports.validateApiKey = (req, res, next) => {
+exports.ValidateApiKey = (req, res, next) => {
     const apiKey = req.headers['api'];
     if (!apiKey) {
         return res.status(403).json({ error: 'API key is missing' });

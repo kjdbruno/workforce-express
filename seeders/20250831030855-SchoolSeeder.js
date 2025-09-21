@@ -1,7 +1,6 @@
 'use strict';
 
-const province = require('../models/province');
-const schools = require('./data/schoollevel.json')
+const schools = require('./data/school.json')
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -20,8 +19,6 @@ module.exports = {
       await queryInterface.bulkInsert('Schools', schools.map(s => ({
         name: s.name,
         type: s.type,
-        province: s.province,
-        town: s.town,
         website: s.website,
         contactNo: s.contactNo,
         createdAt: new Date(),

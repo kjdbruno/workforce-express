@@ -11,11 +11,17 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      
+      // Association with Rate
+      Increment.hasMany(models.Rate, {
+        foreignKey: 'stepId',
+        as: 'rates'
+      });
 
-      // Association with RateIncrement
-      Increment.hasMany(models.RateIncrement, {
-        foreignKey: 'incrementId',
-        as: 'rateIncrements'
+      // Association with Vacancy
+      Increment.hasMany(models.Vacancy, {
+        foreignKey: 'stepId',
+        as: 'vacancies'
       });
     }
   }

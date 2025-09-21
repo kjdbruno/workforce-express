@@ -17,14 +17,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      province: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      town: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
       website: {
         type: Sequelize.STRING,
         allowNull: true

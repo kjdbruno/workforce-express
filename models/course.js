@@ -30,10 +30,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
-    alias: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
