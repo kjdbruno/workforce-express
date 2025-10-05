@@ -2,7 +2,7 @@
 'use strict';
 const { Model } = require('sequelize');
 
-module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTION EXPORT
+module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
       // Define associations here
@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       // Association with Role
       User.belongsTo(models.Role, {
         foreignKey: 'roleId',
-        as: 'Role'
+        as: 'role'
       });
 
       // Association with UserLog
@@ -31,6 +31,18 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
         as: 'ReceivedNotifications',
       });
 
+      // Association with Profile
+      User.belongsTo(models.Profile, {
+        foreignKey: 'profileId',
+        as: 'profile'
+      });
+
+      // Association with Signatory
+      User.hasMany(models.Signatory, {
+        foreignKey: 'userId',
+        as: 'signatories'
+      });
+
     }
   }
   User.init({
@@ -40,9 +52,15 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       autoIncrement: true,
       allowNull: false,
     },
-    name: {
-      type: DataTypes.STRING,
+    profileId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: 'Profiles',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     username: {
       type: DataTypes.STRING,
@@ -65,10 +83,6 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     },
     level: {
       type: DataTypes.ENUM('Management', 'Employee'),
-      allowNull: false
-    },
-    avatar: {
-      type: DataTypes.STRING,
       allowNull: false
     },
     isActive: {

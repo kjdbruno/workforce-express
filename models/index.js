@@ -16,9 +16,6 @@ if (config.use_env_variable) {
 // Base Models (No Foreign Keys)
 db.Role = require('./role')(sequelize, Sequelize.DataTypes);
 db.Sex = require('./sex')(sequelize, Sequelize.DataTypes);
-db.User = require('./user')(sequelize, Sequelize.DataTypes);
-db.UserLog = require('./userlog')(sequelize, Sequelize.DataTypes);
-db.Notification = require('./notification')(sequelize, Sequelize.DataTypes);
 db.CivilStatus = require('./civilstatus')(sequelize, Sequelize.DataTypes);
 db.BloodType = require('./bloodtype')(sequelize, Sequelize.DataTypes);
 db.Region = require('./region')(sequelize, Sequelize.DataTypes);
@@ -26,7 +23,12 @@ db.Province = require('./province')(sequelize, Sequelize.DataTypes);
 db.Town = require('./town')(sequelize, Sequelize.DataTypes);
 db.Barangay = require('./barangay')(sequelize, Sequelize.DataTypes);
 db.Profile = require('./profile')(sequelize, Sequelize.DataTypes);
-db.Account = require('./account')(sequelize, Sequelize.DataTypes);
+db.ProfilePhoto = require('./profilephoto')(sequelize, Sequelize.DataTypes);
+db.User = require('./user')(sequelize, Sequelize.DataTypes);
+db.UserLog = require('./userlog')(sequelize, Sequelize.DataTypes);
+db.Notification = require('./notification')(sequelize, Sequelize.DataTypes);
+db.SignatoryType = require('./signatorytype')(sequelize, Sequelize.DataTypes);
+db.Signatory = require('./signatory')(sequelize, Sequelize.DataTypes);
 db.Department = require('./department')(sequelize, Sequelize.DataTypes);
 db.EmploymentStatus = require('./employmentstatus')(sequelize, Sequelize.DataTypes);
 db.AppointmentStatus = require('./appointmentstatus')(sequelize, Sequelize.DataTypes);
@@ -63,6 +65,7 @@ db.ProfileExperience = require('./profileexperience')(sequelize, Sequelize.DataT
 db.EmploymentInformation = require('./employmentinformation')(sequelize, Sequelize.DataTypes);
 db.EmploymentSchedule = require('./employmentschedule')(sequelize, Sequelize.DataTypes);
 db.EmploymentPhoto = require('./employmentphoto')(sequelize, Sequelize.DataTypes);
+db.VacancyRequest = require('./vacancyrequest')(sequelize, Sequelize.DataTypes);
 
 // Associate all models
 Object.keys(db).forEach(modelName => {

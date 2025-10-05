@@ -83,12 +83,12 @@ exports.Create = async (req, res) => {
         });
 
         if (exist) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: classId,
                     msg: "Record already exists!",
-                    path: "name",
+                    path: "classId",
                     location: "body",
                 }],
             });
@@ -133,12 +133,12 @@ exports.Update = async (req, res) => {
         const scheduleshift = await ScheduleShift.findByPk(id);
         
         if (!scheduleshift) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: classId,
                     msg: "Record not found!",
-                    path: "name",
+                    path: "classId",
                     location: "body",
                 }],
             });
@@ -153,12 +153,12 @@ exports.Update = async (req, res) => {
             },
         });
         if (exist) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: classId,
                     msg: "Record already in use!",
-                    path: "name",
+                    path: "classId",
                     location: "body",
                 }],
             });
@@ -197,12 +197,12 @@ exports.Disable = async (req, res) => {
         const scheduleshift = await ScheduleShift.findByPk(id);
 
         if (!scheduleshift) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "classId",
                     location: "body",
                 }],
             });
@@ -239,12 +239,12 @@ exports.Enable = async (req, res) => {
         const scheduleshift = await ScheduleShift.findByPk(id);
 
         if (!scheduleshift) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "classId",
                     location: "body",
                 }],
             });

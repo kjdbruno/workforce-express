@@ -29,6 +29,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'salaryId',
         as: 'rates'
       });
+
+      Salary.hasOne(models.Position, {
+        foreignKey: 'salaryId',
+        as: 'positions'
+      });
     }
   }
   Salary.init({

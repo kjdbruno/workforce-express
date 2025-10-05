@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const os = require("os");
 
-const { User } = require('../models');
+const { User, Profile, ProfilePhoto } = require('../models');
 
 let io;
 
@@ -16,7 +16,90 @@ module.exports = (_io) => {
             try {
                 const user = await User.findOne({
                     where: { 
-                        username: username 
+                        username 
+                    }
+                });
+                if (!user) {
+                    return res.status(404).json({
+                        errors: [
+                            {
+                                type: "field",
+                                value: username,
+                                msg: "User not found",
+                                path: "username",
+                                location: "body",
+                            },
+                        ],
+                    });
+                }
+                const isMatch = await bcrypt.compare(password, user.password);
+                if (!isMatch) {
+                    return res.status(401).json({
+                        errors: [
+                            {
+                                type: "field",
+                                value: username,
+                                msg: "Invalid credentials!",
+                                path: "username",
+                                location: "body",
+                            },
+                            {
+                                type: "field",
+                                value: password,
+                                msg: "Invalid credentials!",
+                                path: "password",
+                                location: "body",
+                            },
+                        ],
+                    });
+                }
+                const profile = await User.findOne({
+                    where: {
+                        id: user.id
+                    },
+                    include: [
+                        {
+                            model: Profile,
+                            as: 'profile',
+                            attributes: [
+                                'firstname', 'middlename', 'lastname', 'suffix'
+                            ],
+                            include: [
+                                {
+                                    model: ProfilePhoto,
+                                    as: 'photos',
+                                    attributes: [
+                                        'photo'
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    attributes: [
+                        'id', 'username', 'roleId', 'level'
+                    ]
+                })
+                const token = jwt.sign({ 
+                    id: user.id 
+                }, process.env.JWT_SECRET, { 
+                    expiresIn: "8h" 
+                });
+                res.json({ 
+                    user: profile, 
+                    token 
+                });
+            } catch (error) {
+                console.error("Login error:", error); // Log the error for debugging
+                res.status(500).json({ error: error.message || "An unexpected error occurred during login." }); // Use 500 for server errors
+            }
+        },
+        EmployeeLogin: async (req, res) => {
+            const { username, password } = req.body;
+            try {
+                const user = await User.findOne({
+                    where: { 
+                        username: username,
+                        level: 'Employee'
                     }
                 });
                 if (!user) {
@@ -46,9 +129,37 @@ module.exports = (_io) => {
                         ],
                     });
                 }
-                // The 'expiresIn' property handles token expiration
+                const profile = await User.findOne({
+                    where: {
+                        id: user.id
+                    },
+                    include: [
+                        {
+                            model: Profile,
+                            as: 'profile',
+                            attributes: [
+                                'firstname', 'middlename', 'lastname', 'suffix'
+                            ],
+                            include: [
+                                {
+                                    model: ProfilePhoto,
+                                    as: 'photos',
+                                    attributes: [
+                                        'photo'
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    attributes: [
+                        'id', 'username', 'roleId', 'level'
+                    ]
+                })
                 const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "8h" }); // Token expires in 8 hours
-                res.json({ user, token });
+                res.json({ 
+                    user: profile, 
+                    token 
+                });
             } catch (error) {
                 console.error("Login error:", error); // Log the error for debugging
                 res.status(500).json({ error: error.message || "An unexpected error occurred during login." }); // Use 500 for server errors

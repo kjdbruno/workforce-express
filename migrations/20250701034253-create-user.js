@@ -9,9 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
+      profileId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Profiles',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       username: {
         type: Sequelize.STRING,
@@ -24,7 +30,7 @@ module.exports = {
       roleId: {
         type: Sequelize.INTEGER,
         references: {
-          model: 'Roles', // Assuming you have a Roles table
+          model: 'Roles',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -32,10 +38,6 @@ module.exports = {
       },
       level: {
         type: Sequelize.ENUM('Management', 'Employee'),
-        allowNull: false
-      },
-      avatar: {
-        type: Sequelize.STRING,
         allowNull: false
       },
       isActive: {
@@ -52,11 +54,9 @@ module.exports = {
       }
     });
     await queryInterface.addIndex('Users', ['username']);
-    await queryInterface.addIndex('Users', ['name']);
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.removeIndex('Users', ['username']);
-    await queryInterface.removeIndex('Users', ['name']);
     await queryInterface.dropTable('Users');
   }
 };

@@ -65,6 +65,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'stepId',
         as: 'increment'
       });
+
+      // Association with VacancyRequest
+      Vacancy.hasMany(models.VacancyRequest, {
+        foreignKey: 'vacancyId',
+        as: 'requests'
+      });
     }
   }
   Vacancy.init({

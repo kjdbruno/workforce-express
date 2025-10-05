@@ -59,10 +59,10 @@ exports.Create = async (req, res) => {
         });
 
         if (exist) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: name,
                     msg: "Record already exists!",
                     path: "name",
                     location: "body",
@@ -109,10 +109,10 @@ exports.Update = async (req, res) => {
         const leavetype = await LeaveType.findByPk(id);
         
         if (!leavetype) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: name,
                     msg: "Record not found!",
                     path: "name",
                     location: "body",
@@ -127,10 +127,10 @@ exports.Update = async (req, res) => {
             },
         });
         if (exist) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: name,
                     msg: "Record already in use!",
                     path: "name",
                     location: "body",
@@ -170,12 +170,12 @@ exports.Disable = async (req, res) => {
         const leavetype = await LeaveType.findByPk(id);
 
         if (!leavetype) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "name",
                     location: "body",
                 }],
             });
@@ -210,12 +210,12 @@ exports.Enable = async (req, res) => {
         const leavetype = await LeaveType.findByPk(id);
 
         if (!leavetype) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "name",
                     location: "body",
                 }],
             });

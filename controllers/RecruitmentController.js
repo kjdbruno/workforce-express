@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { Position, SalaryGrade, PositionQualification, Salary } = require('../models');
+const { Position, SalaryGrade, PositionQualification, Salary, Vacancy, Signatory, VacancyRequest, Rate, Company, Department, ScheduleShift, ScheduleClass, Sex, SchoolLevel, EmploymentStatus, User, Profile } = require('../models');
 
 exports.GetAll = async (req, res) => {
 
@@ -10,32 +10,117 @@ exports.GetAll = async (req, res) => {
 
     try {
 
-        const where = {
-            status: { [Op.ne]: 'Filled' } // 👈 exclude filled
-        };
-
-        if (Filter) {
-            where.name = { [Op.like]: `%${Filter}%` };
-        }
-
-        const { count, rows } = await Position.findAndCountAll({
+        const { count, rows } = await Vacancy.findAndCountAll({
             include: [
                 {
-                    model: Salary,
-                    as: 'salary',
+                    model: Position,
+                    as: 'position',
+                    attributes: [
+                        "name", "description"
+                    ],
                     include: [
                         {
-                            model: SalaryGrade,
-                            as: 'grade'
+                            model: Salary,
+                            as: 'salary',
+                            include: [
+                                {
+                                    model: SalaryGrade,
+                                    as: 'grade'
+                                },
+                                {
+                                    model: Rate,
+                                    as: 'rates',
+                                    required: false,
+                                    where: {
+                                        stepId: { [Op.col]: "Vacancy.stepId" }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            model: PositionQualification,
+                            as: 'qualifications'
                         }
                     ]
                 },
                 {
-                    model: PositionQualification,
-                    as: 'qualifications'
+                    model: Company,
+                    as: 'company',
+                    attributes: [
+                        "name"
+                    ]
+                },
+                {
+                    model: Department,
+                    as: 'department',
+                    attributes: [
+                        "name"
+                    ]
+                },
+                {
+                    model: ScheduleShift,
+                    as: 'shift',
+                    attributes: [
+                        "timeStart", "timeEnd"
+                    ],
+                    include: [
+                        {
+                            model: ScheduleClass,
+                            as: 'class',
+                            attributes: [
+                                "name"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: Sex,
+                    as: 'sex',
+                    attributes: [
+                        "name"
+                    ]
+                },
+                {
+                    model: SchoolLevel,
+                    as: 'schoolLevel',
+                    attributes: [
+                        "name"
+                    ]
+                },
+                {
+                    model: EmploymentStatus,
+                    as: 'employmentStatus',
+                    attributes: [
+                        "name"
+                    ]
+                },
+                {
+                    model: VacancyRequest,
+                    as: 'requests',
+                    include: [
+                        {
+                            model: Signatory,
+                            as: 'signatory',
+                            include: [
+                                {
+                                    model: User,
+                                    as: 'user',
+                                    include: [
+                                        {
+                                            model: Profile,
+                                            as: 'profile'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
             ],
-            where,
+            where: Filter
+                ? { '$position.name$': { [Op.like]: `%${Filter}%` } }
+                : undefined,
+            subQuery: false,
             limit: Limit,
             offset: Offset,
             order: [['createdAt', 'DESC']]
@@ -59,49 +144,78 @@ exports.GetAll = async (req, res) => {
     }
 };
 
-// exports.Create = async (req, res) => {
+exports.Create = async (req, res) => {
 
-//     const { 
-//         name
-//     } = req.body;
+    const { 
+        positionId,
+        stepId,
+        companyId,
+        departmentId,
+        shiftId,
+        date,
+        location,
+        movement,
+        justification,
+        needBackgroundCheck,
+        sexId,
+        ageRange,
+        levelId,
+        yearExperience,
+        employmentId
+    } = req.body;
 
-//     try {
+    try {
 
-//         const exist = await Sex.findOne({
-//             where: { 
-//                 name 
-//             }
-//         });
+        const vacancy = await Vacancy.create({
+            positionId,
+            stepId,
+            companyId,
+            departmentId,
+            shiftId,
+            dateNeeded: date,
+            location,
+            movement,
+            justification,
+            needBackgroundCheck,
+            sexId,
+            ageRange,
+            levelId,
+            yearExperience,
+            employmentId,
+            status: 'Requested'
+        });
 
-//         if (exist) {
-//             return res.status(403).json({
-//                 errors: [{
-//                     type: "manual",
-//                     value: "",
-//                     msg: "Record already exists!",
-//                     path: "name",
-//                     location: "body",
-//                 }],
-//             });
-//         }
+        const position = await Position.findByPk(positionId);
+        await position.update({ 
+            status: 'Requested'
+        });
 
-//         const sex = await Sex.create({
-//             name
-//         });
+        const signatories = await Signatory.findAll({
+            where: {
+                typeId: 1
+            }
+        });
+        if (signatories.length > 0) {
+            const requestsData = signatories.map(signatory => ({
+                vacancyId: vacancy.id,
+                signatoryId: signatory.id
+            }));
+            await VacancyRequest.bulkCreate(requestsData);
+        }
 
-//         res.status(201).json({
-//             message: "Record Saved!", 
-//             sex: sex
-//         });
+        res.status(201).json({
+            message: "Record Saved!", 
+            vacancy: vacancy
+        });
 
-//     } catch (error) {
+    } catch (error) {
 
-//         res.status(400).json({ 
-//             error: error.message 
-//         });
+        res.status(400).json({ 
+            error: error.message 
+        });
 
-//     }
-// };
+    }
+};
 
 // exports.Update = async (req, res) => {
 
@@ -118,7 +232,7 @@ exports.GetAll = async (req, res) => {
 //         const sex = await Sex.findByPk(id);
         
 //         if (!sex) {
-//             return res.status(403).json({
+//             return res.status(500).json({
 //                 errors: [{
 //                     type: "manual",
 //                     value: "",
@@ -136,7 +250,7 @@ exports.GetAll = async (req, res) => {
 //             },
 //         });
 //         if (exist) {
-//             return res.status(403).json({
+//             return res.status(500).json({
 //                 errors: [{
 //                     type: "manual",
 //                     value: "",
@@ -176,7 +290,7 @@ exports.GetAll = async (req, res) => {
 //         const sex = await Sex.findByPk(id);
 
 //         if (!sex) {
-//             return res.status(403).json({
+//             return res.status(500).json({
 //                 errors: [{
 //                     type: "manual",
 //                     value: "",
@@ -216,7 +330,7 @@ exports.GetAll = async (req, res) => {
 //         const sex = await Sex.findByPk(id);
 
 //         if (!sex) {
-//             return res.status(403).json({
+//             return res.status(500).json({
 //                 errors: [{
 //                     type: "manual",
 //                     value: "",

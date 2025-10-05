@@ -19,15 +19,9 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      documentId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references:  {
-          model: 'DocumentTypes',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+      filename: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       file: {
         type: Sequelize.TEXT('long'),

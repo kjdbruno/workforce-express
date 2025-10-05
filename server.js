@@ -78,7 +78,10 @@ app.use('/api/premiumpay', require('./routes/PremiumPayRoutes'));
 app.use('/api/holiday', require('./routes/HolidayRoutes'));
 app.use('/api/incidentclass', require('./routes/IncidentClassRoutes'));
 app.use('/api/incidentrole', require('./routes/IncidentRoleRoutes'));
+app.use('/api/signatorytype', require('./routes/SignatoryTypeRoutes'));
+app.use('/api/signatoryprofile', require('./routes/SignatoryRoutes'));
 app.use('/api/recruitment', require('./routes/RecruitmentRoutes'));
+app.use('/api/application', require('./routes/ApplicationRoutes'));
 
 app.use(express.static('public'));
 

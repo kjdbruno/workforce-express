@@ -1,7 +1,6 @@
 'use strict';
 
-const bcrypt = require('bcrypt');
-const users = require('./data/user.json')
+const photos = require('./data/photo.json')
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -15,16 +14,10 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    const hashedPassword = await bcrypt.hash('Workforce@2025', 10);
-
-    try {
-      await queryInterface.bulkInsert('Users', users.map(u => ({
-        name: u.name,
-        username: u.username,
-        password: hashedPassword,
-        roleId: u.roleId,
-        level: u.level, 
-        avatar: u.avatar,
+   try {
+      await queryInterface.bulkInsert('ProfilePhotos', photos.map(p => ({
+        profileId: p.profileId,
+        photo: p.photo,
         createdAt: new Date(),
         updatedAt: new Date()
       })), {});
@@ -41,6 +34,6 @@ module.exports = {
      * Example:
      * await queryInterface.bulkDelete('People', null, {});
      */
-    await queryInterface.bulkDelete('Users', null, {});
+    await queryInterface.bulkDelete('ProfilePhotos', null, {});
   }
 };

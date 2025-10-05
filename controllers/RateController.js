@@ -144,7 +144,7 @@ exports.Update = async (req, res) => {
 
     const { 
         id 
-    } = req.params; // rateId
+    } = req.params;
     const { 
         classId, 
         gradeId,
@@ -163,10 +163,10 @@ exports.Update = async (req, res) => {
         if (!salary) {
             return res.status(404).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "rateId",
+                    path: "classId",
                     location: "body",
                 }],
             });
@@ -221,10 +221,10 @@ exports.Disable = async (req, res) => {
         if (!salary) {
             return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "classId",
                     location: "body",
                 }],
             });
@@ -263,10 +263,10 @@ exports.Enable = async (req, res) => {
         if (!salary) {
             return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "classId",
                     location: "body",
                 }],
             });

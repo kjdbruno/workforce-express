@@ -2,32 +2,36 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Accounts', {
+    await queryInterface.createTable('VacancyRequests', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
+      vacancyId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Users',
-          key: 'Id'
+          model: 'Vacancies',
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      profileId: {
+      signatoryId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Profiles',
-          key: 'Id'
+          model: 'Signatories',
+          key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
+      },
+      status: {
+        type: Sequelize.ENUM('Pending', 'Approved'),
+        defaultValue: 'Pending'
       },
       isActive: {
         type: Sequelize.BOOLEAN,
@@ -44,6 +48,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Accounts');
+    await queryInterface.dropTable('VacancyRequests');
   }
 };

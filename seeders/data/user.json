@@ -1,44 +1,26 @@
 [
     { 
-        "name": "Super Administrator",
+        "profileId": 1,
         "username": "SuperAdministrator",
         "roleId": 1,
-        "level": "Management",
-        "avatar": "avatar"
+        "level": "Management"
     },
     { 
-        "name": "Administrator",
-        "username": "Administrator",
-        "roleId": 2,
-        "level": "Management",
-        "avatar": "avatar"
-    },
-    { 
-        "name": "Supervisor",
-        "username": "Supervisor",
+        "profileId": 2,
+        "username": "SuperAdministrator",
         "roleId": 3,
-        "level": "Management",
-        "avatar": "avatar"
+        "level": "Management"
     },
-    {
-        "name": "Human Resource",
-        "username": "HumanResource",
+    { 
+        "profileId": 3,
+        "username": "SuperAdministrator",
         "roleId": 4,
-        "level": "Management",
-        "avatar": "avatar"
+        "level": "Management"
     },
     { 
-        "name": "Finance",
-        "username": "Finance",
+        "profileId": 4,
+        "username": "SuperAdministrator",
         "roleId": 5,
-        "level": "Management",
-        "avatar": "avatar"
-    },
-    { 
-        "name": "Employee",
-        "username": "Employee",
-        "roleId": 6,
-        "level": "Employee",
-        "avatar": "avatar"
+        "level": "Management"
     }
 ]

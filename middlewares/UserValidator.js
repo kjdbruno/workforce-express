@@ -1,13 +1,9 @@
 const { body, validationResult } = require("express-validator");
 
-exports.validateForm = (isCreate = true) => [
-    body("employeeNo")
+exports.ValidateForm = (isCreate = true) => [
+    body("profileId")
         .trim()
-        .notEmpty().withMessage("employee id number is required"),
-    body("name")
-        .trim()
-        .notEmpty().withMessage("name is required")
-        .isAlpha('en-US', { ignore: " " }).withMessage("Invalid name format"),
+        .notEmpty().withMessage("employee is required"),
     body("username")
         .trim()
         .notEmpty().withMessage("username is required"),
@@ -22,9 +18,6 @@ exports.validateForm = (isCreate = true) => [
     body("level")
         .trim()
         .notEmpty().withMessage("level is required"),
-    body("avatar")
-        .trim()
-        .notEmpty().withMessage("avatar is required"),
     (req, res, next) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {

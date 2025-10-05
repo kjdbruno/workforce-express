@@ -3,12 +3,10 @@ const { body, validationResult } = require("express-validator");
 exports.ValidateForm = () => [
     body("name")
         .trim()
-        .notEmpty().withMessage("name is required")
-        .isAlpha('en-US', { ignore: " " }).withMessage("Invalid name format"),
+        .notEmpty().withMessage("name is required"),
     body("type")
         .trim()
-        .notEmpty().withMessage("type is required")
-        .isAlpha('en-US', { ignore: " " }).withMessage("Invalid type format"),
+        .notEmpty().withMessage("type is required"),
     body("website")
         .trim()
         .optional(),

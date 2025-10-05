@@ -110,8 +110,8 @@ exports.Create = async (req, res) => {
         if (exist) {
             return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: name,
                     msg: "Record already exists!",
                     path: "name",
                     location: "body",
@@ -167,61 +167,63 @@ exports.Update = async (req, res) => {
     } = req.body;
 
     try {
-
-        // Find position with qualifications
     const position = await Position.findByPk(id, {
-      include: [{ model: PositionQualification, as: "qualifications" }],
+        include: [
+                { 
+                model: PositionQualification, 
+                as: "qualifications" 
+            }
+        ],
     });
 
     if (!position) {
-      return res.status(404).json({
-        errors: [
-          {
-            type: "manual",
-            value: "",
-            msg: "Record not found!",
-            path: "name",
-            location: "body",
-          },
-        ],
-      });
+        return res.status(404).json({
+            errors: [
+                {
+                    type: "field",
+                    value: name,
+                    msg: "Record not found!",
+                    path: "name",
+                    location: "body",
+                },
+            ],
+        });
     }
-
-    // Ensure name is unique (excluding current id)
+    
     const exist = await Position.findOne({
-      where: {
-        [Op.or]: [{ name }],
-        id: { [Op.ne]: id },
-      },
+        where: {
+            [Op.or]: [{ name }],
+            id: { [Op.ne]: id },
+        },
     });
     if (exist) {
-      return res.status(400).json({
-        errors: [
-          {
-            type: "manual",
-            value: "",
-            msg: "Record already in use!",
-            path: "name",
-            location: "body",
-          },
-        ],
-      });
+        return res.status(400).json({
+            errors: [
+                {
+                    type: "manual",
+                    value: "",
+                    msg: "Record already in use!",
+                    path: "name",
+                    location: "body",
+                },
+            ],
+        });
     }
-
-    // Update position fields
+    
     await position.update({ 
         salaryId,
         name, 
         description 
     });
-
-    // Handle qualifications
+    
     const incoming = (qualifications || []).filter(
-      (q) => q.name && q.name.trim()
+        (q) => q.name && q.name.trim()
     );
 
     const existingQualifications = await PositionQualification.findAll({
-      where: { positionId: id },
+        where: { 
+            positionId: id 
+        },
     });
 
     const existingMap = new Map(
@@ -230,37 +232,33 @@ exports.Update = async (req, res) => {
     const processedIds = new Set();
 
     for (const q of incoming) {
-      if (q.id && existingMap.has(q.id)) {
-        // Update existing qualification
-        const existing = existingMap.get(q.id);
-        existing.name = q.name.trim();
-        existing.isActive = true;
-        await existing.save();
-        processedIds.add(q.id);
-      } else {
-        // Create new qualification
-        await PositionQualification.create({
-          positionId: id,
-          name: q.name.trim(),
-          isActive: true,
-        });
-      }
+        if (q.id && existingMap.has(q.id)) {
+            const existing = existingMap.get(q.id);
+            existing.name = q.name.trim();
+            existing.isActive = true;
+            await existing.save();
+            processedIds.add(q.id);
+        } else {
+            await PositionQualification.create({
+                positionId: id,
+                name: q.name.trim(),
+                isActive: true,
+            });
+        }
     }
-
-    // Deactivate those not in the payload
+    
     for (const qual of existingQualifications) {
-      if (!processedIds.has(qual.id)) {
-        qual.isActive = false;
-        await qual.save();
-      }
+        if (!processedIds.has(qual.id)) {
+            qual.isActive = false;
+            await qual.save();
+        }
     }
-
-    // Get fresh data
+    
     const data = await Get(position.id);
 
     return res.status(200).json({
-      message: "Record Modified!",
-      position: data,
+        message: "Record Modified!",
+        position: data,
     });
 
     } catch (error) {
@@ -285,10 +283,10 @@ exports.Disable = async (req, res) => {
         if (!position) {
             return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "name",
                     location: "body",
                 }],
             });
@@ -325,10 +323,10 @@ exports.Enable = async (req, res) => {
         if (!position) {
             return res.status(500).json({
                 errors: [{
-                    type: "manual",
-                    value: "",
+                    type: "field",
+                    value: id,
                     msg: "Record not found!",
-                    path: "",
+                    path: "name",
                     location: "body",
                 }],
             });

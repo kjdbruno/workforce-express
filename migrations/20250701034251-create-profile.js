@@ -111,13 +111,13 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      zipCode: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
       streetAddress: {
         type: Sequelize.TEXT('long'),
         allowNull: false
+      },
+      isEmployee: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
       },
       createdAt: {
         allowNull: false,

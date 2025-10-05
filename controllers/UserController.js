@@ -1,9 +1,9 @@
 const { Op } = require("sequelize");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { User, Role } = require("../models");
+const { User, Role, Profile } = require("../models");
 
-exports.GetAllUsers = async (req, res) => {
+exports.GetAll = async (req, res) => {
 
     const Page = parseInt(req.query.Page) || 1;
     const Limit = parseInt(req.query.Limit) || 10;
@@ -14,7 +14,20 @@ exports.GetAllUsers = async (req, res) => {
             include: [
                 {
                     model: Role,
-                    as: 'Role'
+                    as: 'role',
+                    attributes: [
+                        "name"
+                    ]
+                },
+                {
+                    model: Profile,
+                    as: 'profile',
+                    where: {
+                        isEmployee: true
+                    },
+                    attributes: [
+                        "firstname", "middlename", "lastname", "suffix"
+                    ]
                 }
             ],
             limit: Limit,
@@ -36,33 +49,65 @@ exports.GetAllUsers = async (req, res) => {
     }
 };
 
-exports.createUser = async (req, res) => {
+GetUser = async (id) => {
+
+    const rows  = await User.findOne({
+        include: [
+            {
+                model: Role,
+                as: 'role',
+                attributes: [
+                    "name"
+                ]
+            },
+            {
+                model: Profile,
+                as: 'profile',
+                where: {
+                    isEmployee: true
+                },
+                attributes: [
+                    "firstname", "middlename", "lastname", "suffix"
+                ]
+            }
+        ],
+        where: {
+            id
+        }
+    });
+
+    return rows;
+
+};
+
+exports.Create = async (req, res) => {
 
     const { 
-        employeeNo,
-        name, 
+        profileId,
         username, 
         password, 
         roleId, 
-        level,
-        avatar 
+        level
     } = req.body;
 
     try {
 
         const userExist = await User.findOne({
-            where: { 
-                username 
+            where: {
+                [Op.or]: [
+                    { profileId, level },
+                    { username, level }
+                ]
             }
         });
 
         if (userExist) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
                     type: "manual",
-                    value: "",
+                    value: profileId,
                     msg: "record already exists!",
-                    path: "name",
+                    path: "profileId",
                     location: "body",
                 }],
             });
@@ -71,13 +116,11 @@ exports.createUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
-            employeeNo,
-            name, 
+            profileId,
             username, 
             password: hashedPassword, 
             roleId, 
-            level,
-            avatar 
+            level 
         });
 
         res.status(201).json({
@@ -94,183 +137,144 @@ exports.createUser = async (req, res) => {
     }
 };
 
-exports.updateUser = async (req, res) => {
-    // const { id } = req.params;
-    // const { name, username, password, officeId, roleId, avatar } = req.body;
-    // try {
-    //     const user = await User.findByPk(id);
-    //     const detail = await UserDetail.findOne({
-    //         where: {
-    //             userId: id
-    //         }
-    //     });
-    //     if (!user) {
-    //         return res.status(403).json({
-    //             errors: [{
-    //                 type: "manual",
-    //                 value: "",
-    //                 msg: "User not found!",
-    //                 path: "name",
-    //                 location: "body",
-    //             }],
-    //         });
-    //     }
-    //     const userExist = await User.findOne({
-    //         where: {
-    //             [Op.or]: [{ username }],
-    //             id: { [Op.ne]: id }
-    //         },
-    //     });
-    //     if (userExist) {
-    //         return res.status(403).json({
-    //             errors: [{
-    //                 type: "manual",
-    //                 value: "",
-    //                 msg: "Username is already in use!",
-    //                 path: "username",
-    //                 location: "body",
-    //             }],
-    //         });
-    //     }
-    //     let hashedPassword = user.password;
-    //     if (password) {
-    //         hashedPassword = await bcrypt.hash(password, 10);
-    //     }
-    //     await user.update({ 
-    //         name, 
-    //         username, 
-    //         password: hashedPassword,
-    //         isInternal: true
-    //     });
-    //     await detail.update({
-    //         officeId,
-    //         roleId,
-    //         avatar
-    //     });
-        
-    //     const updated = await User.findAll({
-    //         where: {
-    //             id: id
-    //         },
-    //         include: {
-    //             model: UserDetail,
-    //             as: 'user_details',
-    //             include: [
-    //                 {
-    //                     model: Office,
-    //                     as: 'office'
-    //                 },
-    //                 {
-    //                     model: Role,
-    //                     as: 'role'
-    //                 }
-    //             ]
-    //         }
-    //     });
+exports.Update = async (req, res) => {
+    const { 
+        id 
+    } = req.params;
+    const { 
+        profileId,
+        username, 
+        password, 
+        roleId, 
+        level
+    } = req.body;
+    try {
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: username,
+                    msg: "Record not found!",
+                    path: "profileId",
+                    location: "body",
+                }],
+            });
+        }
+        const userExist = await User.findOne({
+            where: {
+                [Op.or]: [
+                    { profileId, level },
+                    { username, level },
+                ],
+                id: { [Op.ne]: id }
+            }
+        });
 
-    //     res.status(201).json({
-    //         message: "User updated successfully!", 
-    //         user: updated
-    //     });
-    // } catch (error) {
-    //     res.status(400).json({ error: error.message });
-    // }
+        if (userExist) {
+            return res.status(500).json({
+                errors: [{
+                    type: "manual",
+                    value: profileId,
+                    msg: "record already exists!",
+                    path: "profileId",
+                    location: "body",
+                }],
+            });
+        }
+        let hashedPassword = user.password;
+        if (password) {
+            hashedPassword = await bcrypt.hash(password, 10);
+        }
+        await user.update({ 
+            profileId,
+            username, 
+            password: hashedPassword, 
+            roleId, 
+            level
+        });
+
+        const data = await GetUser(user.id);
+
+        res.status(201).json({
+            message: "record modified!", 
+            user: data
+        });
+    } catch (error) {
+        res.status(400).json({ 
+            error: error.message 
+        });
+    }
 };
 
-exports.disableUser = async (req, res) => {
+exports.Disable = async (req, res) => {
 
-    // const { id } = req.params;
-    // const isActive = false;
+    const { 
+        id 
+    } = req.params;
   
-    // try {
-    //     const user = await User.findByPk(id);
-    //     if (!user) {
-    //         return res.status(403).json({
-    //             errors: [{
-    //                 type: "manual",
-    //                 value: "",
-    //                 msg: "User not found!",
-    //                 path: "username",
-    //                 location: "body",
-    //             }],
-    //         });
-    //     }
-    //     await user.update({ isActive });
+    try {
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Record not found!",
+                    path: "profileId",
+                    location: "body",
+                }],
+            });
+        }
+        await user.update({ 
+            isActive: false 
+        });
         
-    //     const disabled = await User.findAll({
-    //         where: {
-    //             id: id
-    //         },
-    //         include: {
-    //             model: UserDetail,
-    //             as: 'user_details',
-    //             include: [
-    //                 {
-    //                     model: Office,
-    //                     as: 'office'
-    //                 },
-    //                 {
-    //                     model: Role,
-    //                     as: 'role'
-    //                 }
-    //             ]
-    //         }
-    //     });
+        const data = await GetUser(user.id);
 
-    //     res.status(200).json({
-    //         message: "User disabled successfully.", 
-    //         user: disabled 
-    //     });
-    // } catch (error) {
-    //     res.status(500).json({ error: error.message });
-    // }
+        res.status(201).json({
+            message: "record disabled!", 
+            user: data
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
 };
 
-exports.enableUser = async (req, res) => {
+exports.Enable = async (req, res) => {
 
-    // const { id } = req.params;
-    // const isActive = true;
+    const { 
+        id 
+    } = req.params;
   
-    // try {
-    //     const user = await User.findByPk(id);
-    //     if (!user) {
-    //         return res.status(403).json({
-    //             errors: [{
-    //                 type: "manual",
-    //                 value: "",
-    //                 msg: "User not found!",
-    //                 path: "username",
-    //                 location: "body",
-    //             }],
-    //         });
-    //     }
+    try {
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Record not found!",
+                    path: "profileId",
+                    location: "body",
+                }],
+            });
+        }
+        await user.update({ 
+            isActive: true 
+        });
+        
+        const data = await GetUser(user.id);
 
-    //     const enabled = await User.findAll({
-    //         where: {
-    //             id: id
-    //         },
-    //         include: {
-    //             model: UserDetail,
-    //             as: 'user_details',
-    //             include: [
-    //                 {
-    //                     model: Office,
-    //                     as: 'office'
-    //                 },
-    //                 {
-    //                     model: Role,
-    //                     as: 'role'
-    //                 }
-    //             ]
-    //         }
-    //     });
-
-    //     await user.update({ isActive });
-    //     res.status(200).json({
-    //         message: "User enabled successfully.", 
-    //         user: enabled
-    //     });
-    // } catch (error) {
-    //     res.status(500).json({ error: error.message });
-    // }
+        res.status(201).json({
+            message: "record disabled!", 
+            user: data
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
 };

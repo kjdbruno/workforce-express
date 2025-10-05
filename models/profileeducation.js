@@ -64,7 +64,7 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    schooldId: {
+    schoolId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {

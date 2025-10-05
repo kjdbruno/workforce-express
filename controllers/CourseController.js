@@ -59,7 +59,7 @@ exports.Create = async (req, res) => {
             return res.status(500).json({
                 errors: [{
                     type: "field",
-                    value: "",
+                    value: name,
                     msg: "Record already exists!",
                     path: "name",
                     location: "body",
@@ -100,10 +100,10 @@ exports.Update = async (req, res) => {
         const course = await Course.findByPk(id);
         
         if (!course) {
-            return res.status(403).json({
+            return res.status(500).json({
                 errors: [{
                     type: "field",
-                    value: "",
+                    value: name,
                     msg: "Record not found!",
                     path: "name",
                     location: "body",
@@ -121,7 +121,7 @@ exports.Update = async (req, res) => {
             return res.status(500).json({
                 errors: [{
                     type: "field",
-                    value: "",
+                    value: name,
                     msg: "Record already in use!",
                     path: "name",
                     location: "body",
@@ -161,7 +161,7 @@ exports.Disable = async (req, res) => {
             return res.status(500).json({
                 errors: [{
                     type: "field",
-                    value: "",
+                    value: id,
                     msg: "Record not found!",
                     path: "name",
                     location: "body",
@@ -201,7 +201,7 @@ exports.Enable = async (req, res) => {
             return res.status(500).json({
                 errors: [{
                     type: "field",
-                    value: "",
+                    value: id,
                     msg: "Record not found!",
                     path: "name",
                     location: "body",

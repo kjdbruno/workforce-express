@@ -114,6 +114,18 @@ module.exports = (sequelize, DataTypes) => {
         as: 'trainings'
       });
 
+      // Association with User
+      Profile.hasOne(models.User, {
+        foreignKey: 'profileId',
+        as: 'user'
+      });
+
+      // Association with ProfilePhoto
+      Profile.hasOne(models.ProfilePhoto, {
+        foreignKey: 'profileId',
+        as: 'photos'
+      });
+
     }
   }
   Profile.init({
@@ -225,14 +237,14 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    zipCode: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
     streetAddress: {
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
+    isEmployee: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    }
   }, {
     sequelize,
     modelName: 'Profile',

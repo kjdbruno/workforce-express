@@ -18,12 +18,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'profile'
       });
 
-      // Association with DocumentType
-      ProfileDocument.belongsTo(models.DocumentType, {
-        foreignKey: 'documentId',
-        as: 'documentType'
-      });
-
     }
   }
   ProfileDocument.init({
@@ -43,15 +37,9 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    documentId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references:  {
-        model: 'DocumentTypes',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    filename: {
+      type: DataTypes.STRING,
+      allowNull: false
     },
     file: {
       type: DataTypes.TEXT('long'),

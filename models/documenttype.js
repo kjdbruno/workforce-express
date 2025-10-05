@@ -13,10 +13,6 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
 
       // Association with ProfileDocument
-      DocumentType.hasMany(models.ProfileDocument, {
-        foreignKey: 'documentId',
-        as: 'profileDocuments'
-      });
     }
   }
   DocumentType.init({
