@@ -29,6 +29,18 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'signatoryId',
         as: 'requests'
       });
+
+      // Association with LeaveRequest
+      Signatory.hasMany(models.LeaveRequest, {
+        foreignKey: 'signatoryId',
+        as: 'leaveRequests'
+      });
+
+      // Association with OvertimeRequest
+      Signatory.hasMany(models.OvertimeRequest, {
+        foreignKey: 'signatoryId',
+        as: 'overtimeRequests'
+      });
     }
   }
   Signatory.init({
@@ -58,13 +70,17 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     signature: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    level: {
-      type: DataTypes.ENUM("1", "2", "3", "4", "5"),
-      defaultValue: 1
+    order: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     }, 
     isActive: {
       type: DataTypes.BOOLEAN,

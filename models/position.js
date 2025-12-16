@@ -12,28 +12,16 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Association with EmploymentInformation
-      Position.hasMany(models.EmploymentInformation, {
-        foreignKey: 'positionId',
-        as: 'employmentInformations'
-      });
-
       // Association with PositionQualification
       Position.hasMany(models.PositionQualification, {
         foreignKey: 'positionId',
         as: 'qualifications'
       });
 
-      // Association  with Salary
-      Position.belongsTo(models.Salary, {
-        foreignKey: 'salaryId',
-        as: 'salary'
-      });
-
-      // Association with Vacancy
-      Position.hasMany(models.Vacancy, {
+      // Association with Salary
+      Position.hasMany(models.Salary, {
         foreignKey: 'positionId',
-        as: 'vacancies'
+        as: 'salary'
       });
     }
   }
@@ -51,20 +39,6 @@ module.exports = (sequelize, DataTypes) => {
     description: {
       type: DataTypes.TEXT('long'),
       allowNull: false
-    },
-    salaryId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Salaries',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    },
-    status: {
-      type: DataTypes.ENUM('Vacant', 'Requested', 'Approved', 'Filled'),
-      defaultValue: 'Vacant'
     },
     isActive: {
       type: DataTypes.BOOLEAN,

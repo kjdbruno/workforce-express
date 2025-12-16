@@ -115,6 +115,14 @@ module.exports = {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
+      contactNo: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       isEmployee: {
         type: Sequelize.BOOLEAN,
         defaultValue: false

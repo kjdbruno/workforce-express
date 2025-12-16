@@ -1,6 +1,6 @@
 const { Sequelize } = require('sequelize');
 const jwt = require('jsonwebtoken'); // Need jwt for socket auth
-const { User, UserLog, Office, Notification } = require("../models");
+const { User, UserLog, Office, Notification, Profile, ProfilePhoto } = require("../models");
 
 const userSocketMap = new Map(); // userId -> socketId
 const onlineUsers = {};
@@ -272,13 +272,40 @@ module.exports = function (io) {
 
         const notifications = await Notification.findAll({
             where: { 
-                isRead: false,
                 receiverId
             },
             include: [
                 {
                     model: User,
-                    as: 'Receiver'
+                    as: 'Receiver',
+                    include: [
+                        {
+                            model: Profile,
+                            as: 'profile',
+                            include: [
+                                {
+                                    model: ProfilePhoto,
+                                    as: 'photos'
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: User,
+                    as: 'Sender',
+                    include: [
+                        {
+                            model: Profile,
+                            as: 'profile',
+                            include: [
+                                {
+                                    model: ProfilePhoto,
+                                    as: 'photos'
+                                }
+                            ]
+                        }
+                    ]
                 }
             ],
             order: [
@@ -288,6 +315,6 @@ module.exports = function (io) {
 
         io.emit('EmitNotifications', notificationCount, notifications);
         
-    }
+    };
 
 }

@@ -22,6 +22,7 @@ module.exports = {
             {
               classId: item.classId,
               gradeId: item.gradeId,
+              positionId: item.positionId,
               createdAt: new Date(),
               updatedAt: new Date(),
             },

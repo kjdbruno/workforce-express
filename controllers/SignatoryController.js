@@ -116,7 +116,8 @@ exports.Create = async (req, res) => {
 
     const { 
         userId,
-        typeId
+        typeId,
+        order
     } = req.body;
 
     const file = req.file;
@@ -126,7 +127,8 @@ exports.Create = async (req, res) => {
         const exist = await Signatory.findOne({
             where: { 
                 userId,
-                typeId
+                typeId,
+                order
             }
         });
 
@@ -162,7 +164,8 @@ exports.Create = async (req, res) => {
             const signatory = await Signatory.create({
                 userId,
                 typeId,
-                signature: `/signatures/${filename}`
+                signature: `/signatures/${filename}`,
+                order
             });
 
             res.status(201).json({

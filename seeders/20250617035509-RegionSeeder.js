@@ -17,8 +17,7 @@ module.exports = {
    
     try {
       await queryInterface.bulkInsert('Regions', regions.map(r => ({
-        regionCode: r.regCode,
-        name: r.regDesc,
+        name: r.name,
         createdAt: new Date(),
         updatedAt: new Date()
       })), {});

@@ -32,6 +32,8 @@ module.exports = {
         townId: p.townId,
         barangayId: p.barangayId,
         streetAddress: p.streetAddress,
+        email: p.email,
+        contactNo: p.contactNo,
         isEmployee: p.isEmployee,
         createdAt: new Date(),
         updatedAt: new Date()

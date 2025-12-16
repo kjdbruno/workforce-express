@@ -33,7 +33,17 @@ const {
     GetSchools,
     GetCourses,
     GetDocumentTypes,
-    GetRegions
+    GetRegions,
+    GetVacancies,
+    GetHiredApplications,
+    GetTaxCodes,
+    GetAppointmnentStatuses,
+    GetRelationships,
+    GetSalaryRates,
+    GetSalaryPositions,
+    GetRates,
+    GetEmploymentSalaryPositions,
+    GetTrainingTypes
 } = require('../controllers/OptionController');
 
 router.get('/roles', VerifyToken, GetRoles);
@@ -66,5 +76,15 @@ router.get('/barangays', VerifyToken, GetBarangays);
 router.get('/schools', VerifyToken, GetSchools);
 router.get('/courses', VerifyToken, GetCourses);
 router.get('/documenttypes', VerifyToken, GetDocumentTypes);
+router.get('/vacancies', VerifyToken, GetVacancies);
+router.get('/hiredapplications', VerifyToken, GetHiredApplications);
+router.get('/taxcodes', VerifyToken, GetTaxCodes);
+router.get('/appointmentstatuses', VerifyToken, GetAppointmnentStatuses);
+router.get('/relationships', VerifyToken, GetRelationships);
+router.get('/salaryrates', VerifyToken, GetSalaryRates);
+router.get('/salarypositions', VerifyToken, GetSalaryPositions);
+router.get('/rates', VerifyToken, GetRates);
+router.get('/employmentsalarypositions', VerifyToken, GetEmploymentSalaryPositions);
+router.get('/trainingtypes', VerifyToken, GetTrainingTypes);
 
 module.exports = router;

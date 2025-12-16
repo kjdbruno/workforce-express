@@ -24,16 +24,28 @@ module.exports = (sequelize, DataTypes) => {
         as: 'taxCode'
       });
 
+      // Belongs to Company
+      EmploymentInformation.belongsTo(models.Company, {
+        foreignKey: 'companyId',
+        as: 'company'
+      });
+
       // Belongs to Department
       EmploymentInformation.belongsTo(models.Department, {
         foreignKey: 'departmentId',
         as: 'department'
       });
 
-      // Belongs to Position
-      EmploymentInformation.belongsTo(models.Position, {
-        foreignKey: 'positionId',
-        as: 'position'
+      // Belongs to Salary
+      EmploymentInformation.belongsTo(models.Salary, {
+        foreignKey: 'salaryId',
+        as: 'salary'
+      });
+
+      // Belongs to Rate
+      EmploymentInformation.belongsTo(models.Rate, {
+        foreignKey: 'rateId',
+        as: 'rate'
       });
 
       // Belongs to EmploymentStatus
@@ -46,6 +58,12 @@ module.exports = (sequelize, DataTypes) => {
       EmploymentInformation.belongsTo(models.AppointmentStatus, {
         foreignKey: 'appointmentId',
         as: 'appointmentStatus'
+      });
+
+      // Belongs to Shift
+      EmploymentInformation.belongsTo(models.ScheduleShift, {
+        foreignKey: 'shiftId',
+        as: 'shift'
       });
       
     }
@@ -70,11 +88,6 @@ module.exports = (sequelize, DataTypes) => {
     employeeNo: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true
-    },
-    biometricNo: {
-      type: DataTypes.STRING,
-      allowNull: true,
       unique: true
     },
     dateHired: {
@@ -107,6 +120,16 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     },
+    companyId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Companies',
+        key: 'id'
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
+    },
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -117,11 +140,21 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     },
-    positionId: {
+    salaryId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Positions',
+        model: 'Salaries',
+        key: 'id'
+      },
+      onDelete: 'CASACDE',
+      onUpdate: 'CASACDE'
+    },
+    rateId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Rates',
         key: 'id'
       },
       onDelete: 'CASACDE',
@@ -146,6 +179,16 @@ module.exports = (sequelize, DataTypes) => {
       },
       onDelete: 'CASDCADE',
       onUpdate: 'CASDCADE'
+    },
+    shiftId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Shifts',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
   }, {
     sequelize,

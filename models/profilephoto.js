@@ -36,7 +36,11 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: "CASCADE",
       onDelete: 'CASCADE'
     },
-    photo: {
+    filename: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    file: {
       type: DataTypes.STRING,
       allowNull: true
     },

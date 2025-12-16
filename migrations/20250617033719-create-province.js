@@ -9,13 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      regionCode: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      provinceCode: {
-        type: Sequelize.STRING,
-        allowNull: false
+      regionId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Regions',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       name: {
         type: Sequelize.STRING,
@@ -34,13 +36,9 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('Provinces', ['regionCode']);
-    await queryInterface.addIndex('Provinces', ['provinceCode']);
     await queryInterface.addIndex('Provinces', ['name']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('Provinces', ['regionCode']);
-    await queryInterface.removeIndex('Provinces', ['provinceCode']);
     await queryInterface.removeIndex('Provinces', ['name']);
     await queryInterface.dropTable('Provinces');
   }

@@ -19,7 +19,11 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: 'CASCADE'
       },
-      photo: {
+      filename: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      file: {
         type: Sequelize.STRING,
         allowNull: true
       },
@@ -36,10 +40,10 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('ProfilePhotos', ['photo']);
+    await queryInterface.addIndex('ProfilePhotos', ['file']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('ProfilePhotos', ['photo']);
+    await queryInterface.removeIndex('ProfilePhotos', ['file']);
     await queryInterface.dropTable('ProfilePhotos');
   }
 };

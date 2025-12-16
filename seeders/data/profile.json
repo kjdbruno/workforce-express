@@ -12,10 +12,12 @@
         "height": "150",
         "bloodTypeId": 1,
         "regionId": 1,
-        "provinceId": 3,
-        "townId": 71,
-        "barangayId": 1774,
+        "provinceId": 1,
+        "townId": 1,
+        "barangayId": 1,
         "streetAddress": "#23 Gabaldon St.,",
+        "email": "admin@gmail.com",
+        "contactNo": "09123456789",
         "isEmployee": false
     },
     { 
@@ -31,11 +33,13 @@
         "height": "150",
         "bloodTypeId": 1,
         "regionId": 1,
-        "provinceId": 3,
-        "townId": 71,
-        "barangayId": 1774,
+        "provinceId": 1,
+        "townId": 1,
+        "barangayId": 1,
         "streetAddress": "Ortega Highway",
-        "isEmployee": false
+        "email": "admin@gmail.com",
+        "contactNo": "09123456789",
+        "isEmployee": true
     },
     { 
         "firstname": "Marilou",
@@ -50,11 +54,13 @@
         "height": "150",
         "bloodTypeId": 1,
         "regionId": 1,
-        "provinceId": 3,
-        "townId": 71,
-        "barangayId": 1774,
+        "provinceId": 1,
+        "townId": 1,
+        "barangayId": 1,
         "streetAddress": "Ortega Highway",
-        "isEmployee": false
+        "email": "admin@gmail.com",
+        "contactNo": "09123456789",
+        "isEmployee": true
     },
     { 
         "firstname": "Josie",
@@ -69,10 +75,12 @@
         "height": "150",
         "bloodTypeId": 1,
         "regionId": 1,
-        "provinceId": 3,
-        "townId": 71,
-        "barangayId": 1774,
+        "provinceId": 1,
+        "townId": 1,
+        "barangayId": 1,
         "streetAddress": "Ortega Highway",
-        "isEmployee": false
+        "email": "admin@gmail.com",
+        "contactNo": "09123456789",
+        "isEmployee": true
     }
 ]

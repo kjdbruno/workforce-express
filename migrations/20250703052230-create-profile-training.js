@@ -35,26 +35,19 @@ module.exports = {
         type: Sequelize.FLOAT,
         allowNull: false
       },
-      type: {
-        type: Sequelize.ENUM(
-          'Technical',        // job-related skills
-          'Managerial',       // supervisory / leadership
-          'Supervisory',      // for mid-level managers
-          'Mandatory',        // required by CSC/agency
-          'Orientation',      // onboarding / induction
-          'Seminar',          // short learning sessions
-          'Workshop',         // hands-on practical training
-          'Conference'        // external or large event
-        ),
-        allowNull: false
+      typeId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'TrainingTypes',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       conductedBy: {
         type: Sequelize.TEXT('long'),
         allowNull: false
-      },
-      file: {
-        type: Sequelize.TEXT('long'),
-        allowNull: true
       },
       isActive: {
         type: Sequelize.BOOLEAN,
@@ -70,11 +63,9 @@ module.exports = {
       }
     });
     await queryInterface.addIndex('ProfileTrainings', ['title']);
-    await queryInterface.addIndex('ProfileTrainings', ['type']);
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.removeIndex('ProfileTrainings', ['title']);
-    await queryInterface.removeIndex('ProfileTrainings', ['type']);
     await queryInterface.dropTable('ProfileTrainings');
   }
 };

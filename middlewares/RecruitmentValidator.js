@@ -1,7 +1,7 @@
 const { body, validationResult } = require("express-validator");
 
 exports.ValidateForm = () => [
-    body("positionId")
+    body("salaryId")
         .trim()
         .notEmpty().withMessage("position is required"),
     body("stepId")

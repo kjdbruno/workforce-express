@@ -9,13 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      townCode: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      barangayCode: {
-        type: Sequelize.STRING,
-        allowNull: false
+      townId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Towns',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       name: {
         type: Sequelize.STRING,
@@ -34,11 +36,9 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('Barangays', ['townCode']);
     await queryInterface.addIndex('Barangays', ['name']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('Barangays', ['townCode']);
     await queryInterface.removeIndex('Barangays', ['name']);
     await queryInterface.dropTable('Barangays');
   }

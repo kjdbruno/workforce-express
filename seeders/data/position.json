@@ -1,0 +1,10 @@
+[
+    { 
+        "name": "Administrative Assistant",
+        "description": "Provides administrative support to ensure efficient operation of the office."
+    },
+    { 
+        "name": "Driver",
+        "description": "Responsible for transporting employees and goods safely and efficiently."
+    }
+]

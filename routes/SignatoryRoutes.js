@@ -6,13 +6,13 @@ const upload = multer({ storage });
 
 const { ValidateForm } = require('../middlewares/SignatoryValidator');
 
-const { VerifyToken } = require('../middlewares/AuthMiddleware');
+const { VerifyToken, AuthorizeRoles } = require('../middlewares/AuthMiddleware');
 
 const { GetAll, Create, Disable, Enable } = require('../controllers/SignatoryController');
 
-router.get('/', VerifyToken, GetAll);
-router.post('/', upload.single('file'), VerifyToken, ValidateForm(), Create);
-router.post('/:id/disable', VerifyToken, Disable);
-router.post('/:id/enable', VerifyToken, Enable);
+router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin'), GetAll);
+router.post('/', upload.single('file'), VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin'), ValidateForm(), Create);
+router.post('/:id/disable', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin'), Disable);
+router.post('/:id/enable', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin'), Enable);
 
 module.exports = router;

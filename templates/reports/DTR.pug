@@ -1,0 +1,119 @@
+html
+    head
+        meta(charset="utf-8")
+        title Daily Time Record
+        style.
+            * {
+                font-family: Century Gothic, CenturyGothic, AppleGothic, sans-serif;
+                color: #262626;
+            }
+            h2 {
+                text-align: center;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+            }
+            h3 {
+                margin-top: 10px;
+                font-size: 12px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 10px;
+            }
+            td, th {
+                border: 1px solid #000;
+                padding: 5px 8px;
+                vertical-align: top;
+            }
+            .noborder td {
+                border: none;
+                padding: 3px;
+            }
+            .label {
+                width: 200px;
+                font-weight: bold;
+            }
+            .signature {
+                padding-top: 40px;
+                text-align: center;
+                font-style: italic;
+            }
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 10px;
+                margin-bottom: 10px;
+            }
+            .note {
+                font-size: 10px;
+                background-color: #f5f5f5;
+                border-left: 3px solid #000;
+                padding: 5px 10px;
+            }
+            input[type="checkbox"] {
+                accent-color: black;
+            }
+            .logs {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 15px;
+            }
+            .logs th, .logs td {
+                border: 1px solid #000;
+                padding: 2px;
+                text-align: center;
+                font-size: 11px;
+            }
+            .logs th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+            }
+            .holiday {
+                background-color: #ffe6e6;
+            }
+            .leave {
+                background-color: #e6f3ff;
+            }
+
+    body
+        table.noborder(style="width: 100%; margin-bottom: 10px;")
+            td(style="width: 50%")
+                img(style='width: 300px; height: auto;' src= seal)
+            td(style="width: 50%;")
+                div(style="background: #FAFAFA; text-align: center; font-size: 1.2em; text-transform: uppercase; padding: 20px; color: #7A1D1F;")
+                    div(style="color: #7A1D1F;") daily time record
+                    div(style="color: #7A1D1F;")= month
+        table.logs
+            thead
+                tr
+                    th(style="width: 5%;") Date
+                    th(style="width: 5%;") Day
+                    th(colspan="6" style="width: 60%;") Records
+                    th(style="width: 30%;") Remarks
+            tbody
+                each row in logs
+                    - const dayName = moment(row.date).format("dddd");
+                    - const remarksArr = [];
+                    - if (row.holiday) remarksArr.push(row.holiday);
+                    - if (row.leaveType) remarksArr.push(row.leaveType);
+                    - if (row.overtimes) remarksArr.push(row.overtimes);
+                    - const remarks = remarksArr.join(", ");
+                    - const isHoliday = !!row.holiday;
+                    - const isLeave = !!row.leaveType;
+                    tr(class=(isHoliday ? 'holiday' : isLeave ? 'leave' : ''))
+                        td #{moment(row.date).format("DD")}
+                        td #{dayName}
+                        // Display up to 6 logs
+                        - for (let i = 0; i < 6; i++)
+                            td(style="width: 10%;") 
+                                - const timeValue = row.times[i];
+                                - const formattedTime = timeValue ? moment(timeValue, "HH:mm").format("h:mm A") : '';
+                                | #{formattedTime}
+                        // Remarks column (always last)
+                        td #{remarks}
+        footer( style="position: fixed; bottom: 0; left: 0; right: 0;width: 100%; text-align: center; font-size: 10px; color: #333; padding-top: 5px; background-color: #fff; line-height: 1.3;")
+            div(style="font-weight: bold; text-transform: uppercase;") Centurion Collection Management, Inc.
+            div(style="margin-top: 3px;") © #{new Date().getFullYear()} All rights reserved.
+            div(style="margin-top: 3px; font-size: 9px;") This document was system-generated. No signature is required.

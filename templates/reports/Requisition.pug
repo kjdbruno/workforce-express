@@ -1,0 +1,198 @@
+//- html
+//-     head
+//-         title= Requisition
+//-         style.
+//-             * {
+//-                 font-family: Century Gothic, CenturyGothic, AppleGothic, sans-serif;
+//-                 color: #262626;
+//-             }
+//-             body {
+//-                 padding: 0px !important;
+//-                 margin: 0px !important;
+//-             }
+//-             .empty-page {
+//-                 page-break-after: always;
+//-                 visibility: hidden;
+//-             }
+//-             table {
+//-                 padding: 5px;
+//-             }
+//-             .table, .table td, .table th {
+//-                 border: 1px solid;
+//-                 font-size: .90em;
+//-             }
+
+//-             .table {
+//-                 width: 100%;
+//-                 border-collapse: collapse;
+//-             }
+//-     body
+//-         div
+//-             table(style="width: 100%;")
+//-                 td(style="width: 50%")
+//-                     img(style='width: 300px; height: auto;' src= seal)
+//-                 td(style="width: 50%;")
+//-                     div(style="text-align: right; font-size: 0.60em;") MRFRev. 08-17-18
+//-                     div(style="background: #FAFAFA; text-align: center; font-size: 1.2em; text-transform: uppercase; padding: 20px; color: #7A1D1F;") manpower requisition form
+//-         div(style="margin-top: 10px;")
+//-             table(style="width: 100%; border: 1px solid #ccc;")
+//-                 td(style="width: 80%;")
+//-                     div(style="font-size: .65em;") 
+//-                         span(style="text-transform: uppercase; ") instructions: 
+//-                         span Please accomplish thisform to document approved hiring requirementsprior to recruitment.
+//-                 td(style="width: 20%;")
+//-                     div(style="font-size: .65em;") 
+//-                         span(style="text-transform: uppercase; ") control no.: 
+//-         div(style="margin-top: 10px;")
+html
+    head
+        meta(charset="utf-8")
+        title Manpower Requisition Form
+        style.
+            * {
+                font-family: Century Gothic, CenturyGothic, AppleGothic, sans-serif;
+                color: #262626;
+            }
+            h2 {
+                text-align: center;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+            }
+            h3 {
+                margin-top: 10px;
+                font-size: 12px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 10px;
+            }
+            td, th {
+                border: 1px solid #000;
+                padding: 5px 8px;
+                vertical-align: top;
+            }
+            .noborder td {
+                border: none;
+                padding: 3px;
+            }
+            .label {
+                width: 200px;
+                font-weight: bold;
+            }
+            .signature {
+                padding-top: 40px;
+                text-align: center;
+                font-style: italic;
+            }
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 10px;
+                margin-bottom: 10px;
+            }
+            .note {
+                font-size: 10px;
+                background-color: #f5f5f5;
+                border-left: 3px solid #000;
+                padding: 5px 10px;
+            }
+            input[type="checkbox"] {
+                accent-color: black;
+            }
+
+    body
+        table.noborder(style="width: 100%; margin-bottom: 10px;")
+            td(style="width: 50%")
+                img(style='width: 300px; height: auto;' src= seal)
+            td(style="width: 50%;")
+                div(style="text-align: right; font-size: 0.60em;") MRFRev. 08-17-18
+                div(style="background: #FAFAFA; text-align: center; font-size: 1.2em; text-transform: uppercase; padding: 20px; color: #7A1D1F;") manpower requisition form
+        .header
+            div.note INSTRUCTIONS: Please accomplish this form to document approved hiring requirements prior to recruitment.
+            div CONTROL NO.:
+                span(style="text-decoration: underline;")= controlNo
+        h3 1. Position Profile
+        table(style="font-size: 10px;")
+            tr
+                td(style="width: 25%;").label Position:
+                td(style="width: 25%;")= position
+                td(style="width: 25%;").label Salary:
+                td(style="width: 25%;")= salary
+            tr
+                td(style="width: 25%;").label Department:
+                td(style="width: 25%;")= department
+                td(style="width: 25%;").label Company:
+                td(style="width: 25%;")= company
+            tr
+                td(style="width: 25%;").label Work Location:
+                td(style="width: 25%; text-transform: capitalize;")= location
+                td(style="width: 25%;").label Employment Status:
+                td(style="width: 25%;")= employment
+            tr
+                td(style="width: 25%;").label Work Schedule / Hours:
+                td(style="width: 25%;")= shiftTime
+                td(style="width: 25%;").label Required No. of Employees:
+                td(style="width: 25%;") 1
+            tr
+                td(style="width: 25%;").label Date Needed:
+                td(style="width: 25%;")= dateNeeded
+                td(style="width: 25%;").label Require Background Check:
+                td(style="width: 25%;") #{needBackgroundCheck ? 'Yes' : 'No'}
+            tr
+                td(style="width: 25%;")
+                    div 
+                        input(type="checkbox" id="Addition" name="movement" value="Addition" checked=movement === 'Addition')
+                        label(for="Addition") Addtion
+                    div
+                        input(type="checkbox" id="Replacement" name="movement" value="Replacement" checked=movement === 'Replacement')
+                        label(for="Replacement") Replacement
+                td(colspan="3" style="width: 75%;")
+                    div Justification:
+                    div= justification
+        h3 2. Qualification and Job Specification
+        table(style="font-size: 10px;")
+            tr
+                td(style="width: 25%;").label Gender:
+                td(style="width: 25%;")= gender
+                td(style="width: 25%;").label Age Range:
+                td(style="width: 25%;")= age
+            tr
+                td.label Education:
+                td(colspan="3")= education
+            tr
+                td.label Years of Experience:
+                td(colspan="3")= experience
+            tr
+                td.label Skill Sets / Competencies:
+                td(colspan="3")
+                    each q, index in qualifications
+                        div 
+                            span #{index + 1}
+                            span &nbsp;
+                            span #{q.name}
+        h3 3. Brief Job Description
+        table(style="font-size: 10px;")
+            tr
+                td(style="height: 150px")= description
+
+        h3 4. Routing and Approval
+        table.noborder(style="font-size: 10px;")
+            tr
+                each s, index in signatories
+                    td(style="width: 25%;")
+                        div #{s.signatoryName}
+                        div(style="margin-top: 25px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 75%; text-align: center;") 
+                            if s.isSigned
+                                img(style='width: 100px; height: auto; position: relative; margin-bottom: 5px;' src=s.signature)
+                            else
+                                div(style="height: 50px; line-height: 50px; font-style: italic; color: #666;") Unsigned
+                            div(style="font-size: 12px; text-transform: uppercase; font-weight: bold;") #{s.userName}
+                        div(style="width: 75%; text-align: center; font-size: 11px;") #{s.position}
+                        div(style="width: 75%; text-align: center; font-size: 10px;") #{s.date}
+        footer( style="position: fixed; bottom: 0; left: 0; right: 0;width: 100%; text-align: center; font-size: 10px; color: #333; padding-top: 5px; background-color: #fff; line-height: 1.3;")
+            div(style="font-weight: bold; text-transform: uppercase;") Centurion Collection Management, Inc.
+            div(style="margin-top: 3px;") © #{new Date().getFullYear()} All rights reserved.
+            div(style="margin-top: 3px; font-size: 9px;") This document was system-generated. No signature is required.
+

@@ -18,24 +18,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'applications'
       });
 
-      // Profile has one EmploymentInformation
-      Profile.hasOne(models.EmploymentInformation, {
-        foreignKey: 'profileId',
-        as: 'employmentInformation'
-      });
-
-      // Association with EmploymentPhoto
-      Profile.hasMany(models.EmploymentPhoto, {
-        foreignKey: 'profileId',
-        as: 'employmentPhotos'
-      });
-
-      // Assciation with EmploymentSchedule
-      Profile.hasMany(models.EmploymentSchedule, {
-        foreignKey: 'profileId',
-        as: 'employmentSchedules'
-      });
-
       // Association with Sex
       Profile.belongsTo(models.Sex, {
         foreignKey: 'sexId',
@@ -78,12 +60,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'barangay'
       });
 
-      // Association with ProfileContactInformation
-      Profile.hasMany(models.ProfileContactInformation, {
-        foreignKey: 'profileId',
-        as: 'contactInformations'
-      });
-
       // Association with ProfileDependent
       Profile.hasMany(models.ProfileDependent, {
         foreignKey: 'profileId',
@@ -124,6 +100,35 @@ module.exports = (sequelize, DataTypes) => {
       Profile.hasOne(models.ProfilePhoto, {
         foreignKey: 'profileId',
         as: 'photos'
+      });
+
+      // Association with EmploymentHistory
+      Profile.hasMany(models.EmploymentHistory, {
+        foreignKey: 'profileId',
+        as: 'employmentHistories'
+      });
+
+      // Association with ProfileLeave (Leave Credits per employee)
+      Profile.hasMany(models.ProfileLeave, {
+        foreignKey: 'profileId',
+        as: 'leaveCredits'
+      });
+
+      // Association with TimeLog
+      Profile.hasMany(models.TimeLog, {
+        foreignKey: 'profileId',
+        as: 'timeLogs'
+      });
+
+      Profile.hasOne(models.EmploymentInformation, {
+        foreignKey: 'profileId',
+        as: 'employment'
+      });
+
+      // Association with ProfileOvertime
+      Profile.hasMany(models.ProfileOvertime, { 
+        foreignKey: 'profileId', 
+        as: 'overtimes' 
       });
 
     }
@@ -198,7 +203,7 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE'
     },
     regionId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       references: {
         model: 'Regions',
@@ -208,7 +213,7 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE'
     },
     provinceId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       references: {
         model: 'Provinces',
@@ -218,7 +223,7 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE'
     },
     townId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       references: {
         model: 'Towns',
@@ -228,7 +233,7 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE'
     },
     barangayId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       references: {
         model: 'Barangays',
@@ -239,6 +244,14 @@ module.exports = (sequelize, DataTypes) => {
     },
     streetAddress: {
       type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    contactNo: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    email: {
+      type: DataTypes.STRING,
       allowNull: false
     },
     isEmployee: {

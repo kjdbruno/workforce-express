@@ -7,6 +7,7 @@ const { Sequelize } = require('sequelize');
 const path = require('path');
 const app = express();
 const server = http.createServer(app);
+const loginResetJob = require('./utils/cron');
 
 const io = socketIo(server, {
   pingInterval: 25000,
@@ -27,6 +28,8 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+loginResetJob(io);
 
 // Initialize Sequelize
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
@@ -70,6 +73,7 @@ app.use('/api/course', require('./routes/CourseRoutes'));
 app.use('/api/position', require('./routes/PositionRoutes'));
 app.use('/api/salaryclass', require('./routes/SalaryClassRoutes'));
 app.use('/api/salarygrade', require('./routes/SalaryGradeRoutes'));
+app.use('/api/salary', require('./routes/SalaryRoutes'));
 app.use('/api/increment', require('./routes/IncrementRoutes'));
 app.use('/api/rate', require('./routes/RateRoutes'));
 app.use('/api/scheduleclass', require('./routes/ScheduleClassRoutes'));
@@ -82,6 +86,10 @@ app.use('/api/signatorytype', require('./routes/SignatoryTypeRoutes'));
 app.use('/api/signatoryprofile', require('./routes/SignatoryRoutes'));
 app.use('/api/recruitment', require('./routes/RecruitmentRoutes'));
 app.use('/api/application', require('./routes/ApplicationRoutes'));
+app.use('/api/employee', require('./routes/EmployeeRoutes'));
+app.use('/api/employment', require('./routes/EmploymentRoutes'));
+app.use('/api/face', require('./routes/FaceRoutes'));
+app.use('/api/leave', require('./routes/LeaveRoutes'));
 
 app.use(express.static('public'));
 

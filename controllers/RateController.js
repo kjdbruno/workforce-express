@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { Salary, SalaryClass, SalaryGrade, Rate, Increment } = require('../models');
+const { Salary, SalaryClass, SalaryGrade, Rate, Increment, Position } = require('../models');
 
 exports.GetAll = async (req, res) => {
 
@@ -19,12 +19,25 @@ exports.GetAll = async (req, res) => {
         const { count, rows } = await Salary.findAndCountAll({
             include: [
                 {
+                    model: Position,
+                    as: 'positions',
+                    attributes: [
+                        'name'
+                    ]
+                },
+                {
                     model: SalaryClass,
                     as: 'class',
+                    attributes: [
+                        'name'
+                    ]
                 },
                 {
                     model: SalaryGrade,
-                    as: 'grade'
+                    as: 'grade',
+                    attributes: [
+                        'name'
+                    ]
                 },
                 {
                     model: Rate,

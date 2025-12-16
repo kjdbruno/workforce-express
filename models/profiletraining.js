@@ -17,6 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'profileId',
         as: 'profile'
       });
+
+      // Association with TrainingType
+      ProfileTraining.belongsTo(models.TrainingType, {
+        foreignKey: 'typeId',
+        as: 'trainingType'
+      });
     }
   }
   ProfileTraining.init({
@@ -52,26 +58,19 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: false
     },
-    type: {
-      type: DataTypes.ENUM(
-        'Technical',        // job-related skills
-        'Managerial',       // supervisory / leadership
-        'Supervisory',      // for mid-level managers
-        'Mandatory',        // required by CSC/agency
-        'Orientation',      // onboarding / induction
-        'Seminar',          // short learning sessions
-        'Workshop',         // hands-on practical training
-        'Conference'        // external or large event
-      ),
-      allowNull: false
+    typeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'TrainingTypes',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     conductedBy: {
       type: DataTypes.TEXT('long'),
       allowNull: false
-    },
-    file: {
-      type: DataTypes.TEXT('long'),
-      allowNull: true
     },
     isActive: {
       type: DataTypes.BOOLEAN,

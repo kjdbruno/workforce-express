@@ -13,13 +13,6 @@ exports.GetAll = async (req, res) => {
         const { count, rows } = await User.findAndCountAll({
             include: [
                 {
-                    model: Role,
-                    as: 'role',
-                    attributes: [
-                        "name"
-                    ]
-                },
-                {
                     model: Profile,
                     as: 'profile',
                     where: {
@@ -49,17 +42,10 @@ exports.GetAll = async (req, res) => {
     }
 };
 
-GetUser = async (id) => {
+const GetUser = async (id) => {
 
     const rows  = await User.findOne({
         include: [
-            {
-                model: Role,
-                as: 'role',
-                attributes: [
-                    "name"
-                ]
-            },
             {
                 model: Profile,
                 as: 'profile',
@@ -86,8 +72,8 @@ exports.Create = async (req, res) => {
         profileId,
         username, 
         password, 
-        roleId, 
-        level
+        role, 
+        status
     } = req.body;
 
     try {
@@ -95,8 +81,8 @@ exports.Create = async (req, res) => {
         const userExist = await User.findOne({
             where: {
                 [Op.or]: [
-                    { profileId, level },
-                    { username, level }
+                    { profileId, role },
+                    { username, role }
                 ]
             }
         });
@@ -119,13 +105,15 @@ exports.Create = async (req, res) => {
             profileId,
             username, 
             password: hashedPassword, 
-            roleId, 
-            level 
+            role, 
+            status 
         });
+
+        const data = await GetUser(user.id);
 
         res.status(201).json({
             message: "record saved!", 
-            user: user
+            user: data
         });
 
     } catch (error) {
@@ -145,8 +133,8 @@ exports.Update = async (req, res) => {
         profileId,
         username, 
         password, 
-        roleId, 
-        level
+        role, 
+        status
     } = req.body;
     try {
         const user = await User.findByPk(id);
@@ -164,8 +152,8 @@ exports.Update = async (req, res) => {
         const userExist = await User.findOne({
             where: {
                 [Op.or]: [
-                    { profileId, level },
-                    { username, level },
+                    { profileId, role },
+                    { username, role },
                 ],
                 id: { [Op.ne]: id }
             }
@@ -190,8 +178,8 @@ exports.Update = async (req, res) => {
             profileId,
             username, 
             password: hashedPassword, 
-            roleId, 
-            level
+            role, 
+            status
         });
 
         const data = await GetUser(user.id);
@@ -212,6 +200,9 @@ exports.Disable = async (req, res) => {
     const { 
         id 
     } = req.params;
+    const {  
+        status
+    } = req.body;
   
     try {
         const user = await User.findByPk(id);
@@ -227,7 +218,7 @@ exports.Disable = async (req, res) => {
             });
         }
         await user.update({ 
-            isActive: false 
+            status 
         });
         
         const data = await GetUser(user.id);
@@ -248,6 +239,9 @@ exports.Enable = async (req, res) => {
     const { 
         id 
     } = req.params;
+    const {  
+        status
+    } = req.body;
   
     try {
         const user = await User.findByPk(id);
@@ -263,7 +257,7 @@ exports.Enable = async (req, res) => {
             });
         }
         await user.update({ 
-            isActive: true 
+            status
         });
         
         const data = await GetUser(user.id);

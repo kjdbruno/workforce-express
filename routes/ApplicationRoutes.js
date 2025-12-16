@@ -10,11 +10,12 @@ const { ValidateForm } = require('../middlewares/ApplicationValidator');
 
 const { VerifyToken } = require('../middlewares/AuthMiddleware');
 
-const { GetAll, Create, Update, Disable, Enable } = require('../controllers/ApplicationController');
+const { GetAll, Create, Update, Disable, Enable, GetDetails } = require('../controllers/ApplicationController');
 
 router.get('/', VerifyToken, GetAll);
+router.get('/:id/details', VerifyToken, GetDetails);
 router.post('/', upload.any(), VerifyToken, ValidateForm(), Create);
-router.post('/:id/update', VerifyToken, ValidateForm(), Update);
+router.post('/:id/update', VerifyToken, Update);
 router.post('/:id/disable', VerifyToken, Disable);
 router.post('/:id/enable', VerifyToken, Enable);
 

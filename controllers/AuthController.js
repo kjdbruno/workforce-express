@@ -16,7 +16,10 @@ module.exports = (_io) => {
             try {
                 const user = await User.findOne({
                     where: { 
-                        username 
+                        username,
+                        role: {
+                            [Op.in]: ['SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance']
+                        }
                     }
                 });
                 if (!user) {
@@ -32,27 +35,66 @@ module.exports = (_io) => {
                         ],
                     });
                 }
-                const isMatch = await bcrypt.compare(password, user.password);
-                if (!isMatch) {
-                    return res.status(401).json({
+                if (user.status === 'Suspended') {
+                    return res.status(404).json({
                         errors: [
                             {
                                 type: "field",
                                 value: username,
-                                msg: "Invalid credentials!",
+                                msg: "Account suspended. Please contact administrator.",
                                 path: "username",
-                                location: "body",
-                            },
-                            {
-                                type: "field",
-                                value: password,
-                                msg: "Invalid credentials!",
-                                path: "password",
                                 location: "body",
                             },
                         ],
                     });
                 }
+
+                const today = new Date().toDateString();
+                const lastFailed = user.lastFailedLogin ? new Date(user.lastFailedLogin).toDateString() : null;
+                
+                if (lastFailed !== today) {
+                    user.failedLoginAttempts = 0;
+                    await user.save();
+                }
+
+                const isMatch = await bcrypt.compare(password, user.password);
+                if (!isMatch) {
+                    user.failedLoginAttempts += 1;
+                    user.lastFailedLogin = new Date();
+
+                    if (user.failedLoginAttempts >= 4) {
+                        user.status = 'suspended'; // suspend account on 4th failure
+                        await user.save();
+                        return res.status(401).json({
+                            errors: [
+                                {
+                                    type: "field",
+                                    value: username,
+                                    msg: "Account suspended due to multiple failed attempts! Please contact administrator.",
+                                    path: "username",
+                                    location: "body",
+                                }
+                            ],
+                        });
+                    }
+
+                    await user.save();
+                    return res.status(401).json({
+                        errors: [
+                            {
+                                type: "field",
+                                value: username,
+                                msg: `Invalid credentials. ${3 - user.failedLoginAttempts} attempts remaining.`,
+                                path: "username",
+                                location: "body",
+                            }
+                        ],
+                    });
+                }
+
+                user.failedLoginAttempts = 0;
+                await user.save();
+
                 const profile = await User.findOne({
                     where: {
                         id: user.id
@@ -69,18 +111,19 @@ module.exports = (_io) => {
                                     model: ProfilePhoto,
                                     as: 'photos',
                                     attributes: [
-                                        'photo'
+                                        'file'
                                     ]
                                 }
                             ]
                         }
                     ],
                     attributes: [
-                        'id', 'username', 'roleId', 'level'
+                        'id', 'username', 'role', 'status'
                     ]
                 })
                 const token = jwt.sign({ 
-                    id: user.id 
+                    id: user.id,
+                    role: user.role
                 }, process.env.JWT_SECRET, { 
                     expiresIn: "8h" 
                 });
@@ -98,8 +141,8 @@ module.exports = (_io) => {
             try {
                 const user = await User.findOne({
                     where: { 
-                        username: username,
-                        level: 'Employee'
+                        username,
+                        role: 'Employee'
                     }
                 });
                 if (!user) {
@@ -107,7 +150,7 @@ module.exports = (_io) => {
                         errors: [
                             {
                                 type: "field",
-                                value: "",
+                                value: username,
                                 msg: "User not found",
                                 path: "username",
                                 location: "body",
@@ -115,20 +158,66 @@ module.exports = (_io) => {
                         ],
                     });
                 }
-                const isMatch = await bcrypt.compare(password, user.password);
-                if (!isMatch) {
-                    return res.status(401).json({
+                if (user.status === 'Suspended') {
+                    return res.status(404).json({
                         errors: [
                             {
                                 type: "field",
-                                value: "",
-                                msg: "Invalid credentials!",
+                                value: username,
+                                msg: "Account suspended. Please contact administrator.",
                                 path: "username",
                                 location: "body",
                             },
                         ],
                     });
                 }
+
+                const today = new Date().toDateString();
+                const lastFailed = user.lastFailedLogin ? new Date(user.lastFailedLogin).toDateString() : null;
+                
+                if (lastFailed !== today) {
+                    user.failedLoginAttempts = 0;
+                    await user.save();
+                }
+
+                const isMatch = await bcrypt.compare(password, user.password);
+                if (!isMatch) {
+                    user.failedLoginAttempts += 1;
+                    user.lastFailedLogin = new Date();
+
+                    if (user.failedLoginAttempts >= 4) {
+                        user.status = 'suspended'; // suspend account on 4th failure
+                        await user.save();
+                        return res.status(401).json({
+                            errors: [
+                                {
+                                    type: "field",
+                                    value: username,
+                                    msg: "Account suspended due to multiple failed attempts! Please contact administrator.",
+                                    path: "username",
+                                    location: "body",
+                                }
+                            ],
+                        });
+                    }
+
+                    await user.save();
+                    return res.status(401).json({
+                        errors: [
+                            {
+                                type: "field",
+                                value: username,
+                                msg: `Invalid credentials. ${3 - user.failedLoginAttempts} attempts remaining.`,
+                                path: "username",
+                                location: "body",
+                            }
+                        ],
+                    });
+                }
+
+                user.failedLoginAttempts = 0;
+                await user.save();
+
                 const profile = await User.findOne({
                     where: {
                         id: user.id
@@ -145,17 +234,22 @@ module.exports = (_io) => {
                                     model: ProfilePhoto,
                                     as: 'photos',
                                     attributes: [
-                                        'photo'
+                                        'file'
                                     ]
                                 }
                             ]
                         }
                     ],
                     attributes: [
-                        'id', 'username', 'roleId', 'level'
+                        'id', 'username', 'role', 'status'
                     ]
                 })
-                const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "8h" }); // Token expires in 8 hours
+                const token = jwt.sign({ 
+                    id: user.id,
+                    role: user.role
+                }, process.env.JWT_SECRET, { 
+                    expiresIn: "8h" 
+                });
                 res.json({ 
                     user: profile, 
                     token 

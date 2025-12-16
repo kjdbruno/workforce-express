@@ -1,6 +1,7 @@
 [
     { 
         "profileId": 1,
-        "photo": "/uploads/photos/Admin.jpg"
+        "filename": "Admin.jpg",
+        "file": "/photos/Admin.jpg"
     }
 ]

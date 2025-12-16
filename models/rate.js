@@ -23,6 +23,18 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'stepId',
         as: 'increment'
       });
+
+      // Association with EmploymentInformation
+      Rate.hasMany(models.EmploymentInformation, {
+        foreignKey: 'rateId',
+        as: 'employmentInformations'
+      });
+
+      // Associa5tion with EmploymentHistory
+      Rate.hasMany(models.EmploymentHistory, {
+        foreignKey: 'rateId',
+        as: 'employmentHistories'
+      });
     }
   }
   Rate.init({

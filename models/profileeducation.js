@@ -97,12 +97,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     graduated: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.DATEONLY,
       allowNull: true
     },
     isActive: {
       type: DataTypes.BOOLEAN,
-      defaultvalue: true 
+      defaultValue: true 
     },
   }, {
     sequelize,

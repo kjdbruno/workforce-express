@@ -12,12 +12,6 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Association with EmploymentSchedfule
-      ScheduleShift.hasMany(models.EmploymentSchedule, {
-        foreignKey: 'shiftId',
-        as: 'employmentSchedules'
-      });
-
       // Association with ScheduleClass
       ScheduleShift.belongsTo(models.ScheduleClass, {
         foreignKey: 'classId',
@@ -29,6 +23,13 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'shiftId',
         as: 'vacancies'
       });
+
+      // Association with EmploymentInformation
+      ScheduleShift.hasMany(models.EmploymentInformation, {
+        foreignKey: 'shiftId',
+        as: 'employmentInformations'
+      });
+
     }
   }
   ScheduleShift.init({

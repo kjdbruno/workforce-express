@@ -17,6 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'regionId',
         as: 'profiles'
       });
+
+      // Association with Province
+      Region.hasMany(models.Province, {
+        foreignKey: 'regionId',
+        as: 'provinces'
+      });
     }
   }
   Region.init({
@@ -25,10 +31,6 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
-    },
-    regionCode: {
-      type: DataTypes.STRING,
-      allowNull: false
     },
     name: {
       type: DataTypes.STRING,

@@ -9,11 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      positionId: {
+      controlNo: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      salaryId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Positions',
+          model: 'Salaries',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -119,6 +123,10 @@ module.exports = {
       status: {
         type: Sequelize.ENUM('Vacant', 'Requested', 'Approved', 'Rejected', 'Filled'),
         allowNull: false
+      },
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
       createdAt: {
         allowNull: false,

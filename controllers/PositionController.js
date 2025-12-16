@@ -19,16 +19,6 @@ exports.GetAll = async (req, res) => {
         const { count, rows } = await Position.findAndCountAll({
             include: [
                 {
-                    model: Salary,
-                    as: 'salary',
-                    include: [
-                        {
-                            model: SalaryGrade,
-                            as: 'grade'
-                        }
-                    ]
-                },
-                {
                     model: PositionQualification,
                     as: 'qualifications',
                     where: {

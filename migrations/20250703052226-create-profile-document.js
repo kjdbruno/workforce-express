@@ -24,7 +24,7 @@ module.exports = {
         allowNull: false
       },
       file: {
-        type: Sequelize.TEXT('long'),
+        type: Sequelize.STRING,
         allowNull: false
       },
       isActive: {

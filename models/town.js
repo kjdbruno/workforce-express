@@ -17,6 +17,18 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'townId',
         as: 'profiles'
       });
+
+      // Association with Province
+      Town.belongsTo(models.Province, {
+        foreignKey: 'provinceId',
+        as: 'province'
+      });
+
+      // Association with Barangay
+      Town.hasMany(models.Barangay, {
+        foreignKey: 'townId',
+        as: 'barangays'
+      });
     }
   }
   Town.init({
@@ -26,13 +38,15 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    provinceCode: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    townCode: {
-      type: DataTypes.STRING,
-      allowNull: false
+    provinceId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Provinces',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     name: {
       type: DataTypes.STRING,

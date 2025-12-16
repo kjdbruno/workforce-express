@@ -1,5 +1,14 @@
 [
     { 
         "name": "Onboarding and Recruitment" 
+    },
+    { 
+        "name": "Overtime Request" 
+    },
+    { 
+        "name": "Leave Application" 
+    },
+    { 
+        "name": "Daily Time Record" 
     }
 ]

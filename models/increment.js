@@ -23,6 +23,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'stepId',
         as: 'vacancies'
       });
+
     }
   }
   Increment.init({

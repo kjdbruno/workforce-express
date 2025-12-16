@@ -29,13 +29,17 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
+      name: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       signature: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      level: {
-        type: Sequelize.ENUM("1", "2", "3", "4", "5"),
-        defaultValue: 1
+      order: {
+        type: Sequelize.INTEGER,
+        allowNull: false
       },  
       isActive: {
         type: Sequelize.BOOLEAN,

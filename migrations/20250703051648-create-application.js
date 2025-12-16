@@ -33,7 +33,7 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       status: {
-        type: Sequelize.ENUM('Pooling', 'Shorlisted', 'Interview', 'Hired', 'Rejected', 'Withdrawn'),
+        type: Sequelize.ENUM('Pooling', 'Shortlisted', 'Interview', 'Hired', 'Rejected', 'Withdrawn'),
         defaultValue: 'Pooling'
       },
       isActive: {

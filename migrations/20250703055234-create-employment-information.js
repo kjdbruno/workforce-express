@@ -27,11 +27,6 @@ module.exports = {
         allowNull: false,
         unique: true
       },
-      biometricNo: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        unique: true
-      },
       dateHired: {
         type: Sequelize.DATEONLY,
         allowNull: false
@@ -62,6 +57,16 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
       },
+      companyId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Companies',
+          key: 'id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+      },
       departmentId: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -72,11 +77,21 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
       },
-      positionId: {
+      salaryId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Positions',
+          model: 'Salaries',
+          key: 'id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+      },
+      rateId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Rates',
           key: 'id'
         },
         onDelete: 'CASCADE',
@@ -102,6 +117,16 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
       },
+      shiftId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'ScheduleShifts',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
@@ -112,11 +137,9 @@ module.exports = {
       }
     });
     await queryInterface.addIndex('EmploymentInformations', ['employeeNo']);
-    await queryInterface.addIndex('EmploymentInformations', ['biometricNo']);
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.removeIndex('EmploymentInformations', ['employeeNo']);
-    await queryInterface.removeIndex('EmploymentInformations', ['biometricNo']);
     await queryInterface.dropTable('EmploymentInformations');
   }
 };

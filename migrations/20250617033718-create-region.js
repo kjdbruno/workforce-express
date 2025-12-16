@@ -9,17 +9,13 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      regionCode: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       name: {
         type: Sequelize.STRING,
         allowNull: false
       },
       isActive: {
         type: Sequelize.BOOLEAN,
-        defaultValue: true // Default value for isActive
+        defaultValue: true
       },
       createdAt: {
         allowNull: false,
@@ -30,11 +26,9 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-    await queryInterface.addIndex('Regions', ['regionCode']);
     await queryInterface.addIndex('Regions', ['name']);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('Regions', ['regionCode']);
     await queryInterface.removeIndex('Regions', ['name']);
     await queryInterface.dropTable('Regions');
   }

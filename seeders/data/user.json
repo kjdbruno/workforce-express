@@ -2,25 +2,37 @@
     { 
         "profileId": 1,
         "username": "SuperAdministrator",
-        "roleId": 1,
-        "level": "Management"
+        "role": "SuperAdmin",
+        "status": "Active"
     },
     { 
         "profileId": 2,
-        "username": "SuperAdministrator",
-        "roleId": 3,
-        "level": "Management"
+        "username": "Administrator",
+        "role": "Admin",
+        "status": "Active"
     },
     { 
         "profileId": 3,
-        "username": "SuperAdministrator",
-        "roleId": 4,
-        "level": "Management"
+        "username": "Supervisor",
+        "role": "Supervisor",
+        "status": "Active"
     },
     { 
         "profileId": 4,
-        "username": "SuperAdministrator",
-        "roleId": 5,
-        "level": "Management"
+        "username": "HumanResource",
+        "role": "HR",
+        "status": "Active"
+    },
+    { 
+        "profileId": 4,
+        "username": "Finance",
+        "role": "Finance",
+        "status": "Active"
+    },
+    { 
+        "profileId": 4,
+        "username": "Employee",
+        "role": "Employee",
+        "status": "Active"
     }
 ]

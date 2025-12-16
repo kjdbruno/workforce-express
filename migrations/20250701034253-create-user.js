@@ -27,22 +27,21 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      roleId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'Roles',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      level: {
-        type: Sequelize.ENUM('Management', 'Employee'),
+      role: {
+        type: Sequelize.ENUM('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'),
         allowNull: false
       },
-      isActive: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true
+      status: {
+        type: Sequelize.ENUM('Active', 'Inactive', 'Suspended'),
+        allowNull: false
+      },
+      failedLoginAttempts: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+      },
+      lastFailedLogin: {
+        type: Sequelize.DATE,
+        allowNull: true,
       },
       createdAt: {
         allowNull: false,

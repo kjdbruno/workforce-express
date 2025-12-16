@@ -62,12 +62,12 @@ module.exports = {
         allowNull: true
       },
       graduated: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DATEONLY,
         allowNull: true
       },
       isActive: {
         type: Sequelize.BOOLEAN,
-        defaultvALUE: true
+        defaultValue: true
       },
       createdAt: {
         allowNull: false,

@@ -11,6 +11,12 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Association with ProfileLeave (Leave Credit)
+      LeaveType.hasMany(models.ProfileLeave, {
+        foreignKey: 'typeId',
+        as: 'leaveCredits'
+      });
     }
   }
   LeaveType.init({

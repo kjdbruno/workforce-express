@@ -18,10 +18,10 @@ module.exports = (sequelize, DataTypes) => {
         as: 'applications'
       });
 
-      // Association with Position
-      Vacancy.belongsTo(models.Position, {
-        foreignKey: 'positionId',
-        as: 'position'
+      // Association with Salary
+      Vacancy.belongsTo(models.Salary, {
+        foreignKey: 'salaryId',
+        as: 'salary'
       });
 
       // Assocition with Company
@@ -80,11 +80,15 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    positionId: {
+    controlNo: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    salaryId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Positions',
+        model: 'Salaries',
         key: 'id'
       },
       onUpdate: 'CASCADE',
@@ -190,6 +194,10 @@ module.exports = (sequelize, DataTypes) => {
     status: {
       type: DataTypes.ENUM('Vacant', 'Requested', 'Approved', 'Rejected', 'Filled'),
       allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
     },
   }, {
     sequelize,

@@ -22,8 +22,8 @@ module.exports = {
         profileId: u.profileId,
         username: u.username,
         password: hashedPassword,
-        roleId: u.roleId,
-        level: u.level, 
+        role: u.role,
+        status: u.status, 
         createdAt: new Date(),
         updatedAt: new Date()
       })), {});

@@ -1,0 +1,26 @@
+[
+    { 
+        "name": "Technical"
+    },
+    { 
+        "name": "Managerial"
+    },
+    { 
+        "name": "Supervisory"
+    },
+    { 
+        "name": "Mandatory"
+    },
+    { 
+        "name": "Orientation"
+    },
+    { 
+        "name": "Seminar"
+    },
+    { 
+        "name": "Workshop"
+    },
+    { 
+        "name": "Conference"
+    }
+]

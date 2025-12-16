@@ -17,9 +17,8 @@ module.exports = {
     
     try {
       await queryInterface.bulkInsert('Barangays', barangays.map(b => ({
-        townCode: b.citymunCode,
-        barangayCode: b.brgyCode,
-        name: b.brgyDesc,
+        townId: b.townId,
+        name: b.name,
         createdAt: new Date(),
         updatedAt: new Date()
       })), {});

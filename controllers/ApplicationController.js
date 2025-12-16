@@ -1,24 +1,223 @@
 const { Op } = require("sequelize");
 const path = require("path");
 const fs = require("fs");
-const { Profile, Application, ProfileEducation, ProfileTraining, ProfileExperience, ProfileDocument, SchoolLevel, School, Course } = require('../models');
+const transporter = require('../utils/mailer');
+
+const { Profile, 
+    Application, 
+    ProfileEducation, 
+    ProfileTraining, 
+    ProfileExperience, 
+    ProfileDocument, 
+    SchoolLevel, 
+    School, 
+    Course, 
+    Vacancy, 
+    Position, 
+    Salary, 
+    SalaryGrade, 
+    Rate, 
+    Sex, 
+    CivilStatus, 
+    BloodType, 
+    Region, 
+    Province, 
+    Town, 
+    Barangay, 
+    ProfileContactInformation, 
+    PositionQualification, 
+    Company, 
+    Department, 
+    ScheduleShift, 
+    ScheduleClass, 
+    EmploymentStatus 
+} = require('../models');
 
 exports.GetAll = async (req, res) => {
-    const vacancyId = req.query.id;
-    try {
+    
+    const Page = parseInt(req.query.Page) || 1;
+    const Limit = parseInt(req.query.Limit) || 10;
+    const Filter = req.query.Filter ? req.query.Filter.trim() : "";
+    const Offset = (Page - 1) * Limit;
 
-        const rows = await Application.findAll({
+    try {
+        
+        const { count, rows } = await Application.findAndCountAll({
             include: [
                 {
                     model: Profile,
                     as: 'profile',
+                    attributes: [
+                        'firstname', 
+                        'middlename', 
+                        'lastname',
+                        'suffix',
+                    ]
+                },
+                {
+                    model: Vacancy,
+                    as: 'vacancy',
+                    attributes: [
+                        'id'
+                    ],
                     include: [
+                        {
+                            model: Salary,
+                            as: 'salary',
+                            attributes: [
+                                'id'
+                            ],
+                            include: [
+                                {
+                                    model: Position,
+                                    as: 'positions',
+                                    attributes: [
+                                        'name'
+                                    ]
+                                },
+                                {
+                                    model: SalaryGrade,
+                                    as: 'grade',
+                                    attributes: [
+                                        'name'
+                                    ]
+                                },
+                                {
+                                    model: Rate,
+                                    as: 'rates',
+                                    required: false,
+                                    where: {
+                                        stepId: { [Op.col]: "vacancy.stepId" }
+                                    },
+                                    attributes: [
+                                        'monthlyCompensation', 'dailyCompensation', 'hourlyCompensation'
+                                    ]
+                                }
+                            ]
+                        },
+                    ]
+                }
+            ],
+            where: Filter
+            ? {
+                [Op.or]: [
+                    { '$vacancy.position.name$': { [Op.like]: `%${Filter}%` } },
+                    { '$profile.firstName$': { [Op.like]: `%${Filter}%` } },
+                    { '$profile.middleName$': { [Op.like]: `%${Filter}%` } },
+                    { '$profile.lastName$': { [Op.like]: `%${Filter}%` } }
+                ]
+            }
+            : undefined,
+            subQuery: false,
+            limit: Limit,
+            offset: Offset,
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json({
+            data: rows,
+            meta: {
+                TotalItems: count,
+                TotalPages: Math.ceil(count / Limit),
+                CurrentPage: Page
+            }
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+exports.GetDetails = async (req, res) => {
+    
+    const { 
+        id 
+    } = req.params;
+
+    try {
+        
+        const rows  = await Application.findOne({
+            where: {
+                id
+            },
+            include: [
+                {
+                    model: Profile,
+                    as: 'profile',
+                    attributes: [
+                        'firstname', 
+                        'middlename', 
+                        'lastname',
+                        'suffix',
+                        'birthdate',
+                        'birthplace',
+                        'weight',
+                        'height',
+                        'streetAddress'
+                    ],
+                    include: [
+                        {
+                            model: Sex,
+                            as: 'sex',
+                            attributes: [
+                                'name'
+                            ]
+                        },
+                        {
+                            model: CivilStatus,
+                            as: 'civilStatus',
+                            attributes: [
+                                'name'
+                            ]
+                        },
+                        {
+                            model: BloodType,
+                            as: 'bloodType',
+                            attributes: [
+                                'name'
+                            ]
+                        },
+                        {
+                            model: Region,
+                            as: 'region',
+                            attributes: [
+                                'name'
+                            ]
+                        },
+                        {
+                            model: Province,
+                            as: 'province',
+                            attributes: [
+                                'name'
+                            ]    
+                        },
+                        {
+                            model: Town,
+                            as: 'town',
+                            attributes: [
+                                'name'
+                            ]
+                        },
+                        {
+                            model: Barangay,
+                            as: 'barangay',
+                            attributes: [
+                                'name'
+                            ]
+                        },
                         {
                             model: ProfileEducation,
                             as: 'educations',
                             attributes: [
                                 'startDate', 'endDate', 'rating', 'graduated'
                             ],
+                            where: {
+                                isActive: true
+                            },
                             include: [
                                 {
                                     model: SchoolLevel,
@@ -47,23 +246,144 @@ exports.GetAll = async (req, res) => {
                             model: ProfileTraining,
                             as: 'trainings',
                             attributes: [
-                                'title', 'startDate', 'endDate', 'hour', 'type', 'conductedBy'
-                            ]
+                                'title', 'startDate', 'endDate', 'hour', 'typeId', 'conductedBy'
+                            ],
+                            where: {
+                                isActive: true
+                            },
                         },
                         {
                             model: ProfileExperience,
                             as: 'experiences',
                             attributes: [
                                 'position', 'jobDescription', 'startDate', 'endDate'
+                            ],
+                            where: {
+                                isActive: true
+                            },
+                        },
+                        {
+                            model: ProfileDocument,
+                            as: 'documents',
+                            attributes: [
+                                'filename', 'file'
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: Vacancy,
+                    as: 'vacancy',
+                    attributes: [
+                        'id',
+                        'dateNeeded',
+                        'location',
+                        'movement',
+                        'justification',
+                        'needBackgroundCheck',
+                        'ageRange',
+                        'yearExperience',
+                        'status'
+                    ],
+                    include: [
+                        {
+                            model: Salary,
+                            as: 'salary',
+                            attributes: [
+                                'id'
+                            ],
+                            include: [
+                                {
+                                    model: Position,
+                                    as: 'positions',
+                                    attributes: [
+                                        'name', 'description'
+                                    ],
+                                    include: [
+                                        {
+                                            model: PositionQualification,
+                                            as: 'qualifications',
+                                            attributes: [
+                                                'name'
+                                            ]
+                                        },
+                                        
+                                    ]
+                                },
+                                {
+                                    model: SalaryGrade,
+                                    as: 'grade',
+                                    attributes: [
+                                        'name'
+                                    ]
+                                },
+                                {
+                                    model: Rate,
+                                    as: 'rates',
+                                    required: false,
+                                    where: {
+                                        stepId: { [Op.col]: "vacancy.stepId" }
+                                    },
+                                    attributes: [
+                                        'monthlyCompensation', 'dailyCompensation', 'hourlyCompensation'
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            model: Company,
+                            as: 'company',
+                            attributes: [
+                                'name'
+                            ]
+                        },
+                        {
+                            model: Department,
+                            as: 'department',
+                            attributes: [
+                                'name'
+                            ]
+                        },
+                        {
+                            model: ScheduleShift,
+                            as: 'shift',
+                            attributes: [
+                                "timeStart", "timeEnd"
+                            ],
+                            include: [
+                                {
+                                    model: ScheduleClass,
+                                    as: 'class',
+                                    attributes: [
+                                        "name"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            model: Sex,
+                            as: 'sex',
+                            attributes: [
+                                "name"
+                            ]
+                        },
+                        {
+                            model: SchoolLevel,
+                            as: 'schoolLevel',
+                            attributes: [
+                                "name"
+                            ]
+                        },
+                        {
+                            model: EmploymentStatus,
+                            as: 'employmentStatus',
+                            attributes: [
+                                "name"
                             ]
                         }
                     ]
                 }
-            ],
-            where: {
-                vacancyId
-            },
-            order: [['createdAt', 'DESC']]
+            ]
         });
 
         res.json({
@@ -79,94 +399,341 @@ exports.GetAll = async (req, res) => {
     }
 };
 
+const GetApplicant = async (id) => {
+    return await Application.findOne({
+        include: [
+            {
+                model: Profile,
+                as: 'profile',
+                attributes: [
+                    'firstname', 
+                    'middlename', 
+                    'lastname',
+                    'suffix',
+                    'birthdate',
+                    'birthplace',
+                    'weight',
+                    'height',
+                    'streetAddress'
+                ],
+                include: [
+                    {
+                        model: Sex,
+                        as: 'sex',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: CivilStatus,
+                        as: 'civilStatus',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: BloodType,
+                        as: 'bloodType',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: Region,
+                        as: 'region',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: Province,
+                        as: 'province',
+                        attributes: [
+                            'name'
+                        ]    
+                    },
+                    {
+                        model: Town,
+                        as: 'town',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: Barangay,
+                        as: 'barangay',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: ProfileEducation,
+                        as: 'educations',
+                        attributes: [
+                            'startDate', 'endDate', 'rating', 'graduated'
+                        ],
+                        where: {
+                            isActive: true
+                        },
+                        include: [
+                            {
+                                model: SchoolLevel,
+                                as: 'level',
+                                attributes: [
+                                    "name"
+                                ]
+                            },
+                            {
+                                model: School,
+                                as: 'school',
+                                attributes: [
+                                    'name', 'type', 'website', 'contactNo'
+                                ]
+                            },
+                            {
+                                model: Course,
+                                as: 'course',
+                                attributes: [
+                                    'name'
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        model: ProfileTraining,
+                        as: 'trainings',
+                        attributes: [
+                            'title', 'startDate', 'endDate', 'hour', 'typeId', 'conductedBy'
+                        ],
+                        where: {
+                            isActive: true
+                        },
+                    },
+                    {
+                        model: ProfileExperience,
+                        as: 'experiences',
+                        attributes: [
+                            'position', 'jobDescription', 'startDate', 'endDate'
+                        ],
+                        where: {
+                            isActive: true
+                        },
+                    },
+                    {
+                        model: ProfileDocument,
+                        as: 'documents',
+                        attributes: [
+                            'filename', 'file'
+                        ]
+                    }
+                ]
+            },
+            {
+                model: Vacancy,
+                as: 'vacancy',
+                attributes: [
+                    'id',
+                    'dateNeeded',
+                    'location',
+                    'movement',
+                    'justification',
+                    'needBackgroundCheck',
+                    'ageRange',
+                    'yearExperience'
+                ],
+                include: [
+                    {
+                        model: Salary,
+                        as: 'salary',
+                        attributes: [
+                            'id'
+                        ],
+                        include: [
+                            {
+                                model: Position,
+                                as: 'positions',
+                                attributes: [
+                                    'name', 'description'
+                                ],
+                                include: [
+                                    {
+                                        model: PositionQualification,
+                                        as: 'qualifications',
+                                        attributes: [
+                                            'name'
+                                        ]
+                                    },
+                                    
+                                ]
+                            },
+                            {
+                                model: SalaryGrade,
+                                as: 'grade',
+                                attributes: [
+                                    'name'
+                                ]
+                            },
+                            {
+                                model: Rate,
+                                as: 'rates',
+                                required: false,
+                                where: {
+                                    stepId: { [Op.col]: "vacancy.stepId" }
+                                },
+                                attributes: [
+                                    'monthlyCompensation', 'dailyCompensation', 'hourlyCompensation'
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        model: Company,
+                        as: 'company',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: Department,
+                        as: 'department',
+                        attributes: [
+                            'name'
+                        ]
+                    },
+                    {
+                        model: ScheduleShift,
+                        as: 'shift',
+                        attributes: [
+                            "timeStart", "timeEnd"
+                        ],
+                        include: [
+                            {
+                                model: ScheduleClass,
+                                as: 'class',
+                                attributes: [
+                                    "name"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        model: Sex,
+                        as: 'sex',
+                        attributes: [
+                            "name"
+                        ]
+                    },
+                    {
+                        model: SchoolLevel,
+                        as: 'schoolLevel',
+                        attributes: [
+                            "name"
+                        ]
+                    },
+                    {
+                        model: EmploymentStatus,
+                        as: 'employmentStatus',
+                        attributes: [
+                            "name"
+                        ]
+                    }
+                ]
+            }
+        ],
+        where: {
+            id
+        }
+    });
+};
+
 exports.Create = async (req, res) => {
     const {
-    vacancyId,
-    firstname,
-    middlename,
-    lastname,
-    suffix,
-    sexId,
-    maritalId,
-    birthdate,
-    birthplace,
-    weight,
-    height,
-    bloodTypeId,
-    email,
-    contactNo,
-    regionId,
-    provinceId,
-    townId,
-    barangayId,
-    streetAddress,
-    educations,
-    trainings,
-    experiences
-  } = req.body;
-
-  const files = req.files || [];
-  
-  const educ = JSON.parse(educations || "[]");
-  const train = JSON.parse(trainings || "[]");
-  const exp = JSON.parse(experiences || "[]");
-  
-  const t = await Profile.sequelize.transaction();
-
-  try {
-    
-    const profile = await Profile.create({
+        vacancyId,
         firstname,
         middlename,
         lastname,
         suffix,
         sexId,
-        civilStatusId: maritalId,
+        maritalId,
         birthdate,
         birthplace,
+        weight,
+        height,
+        bloodTypeId,
+        email,
+        contactNo,
         regionId,
         provinceId,
         townId,
         barangayId,
         streetAddress,
-        weight,
-        height,
-        bloodTypeId,
-        email,
-        contactNo
-    }, { transaction: t });
-    
-    await Application.create({
-        profileId: profile.id,
-        vacancyId
-    }, { transaction: t });
-    
-    for (const edu of educ) {
-        await ProfileEducation.create({
-            profileId: profile.id,
-            levelId: edu.levelId,
-            schoolId: edu.schoolId,
-            courseId: edu.courseId,
-            rating: edu.rating,
-            startDate: edu.startDate,
-            endDate: edu.endDate,
-            graduated: edu.yearGraduated
+        educations,
+        trainings,
+        experiences
+    } = req.body;
+
+    const mail = email.toLowerCase();
+
+    const files = req.files || [];
+    const educ = JSON.parse(educations || "[]");
+    const train = JSON.parse(trainings || "[]");
+    const exp = JSON.parse(experiences || "[]");
+
+    const t = await Profile.sequelize.transaction();
+
+    try {
+        const profile = await Profile.create({
+            firstname,
+            middlename,
+            lastname,
+            suffix,
+            sexId,
+            civilStatusId: maritalId,
+            birthdate,
+            birthplace,
+            regionId,
+            provinceId,
+            townId,
+            barangayId,
+            streetAddress,
+            weight,
+            height,
+            bloodTypeId,
+            contactNo,
+            email
         }, { transaction: t });
-    }
-    
-    for (const tr of train) {
-        await ProfileTraining.create({
+        
+        const application = await Application.create({
             profileId: profile.id,
-            title: tr.title,
-            type: tr.type,
-            startDate: tr.startDate,
-            endDate: tr.endDate,
-            hour: tr.hour,
-            conductedBy: tr.conductedBy,
+            vacancyId
         }, { transaction: t });
-    }
-    
-    for (const ex of exp) {
+        
+        for (const edu of educ) {
+            await ProfileEducation.create({
+                profileId: profile.id,
+                levelId: edu.levelId,
+                schoolId: edu.schoolId,
+                courseId: edu.courseId,
+                rating: edu.rating,
+                startDate: edu.startDate,
+                endDate: edu.endDate,
+                graduated: edu.yearGraduated
+            }, { transaction: t });
+        }
+        
+        for (const tr of train) {
+            await ProfileTraining.create({
+                profileId: profile.id,
+                title: tr.title,
+                typeId: tr.typeId,
+                startDate: tr.startDate,
+                endDate: tr.endDate,
+                hour: tr.hour,
+                conductedBy: tr.conductedBy,
+            }, { transaction: t });
+        }
+        
+        for (const ex of exp) {
         await ProfileExperience.create({
             profileId: profile.id,
             position: ex.position,
@@ -174,93 +741,155 @@ exports.Create = async (req, res) => {
             endDate: ex.endDate,
             jobDescription: ex.description
         }, { transaction: t });
-    }
-    
-    for (const file of files) {
-        const filePath = `/uploads/${file.filename}`;
-        await ProfileDocument.create({
-            profileId: profile.id,
-            file: filePath,
-            filename: file.originalname
-        }, { transaction: t });
-    }
+        }
+        
+        for (const file of files) {
+            const filePath = `/documents/${file.filename}`;
+            await ProfileDocument.create({
+                profileId: profile.id,
+                file: filePath,
+                filename: file.originalname
+            }, { transaction: t });
+        }
+        
+        await t.commit();
 
+        const data = await GetApplicant(application.id);
+        const position = data.vacancy.salary.positions.name;
 
-    await t.commit();
+        try {
+            const templatePath = path.join(__dirname, '../templates/NewApplication.html');
+            let htmlContent = fs.readFileSync(templatePath, 'utf8');
+            htmlContent = htmlContent
+                .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                .replace(/{{\s*position\s*}}/g, position || 'a position');
 
-    res.status(201).json({
-        message: "Record Saved!"
-    });
+            const mailOptions = {
+                from: `"Recruitment Team" <${process.env.MAIL_USER}>`,
+                to: mail,
+                subject: 'Application Status: Considered for Talent Pooling',
+                html: htmlContent,
+            };
+
+            const info = await transporter.sendMail(mailOptions);
+            console.log('Email sent:', info.response);
+        } catch (emailError) {
+            console.error('Email sending failed:', emailError.message);
+        }
+
+        res.status(201).json({
+            message: "Record Saved Successfully!",
+            application: data
+        });
 
     } catch (error) {
         await t.rollback();
+        console.error('Error creating application:', error);
         res.status(400).json({
+            message: "Failed to create record.",
             error: error.message
         });
     }
 };
 
-
 exports.Update = async (req, res) => {
 
-    // const { 
-    //     id 
-    // } = req.params;
+    const { 
+        id 
+    } = req.params;
 
-    // const { 
-    //     name
-    // } = req.body;
+    const { 
+        status
+    } = req.body;
 
-    // try {
+    try {
 
-    //     const sex = await Sex.findByPk(id);
+        const application = await Application.findByPk(id);
+        if (!application) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: status,
+                    msg: "Record not found!",
+                    path: "applicationStatus",
+                    location: "body",
+                }],
+            });
+        }
+        await application.update({ 
+            status
+        });
+
+        const vacancy = await Vacancy.findByPk(application.vacancyId);
+        if (!vacancy) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: status,
+                    msg: "Record not found!",
+                    path: "applicationStatus",
+                    location: "body",
+                }],
+            });
+        }
+        await vacancy.update({ 
+            status: 'Filled'
+        });
+
+        const data = await GetApplicant(application.id);
+        const email = data.profile.email;
+        const firstname = data.profile.firstname;
+        const position = data.vacancy.salary.positions.name;
         
-    //     if (!sex) {
-    //         return res.status(500).json({
-    //             errors: [{
-    //                 type: "field",
-    //                 value: name,
-    //                 msg: "Record not found!",
-    //                 path: "name",
-    //                 location: "body",
-    //             }],
-    //         });
-    //     }
+        try {
+            let templatePath;
+            let subject;
+            if (status == 'Shortlisted') {
+                templatePath = path.join(__dirname, '../templates/ShortlistedApplication.html');
+                subject = 'Application Status: Shortlisted';
+            } else if (status == 'Interview') {
+                templatePath = path.join(__dirname, '../templates/InterviewApplication.html');
+                subject = 'Application Status: For Interview';
+            } else if (status == 'Hired') {
+                templatePath = path.join(__dirname, '../templates/HiredApplication.html');
+                subject = 'Application Status: Hired';
+            } else if (status == 'Rejected') {
+                templatePath = path.join(__dirname, '../templates/RejectedApplication.html');
+                subject = 'Application Status: Rejected';
+            } else if (status == 'Withdrawn') {
+                templatePath = path.join(__dirname, '../templates/WithdrawnApplication.html');
+                subject = 'Application Status: Withdrawn';
+            }
+            let htmlContent = fs.readFileSync(templatePath, 'utf8');
+            htmlContent = htmlContent
+                .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                .replace(/{{\s*position\s*}}/g, position || 'a position');
 
-    //     const exist = await Sex.findOne({
-    //         where: {
-    //             [Op.or]: [{ name }],
-    //             id: { [Op.ne]: id }
-    //         },
-    //     });
-    //     if (exist) {
-    //         return res.status(500).json({
-    //             errors: [{
-    //                 type: "field",
-    //                 value: name,
-    //                 msg: "Record already in use!",
-    //                 path: "name",
-    //                 location: "body",
-    //             }],
-    //         });
-    //     }
+            const mailOptions = {
+                from: `"Recruitment Team" <${process.env.MAIL_USER}>`,
+                to: email,
+                subject,
+                html: htmlContent,
+            };
 
-    //     await sex.update({ 
-    //         name
-    //     });
+            const info = await transporter.sendMail(mailOptions);
+            console.log('Email sent:', info.response);
+        } catch (emailError) {
+            console.error('Email sending failed:', emailError.message);
+        }
 
-    //     res.status(201).json({
-    //         message: "Record Modified!", 
-    //         sex: sex
-    //     });
+        res.status(201).json({
+            message: "Record Modified!", 
+            application: data
+        });
 
-    // } catch (error) {
+    } catch (error) {
 
-    //     res.status(400).json({ 
-    //         error: error.message 
-    //     });
+        res.status(400).json({ 
+            error: error.message 
+        });
 
-    // }
+    }
 };
 
 exports.Disable = async (req, res) => {

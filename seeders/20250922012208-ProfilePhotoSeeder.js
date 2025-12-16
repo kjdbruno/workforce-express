@@ -17,7 +17,8 @@ module.exports = {
    try {
       await queryInterface.bulkInsert('ProfilePhotos', photos.map(p => ({
         profileId: p.profileId,
-        photo: p.photo,
+        filename: p.filename,
+        file: p.file,
         createdAt: new Date(),
         updatedAt: new Date()
       })), {});

@@ -7,12 +7,6 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // Define associations here
 
-      // Association with Role
-      User.belongsTo(models.Role, {
-        foreignKey: 'roleId',
-        as: 'role'
-      });
-
       // Association with UserLog
       User.hasOne(models.UserLog, {
         foreignKey: 'userId',
@@ -71,23 +65,21 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    roleId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Roles',
-        key: 'id',
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    },
-    level: {
-      type: DataTypes.ENUM('Management', 'Employee'),
+    role: {
+      type: DataTypes.ENUM('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'),
       allowNull: false
     },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
+    status: {
+      type: DataTypes.ENUM('Active', 'Inactive', 'Suspended'),
+      allowNull: false
+    },
+    failedLoginAttempts: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    lastFailedLogin: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   }, {
     sequelize,
