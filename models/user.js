@@ -9,33 +9,40 @@ module.exports = (sequelize, DataTypes) => {
 
       // Association with UserLog
       User.hasOne(models.UserLog, {
-        foreignKey: 'userId',
+        foreignKey: 'user_id',
         as: 'UserLog',
       });
 
       // Association with Notification (SenderId)
       User.hasMany(models.Notification, {
-        foreignKey: 'senderId',
+        foreignKey: 'sender_id',
         as: 'SentNotifications',
       });
 
       // Association with Notification (ReceiverId)
       User.hasMany(models.Notification, {
-        foreignKey: 'receiverId',
+        foreignKey: 'receiver_id',
         as: 'ReceivedNotifications',
       });
 
-      // Association with Profile
-      User.belongsTo(models.Profile, {
-        foreignKey: 'profileId',
-        as: 'profile'
+      // Association with Signatory -> signatoryId
+      User.hasMany(models.ApprovalSetting, {
+        foreignKey: 'approver_id',
+        as: 'approver'
       });
 
-      // Association with Signatory
-      User.hasMany(models.Signatory, {
-        foreignKey: 'userId',
-        as: 'signatories'
+      // Asociaton with Approval -> ownerId
+      User.hasMany(models.Approval, {
+        foreignKey: 'owner_id',
+        as: 'approvals'
       });
+
+      // User → EmployeeAccount
+      User.hasOne(models.EmployeeAccount, {
+        foreignKey: 'user_id',
+        as: 'employeeAccount'
+      });
+
 
     }
   }
@@ -46,15 +53,9 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       allowNull: false,
     },
-    profileId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Profiles',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
     },
     username: {
       type: DataTypes.STRING,
@@ -71,6 +72,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     status: {
       type: DataTypes.ENUM('Active', 'Inactive', 'Suspended'),
+      allowNull: false
+    },
+    avatar: {
+      type: DataTypes.STRING,
       allowNull: false
     },
     failedLoginAttempts: {

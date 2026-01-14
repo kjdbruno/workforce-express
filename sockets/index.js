@@ -177,15 +177,15 @@ module.exports = function (io) {
             const log = await UserLog.findOne(
                 { 
                     where: { 
-                        socketId: socket.id 
+                        socket_id: socket.id 
                     } 
                 });
 
             if (log) {
 
                 await log.update({ 
-                    isOnline: false, 
-                    socketId: null 
+                    is_online: false, 
+                    socket_id: null 
                 });
                 
                 EmitOnlineUsers();
@@ -204,11 +204,11 @@ module.exports = function (io) {
 
             await Notification.update(
                 { 
-                    isRead: true 
+                    is_read: true 
                 },
                 { 
                     where: { 
-                        receiverId: id 
+                        receiver_id: id 
                     } 
                 }
             );
@@ -224,9 +224,9 @@ module.exports = function (io) {
         try {
 
             await UserLog.upsert({
-                userId,
-                socketId,
-                isOnline: true
+                user_id: userId,
+                socket_id: socketId,
+                is_online: true
             });
 
         } catch (e) {
@@ -243,7 +243,7 @@ module.exports = function (io) {
 
             const users = await UserLog.findAll({
                 where: { 
-                    isOnline: true 
+                    is_online: true 
                 },
                 include: {
                     model: User,
@@ -265,47 +265,23 @@ module.exports = function (io) {
 
         const notificationCount = await Notification.count({
             where: {
-                receiverId: receiverId,
-                isRead: false
+                receiver_id: receiverId,
+                is_read: false
             }
         });
 
         const notifications = await Notification.findAll({
             where: { 
-                receiverId
+                receiver_id: receiverId
             },
             include: [
                 {
                     model: User,
-                    as: 'Receiver',
-                    include: [
-                        {
-                            model: Profile,
-                            as: 'profile',
-                            include: [
-                                {
-                                    model: ProfilePhoto,
-                                    as: 'photos'
-                                }
-                            ]
-                        }
-                    ]
+                    as: 'Receiver'
                 },
                 {
                     model: User,
-                    as: 'Sender',
-                    include: [
-                        {
-                            model: Profile,
-                            as: 'profile',
-                            include: [
-                                {
-                                    model: ProfilePhoto,
-                                    as: 'photos'
-                                }
-                            ]
-                        }
-                    ]
+                    as: 'Sender'
                 }
             ],
             order: [

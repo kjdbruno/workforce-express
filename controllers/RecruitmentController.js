@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 const moment = require('moment');
-const { Position, SalaryGrade, PositionQualification, Salary, Vacancy, Signatory, VacancyRequest, Rate, Company, Department, ScheduleShift, ScheduleClass, Sex, SchoolLevel, EmploymentStatus, User, Profile, EmploymentInformation } = require('../models');
+const { Approval, ApprovalSetting, Vacancy, Position, Company, Department, Schedule, SchoolLevel, User, EmployeeAccount, Employee, Employment } = require('../models');
+const { schedule } = require("node-cron");
 
 exports.GetAll = async (req, res) => {
 
@@ -18,26 +19,12 @@ exports.GetAll = async (req, res) => {
         const { count, rows } = await Vacancy.findAndCountAll({
             include: [
                 {
-                    model: Salary,
-                    as: 'salary',
-                    include: [
-                        {
-                            model: Position,
-                            as: 'positions',
-                            attributes: [
-                                'name'
-                            ]
-                        },
-                        {
-                            model: SalaryGrade,
-                            as: 'grade',
-                            attributes: [
-                                'name'
-                            ]
-                        },
+                    model: Position,
+                    as: 'position',
+                    attributes: [
+                        'name'
                     ]
-                },
-                
+                }
             ],
             where: Filter
                 ? { '$position.name$': { [Op.like]: `%${Filter}%` } }
@@ -68,150 +55,199 @@ exports.GetAll = async (req, res) => {
     }
 };
 
+exports.GetPosition = async (req, res) => {
+    try {
+        const data = await Position.findAll({
+            where: {
+                is_active: true
+            },
+            attributes: [
+                'id',
+                ['id', 'value'],
+                ['name', "label"],
+                'description',
+                'qualification'
+            ],
+            order: [['id', 'ASC']]
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+exports.GetCompany = async (req, res) => {
+    try {
+        const data = await Company.findAll({
+            where: {
+                is_active: true
+            },
+            attributes: [
+                ['id', 'value'],
+                ['name', "label"]
+            ],
+            order: [['id', 'ASC']]
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+exports.GetDepartment = async (req, res) => {
+    try {
+        const data = await Department.findAll({
+            where: {
+                is_active: true
+            },
+            attributes: [
+                ['id', 'value'],
+                ['name', "label"]
+            ],
+            order: [['id', 'ASC']]
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+exports.GetSchedule = async (req, res) => {
+    try {
+        const data = await Schedule.findAll({
+            where: {
+                is_active: true
+            },
+            attributes: [
+                ['id', 'value'],
+                ['name', "label"],
+                'time_start',
+                'time_end'
+            ],
+            order: [['id', 'ASC']]
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+exports.GetSchoolLevel = async (req, res) => {
+    try {
+        const data = await SchoolLevel.findAll({
+            attributes: [
+                ['id', 'value'],
+                ['name', "label"]
+            ],
+            order: [['id', 'ASC']]
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+
 exports.GetDetails = async (req, res) => {
 
-    const { 
-        id 
-    } = req.params;
+    const { id } = req.params;
 
     try {
 
-        const rows  = await Vacancy.findOne({
-            where: {
-                id
+        const vacancy = await Vacancy.findOne({
+            where: { 
+                id 
             },
             include: [
                 {
-                    model: Salary,
-                    as: 'salary',
-                    include: [
-                        {
-                            model: Position,
-                            as: 'positions',
-                            attributes: [
-                                'name', 'description'
-                            ],
-
-                            include: [
-                                {
-                                    model: PositionQualification,
-                                    as: 'qualifications',
-                                    attributes: [
-                                        'name'
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            model: SalaryGrade,
-                            as: 'grade',
-                            attributes: [
-                                'name'
-                            ]
-                        },
-                        {
-                            model: Rate,
-                            as: 'rates',
-                            required: false,
-                            where: {
-                                stepId: { [Op.col]: "Vacancy.stepId" }
-                            }
-                        }
-                    ]
+                    model: Position,
+                    as: 'position'
                 },
                 {
                     model: Company,
                     as: 'company',
-                    attributes: [
-                        "name"
-                    ]
+                    attributes: ['name']
                 },
                 {
                     model: Department,
                     as: 'department',
-                    attributes: [
-                        "name"
-                    ]
+                    attributes: ['name']
                 },
                 {
-                    model: ScheduleShift,
-                    as: 'shift',
-                    attributes: [
-                        "timeStart", "timeEnd"
-                    ],
+                    model: Schedule,
+                    as: 'schedule'
+                }
+            ]
+        });
+
+        const approvals = await Approval.findAll({
+            where: {
+                document_id: vacancy.id,
+                is_active: true
+            },
+            include: [
+                {
+                    model: ApprovalSetting,
+                    as: 'setting',
                     include: [
                         {
-                            model: ScheduleClass,
-                            as: 'class',
-                            attributes: [
-                                "name"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    model: Sex,
-                    as: 'sex',
-                    attributes: [
-                        "name"
-                    ]
-                },
-                {
-                    model: SchoolLevel,
-                    as: 'schoolLevel',
-                    attributes: [
-                        "name"
-                    ]
-                },
-                {
-                    model: EmploymentStatus,
-                    as: 'employmentStatus',
-                    attributes: [
-                        "name"
-                    ]
-                },
-                {
-                    model: VacancyRequest,
-                    as: 'requests',
-                    include: [
-                        {
-                            model: Signatory,
-                            as: 'signatory',
+                            model: User,
+                            as: 'approver',
+                            attributes: ['id'],
                             include: [
                                 {
-                                    model: User,
-                                    as: 'user',
+                                    model: EmployeeAccount,
+                                    as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Profile,
-                                            as: 'profile'
+                                            model: Employee,
+                                            as: 'employee',
+                                            include: [
+                                                {
+                                                    model: Employment,
+                                                    as: 'employment',
+                                                    include: [
+                                                        {
+                                                            model: Position,
+                                                            as: 'position',
+                                                        }
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
                             ]
                         }
                     ]
+                },
+                {
+                    model: User,
+                    as: 'owner',
+                    attributes: ['id']
                 }
             ],
             order: [
-                [
-                    { model: VacancyRequest, as: 'requests' },
-                    { model: Signatory, as: 'signatory' },
-                        'order',
-                        'ASC'
-                ],
+                [{ model: ApprovalSetting, as: 'setting' }, 'order', 'ASC']
             ]
         });
 
-        res.json({
-            data: rows
-        });
+        // 3️⃣ Combine vacancy + approvals
+        const result = {
+            ...vacancy.toJSON(),
+            approvals
+        };
+
+        res.json({ data: result });
 
     } catch (error) {
 
-        res.status(500).json({ 
-            error: error.message 
-        });
+        res.status(500).json({ error: error.message });
 
     }
 };
@@ -219,76 +255,98 @@ exports.GetDetails = async (req, res) => {
 exports.Create = async (req, res) => {
 
     const { 
-        salaryId,
-        stepId,
+        positionId,
         companyId,
         departmentId,
-        shiftId,
+        scheduleId,
+        salaryRange,
         date,
         location,
         movement,
         justification,
         needBackgroundCheck,
-        sexId,
+        sex,
         ageRange,
-        levelId,
+        schoolLevel,
         yearExperience,
-        employmentId
+        employmentStatus
     } = req.body;
 
     try {
 
         const year = new Date().getFullYear().toString();
         const latest = await Vacancy.findOne({
-            where: { controlNo: { [Op.like]: `${year}-%` } },
-            order: [['controlNo', 'DESC']]
+            where: { control_no: { [Op.like]: `${year}-%` } },
+            order: [['control_no', 'DESC']]
         });
         let nextSeq = 1;
 
         if (latest) {
-            const lastSeq = parseInt(latest.controlNo.split('-')[1]);
+            const lastSeq = parseInt(latest.control_no.split('-')[1]);
             nextSeq = lastSeq + 1;
         }
         const newNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
 
-
         const vacancy = await Vacancy.create({
-            controlNo: newNo,
-            salaryId,
-            stepId,
-            companyId,
-            departmentId,
-            shiftId,
-            dateNeeded: date,
+            control_no: newNo,
+            position_id: positionId,
+            company_id: companyId,
+            department_id: departmentId,
+            schedule_id: scheduleId,
+            salary_range: salaryRange,
+            date_needed: date,
             location,
             movement,
             justification,
-            needBackgroundCheck,
-            sexId,
-            ageRange,
-            levelId,
-            yearExperience,
-            employmentId,
+            need_background_check: needBackgroundCheck,
+            sex: sex,
+            age_range: ageRange,
+            school_level: schoolLevel,
+            year_experience: yearExperience,
+            employment_status: employmentStatus,
             status: 'Requested'
         });
 
-        const salary = await Salary.findByPk(salaryId);
-        await salary.update({ 
-            status: 'Requested'
-        });
-
-        const signatories = await Signatory.findAll({
-            where: {
-                typeId: 1
+        await Position.update(
+            { 
+                status: 'Requested' 
+            },
+            { 
+                where: { 
+                    id: positionId 
+                } 
             }
+        );
+
+        // Fetch approval settings by document type
+        const signatories = await ApprovalSetting.findAll({
+            where: {
+                type: 'Vacancy',        // 👈 use dynamic type
+                is_active: true
+            },
+            order: [['order', 'ASC']]
         });
-        if (signatories.length > 0) {
-            const requestsData = signatories.map(signatory => ({
-                vacancyId: vacancy.id,
-                signatoryId: signatory.id
-            }));
-            await VacancyRequest.bulkCreate(requestsData);
+
+        for (const sig of signatories) {
+
+            const isOwner = sig.approver_id === req.user.id;
+            const isFirst = sig.order === 1;
+
+            await Approval.create({
+                setting_id: sig.id,
+                document_id: vacancy.id,
+                owner_id: req.user.id,
+
+                // ✅ auto-approve ONLY if owner is first approver
+                status: (isOwner && isFirst) ? 'Approved' : 'Pending',
+
+                signed_at: (isOwner && isFirst) ? new Date() : null,
+                remarks: (isOwner && isFirst)
+                    ? 'Auto-approved (owner is first approver)'
+                    : null
+            });
         }
+
 
         res.status(201).json({
             message: "Record Saved!", 
@@ -309,24 +367,8 @@ const GetRecruitment = async (id) => {
     return await Vacancy.findOne({
         include: [
                 {
-                    model: Salary,
-                    as: 'salary',
-                    include: [
-                        {
-                            model: Position,
-                            as: 'positions',
-                            attributes: [
-                                'name'
-                            ]
-                        },
-                        {
-                            model: SalaryGrade,
-                            as: 'grade',
-                            attributes: [
-                                'name'
-                            ]
-                        },
-                    ]
+                    model: Position,
+                    as: 'position'
                 },
                 
             ],
@@ -340,44 +382,61 @@ const GetRecruitment = async (id) => {
 exports.Approve = async (req, res) => {
 
     const { 
-        vacancyId,
-        signatoryId
+        vacancyId
     } = req.body;
 
     try {
-        const requests = await VacancyRequest.findOne({
+        // 1️⃣ Find the Approval record for this approver
+        const approval = await Approval.findOne({
             where: {
-                vacancyId,
-                signatoryId,
-                isActive: true
-            }
-        });
-        if (!requests) {
-            return res.status(500).json({
-                errors: [{
-                    type: "manual",
-                    value: "",
-                    msg: "Record not found!",
-                    path: "name",
-                    location: "body",
-                }],
-            });
-        }
-        await requests.update({ 
-            status: 'Approved'
+                document_id: vacancyId,
+                is_active: true
+            },
+            include: [
+                {
+                    model: ApprovalSetting,
+                    as: 'setting',
+                    where: {
+                        type: 'Vacancy',
+                        approver_id: req.user.id, // ✅ filter by current approver
+                        is_active: true
+                    }
+                }
+            ]
         });
 
-        const pendingRequests = await VacancyRequest.count({
+        if (!approval) {
+            return res.status(404).json({
+                message: 'Approval record not found for this document and approver.'
+            });
+        }
+
+        // 2️⃣ Update approval to Approved
+        await approval.update({
+            status: 'Approved',
+            signed_at: moment().toDate()
+        });
+
+        // 3️⃣ Check if all approvals for this document are now approved
+        const pendingApprovals = await Approval.count({
             where: {
-                vacancyId,
-                status: { [Op.ne]: "Approved" },
-                isActive: true
+                document_id: vacancyId,
+                status: {
+                    [Op.ne]: 'Approved' 
+                },
+                is_active: true
             }
         });
-        if (pendingRequests === 0) {
+        if (pendingApprovals === 0) {
             await Vacancy.update(
-                { status: "Approved" },
-                { where: { id: vacancyId } }
+                { 
+                    status: "Approved" 
+                },
+                { 
+                    where: { 
+                        id: vacancyId 
+                    } 
+                }
             );
         }
 
@@ -496,133 +555,62 @@ exports.GeneratePDF = async (req, res) => {
     } = req.params;
     let browser;
     try {
-        const rows  = await Vacancy.findOne({
-            where: {
-                id
-            },
+        const vacancy = await Vacancy.findOne({
+            where: { id },
+
             include: [
                 {
-                    model: Salary,
-                    as: 'salary',
-                    include: [
-                        {
-                            model: Position,
-                            as: 'positions',
-                            attributes: [
-                                'name', 'description'
-                            ],
-
-                            include: [
-                                {
-                                    model: PositionQualification,
-                                    as: 'qualifications',
-                                    attributes: [
-                                        'name'
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            model: SalaryGrade,
-                            as: 'grade',
-                            attributes: [
-                                'name'
-                            ]
-                        },
-                        {
-                            model: Rate,
-                            as: 'rates',
-                            required: false,
-                            where: {
-                                stepId: { [Op.col]: "Vacancy.stepId" }
-                            }
-                        }
-                    ]
+                    model: Position,
+                    as: 'position'
                 },
                 {
                     model: Company,
                     as: 'company',
-                    attributes: [
-                        "name"
-                    ]
+                    attributes: ['name']
                 },
                 {
                     model: Department,
                     as: 'department',
-                    attributes: [
-                        "name"
-                    ]
+                    attributes: ['name']
                 },
                 {
-                    model: ScheduleShift,
-                    as: 'shift',
-                    attributes: [
-                        "timeStart", "timeEnd"
-                    ],
+                    model: Schedule,
+                    as: 'schedule',
+                    attributes: ['time_start', 'time_end']
+                }
+            ]
+        });
+
+        const approvals = await Approval.findAll({
+            where: {
+                document_id: vacancy.id,
+                is_active: true
+            },
+            include: [
+                {
+                    model: ApprovalSetting,
+                    as: 'setting',
                     include: [
                         {
-                            model: ScheduleClass,
-                            as: 'class',
-                            attributes: [
-                                "name"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    model: Sex,
-                    as: 'sex',
-                    attributes: [
-                        "name"
-                    ]
-                },
-                {
-                    model: SchoolLevel,
-                    as: 'schoolLevel',
-                    attributes: [
-                        "name"
-                    ]
-                },
-                {
-                    model: EmploymentStatus,
-                    as: 'employmentStatus',
-                    attributes: [
-                        "name"
-                    ]
-                },
-                {
-                    model: VacancyRequest,
-                    as: 'requests',
-                    
-                    include: [
-                        {
-                            model: Signatory,
-                            as: 'signatory',
+                            model: User,
+                            as: 'approver',
+                            attributes: ['id'],
                             include: [
                                 {
-                                    model: User,
-                                    as: 'user',
+                                    model: EmployeeAccount,
+                                    as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Profile,
-                                            as: 'profile',
+                                            model: Employee,
+                                            as: 'employee',
                                             include: [
                                                 {
-                                                    model: EmploymentInformation,
+                                                    model: Employment,
                                                     as: 'employment',
                                                     include: [
                                                         {
-                                                            model: Salary,
-                                                            as: 'salary',
-                                                            include: [
-                                                                {
-                                                                    model: Position,
-                                                                    as: 'positions',
-                                                                    attributes: [
-                                                                        'name'
-                                                                    ]
-                                                                }
-                                                            ]
+                                                            model: Position,
+                                                            as: 'position',
                                                         }
                                                     ]
                                                 }
@@ -633,26 +621,37 @@ exports.GeneratePDF = async (req, res) => {
                             ]
                         }
                     ]
+                },
+                {
+                    model: User,
+                    as: 'owner',
+                    attributes: ['id']
                 }
             ],
             order: [
                 [
-                    { model: VacancyRequest, as: 'requests' },
-                    { model: Signatory, as: 'signatory' },
-                        'order',
-                        'ASC'
-                ],
+                    { 
+                        model: ApprovalSetting, as: 'setting' 
+                    }, 
+                    'order', 'ASC'
+                ]
             ]
         });
+
+        // 3️⃣ Combine vacancy + approvals
+        const result = {
+            ...vacancy.toJSON(),
+            approvals
+        };
 
         const templatePath = path.join(__dirname, '../templates/reports/Requisition.pug');
 
         const seal = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, '../templates/reports/logo.jpg')).toString('base64');
 
-        const controlNo = rows?.controlNo;
-        const position = rows?.salary?.positions?.name;
-        const department = rows?.department?.name;
-        const location = rows?.location;
+        const controlNo = result?.control_no;
+        const position = result?.position?.name;
+        const department = result?.department?.name;
+        const location = result?.location;
         const formatTime = (t) =>
             t
                 ? new Date(`1970-01-01T${t}`).toLocaleTimeString([], {
@@ -661,58 +660,51 @@ exports.GeneratePDF = async (req, res) => {
                 })
                 : '';
 
-        const timeStart = formatTime(rows?.shift?.timeStart);
-        const timeEnd = formatTime(rows?.shift?.timeEnd);
-        const shiftTime = `${timeStart} - ${timeEnd}`;
-        const dateNeeded = moment(rows?.dateNeeded).format('MMMM DD, YYYY'); 
-        const grade = rows?.salary?.grade?.name || '';
-        const monthlyComp = rows?.salary?.rates[0]?.monthlyCompensation || 0;
-        const salary = grade
-            ? `${grade} - ₱${Number(monthlyComp).toLocaleString()}`
-            : `₱${Number(monthlyComp).toLocaleString()}`;
-        const company = rows?.company?.name;
-        const employment = rows?.employmentStatus?.name;
-        const needBackgroundCheck = rows?.needBackgroundCheck;
-        const movement = rows?.movement;
-        const justification = rows?.justification;
-        const gender = rows?.sex?.name;
-        const education = rows?.schoolLevel?.name;
-        const experience = rows?.yearExperience;
-        const age = rows?.ageRange;
-        const qualifications = rows?.salary?.positions?.qualifications;
-        const description = rows?.salary?.positions?.description;
-        const signatories =
-            rows?.requests?.map((req) => {
-                const profile = req?.signatory?.user?.profile;
-                const employment = profile?.employment;
-                const salary = employment?.salary;
-                const position = salary?.positions?.name || '';
+        const timeStart = formatTime(result?.schedule?.time_start);
+        const timeEnd = formatTime(result?.schedule?.time_end);
+        const scheduleTime = `${timeStart} - ${timeEnd}`;
+        const dateNeeded = moment(result?.date_needed).format('MMMM DD, YYYY'); 
+        const salaryRange = result?.salary_range || 0;
+        const company = result?.company?.name;
+        const employment = result?.employment_status;
+        const needBackgroundCheck = result?.need_background_check;
+        const movement = result?.movement;
+        const justification = result?.justification;
+        const gender = result?.sex;
+        const education = result?.school_level;
+        const experience = result?.year_experience;
+        const age = result?.age_range;
+        const qualifications = result?.position?.qualification;
+        const description = result?.position?.description;
+        // Map approvals to the desired format
+        const signatories = approvals.map((app) => {
+            const employee = app?.setting?.approver?.employeeAccount?.employee;
+            const profile = employee || {};
 
-                // Format full name (First M. Last Suffix)
-                const first = profile?.firstname || '';
-                const middle = profile?.middlename ? `${profile.middlename.charAt(0)}.` : '';
-                const last = profile?.lastname || '';
-                const suffix = profile?.suffix ? ` ${profile.suffix}` : '';
-                const userName = `${first} ${middle} ${last}${suffix}`.replace(/\s+/g, ' ').trim();
+            const position = app?.setting?.approver?.employeeAccount?.employment?.position?.name || '';
+            // Format full name (First M. Last Suffix)
+            const first = profile?.first_name || '';
+            const middle = profile?.middle_name ? `${profile.middle_name.charAt(0)}.` : '';
+            const last = profile?.last_name || '';
+            const suffix = profile?.suffix ? ` ${profile.suffix}` : '';
+            const userName = `${first} ${middle} ${last}${suffix}`.replace(/\s+/g, ' ').trim();
 
-                // Only show signature & date if request is approved
-                const isApproved = req?.status === 'Approved';
+            // Only show signature & date if approval is approved
+            const isApproved = app?.status === 'Approved';
+            const signaturePath = app?.setting?.signature; // Assuming approval setting stores the signature path
 
-                return {
-                    signatoryName: req?.signatory?.name || '',
-                    userName,
-                    position,
-                    signature: isApproved
-                        ? 'data:image/png;base64,' +
-                        fs
-                            .readFileSync(path.join(__dirname, `../public/${req?.signatory?.signature}`))
-                            .toString('base64')
-                        : null, // or '' if you prefer
-                    date: isApproved ? moment(req?.createdAt).format('MMMM DD, YYYY') : null,
-                    isSigned: isApproved
-                };
-        }) || [];
-
+            return {
+                description: app?.setting.description || '',
+                approver: userName,
+                position,
+                signature: isApproved && signaturePath
+                    ? 'data:image/png;base64,' +
+                    fs.readFileSync(path.join(__dirname, `../public/${signaturePath}`)).toString('base64')
+                    : null,
+                date: isApproved ? moment(app?.signed_at || app?.createdAt).format('MMMM DD, YYYY hh:mm A') : null,
+                isSigned: isApproved
+            };
+        });
 
         const html = pug.renderFile(templatePath, { 
             seal, 
@@ -720,9 +712,9 @@ exports.GeneratePDF = async (req, res) => {
             position,
             department,
             location,
-            shiftTime,
+            scheduleTime,
             dateNeeded,
-            salary,
+            salaryRange,
             company,
             employment,
             needBackgroundCheck,

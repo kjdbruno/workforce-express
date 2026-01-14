@@ -11,17 +11,15 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
-      // Association with PositionQualification
-      Position.hasMany(models.PositionQualification, {
-        foreignKey: 'positionId',
-        as: 'qualifications'
+      // Vacancies
+      Position.hasMany(models.Vacancy, {
+        foreignKey: 'position_id',
+        as: 'vacancies'
       });
 
-      // Association with Salary
-      Position.hasMany(models.Salary, {
-        foreignKey: 'positionId',
-        as: 'salary'
+      Position.hasMany(models.Employment, {
+        foreignKey: 'position_id',
+        as: 'employments'
       });
     }
   }
@@ -36,11 +34,23 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false
+    },
     description: {
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
-    isActive: {
+    qualification: {
+      type: DataTypes.JSON,
+      allowNull: false
+    },
+    status: {
+      type: DataTypes.ENUM('Vacant', 'Requested', 'Filled'),
+      defaultValue: 'Vacant'
+    },
+    is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
     },

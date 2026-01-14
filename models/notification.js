@@ -9,13 +9,13 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
 
       // Association with User (senderId)
       Notification.belongsTo(models.User, {
-        foreignKey: 'senderId',
+        foreignKey: 'sender_id',
         as: 'Sender',
       });
 
       // Association with User (receiverId)
       Notification.belongsTo(models.User, {
-        foreignKey: 'receiverId',
+        foreignKey: 'receiver_id',
         as: 'Receiver',
       });
 
@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    senderId: {
+    sender_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    receiverId: {
+    receiver_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
-    isRead: {
+    is_read: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },

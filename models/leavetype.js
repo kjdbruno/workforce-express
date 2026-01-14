@@ -11,12 +11,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
-      // Association with ProfileLeave (Leave Credit)
-      LeaveType.hasMany(models.ProfileLeave, {
-        foreignKey: 'typeId',
-        as: 'leaveCredits'
-      });
     }
   }
   LeaveType.init({
@@ -26,6 +20,11 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER
     },
+    code: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false
@@ -34,17 +33,21 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: false
     },
-    accrual: {
-      type: DataTypes.ENUM('Yearly', 'Monthly', 'Daily'),
+    loa_type: {
+      type: DataTypes.ENUM('Paid', 'Unpaid'),
       allowNull: false
     },
-    carryOver: {
+    annual_limit: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    can_carry_over: {
       type: DataTypes.BOOLEAN,
       allowNull: false
     },
-    isActive: {
+    affects_payroll: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true
+      allowNull: false
     },
   }, {
     sequelize,

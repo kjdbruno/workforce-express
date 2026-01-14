@@ -11,11 +11,14 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      School.hasMany(models.ApplicantEducation, {
+        foreignKey: 'school_id',
+        as: 'applicantEducations'
+      });
 
-      // Association with ProfileEducation
-      School.hasMany(models.ProfileEducation, {
-        foreignKey: 'schoolId',
-        as: 'profileEducations'
+      School.hasMany(models.EmployeeEducation, {
+        foreignKey: 'school_id',
+        as: 'employeeEducations'
       });
     }
   }

@@ -1,21 +1,21 @@
 const { body, validationResult } = require("express-validator");
 
 exports.ValidateForm = () => [
-    body("salaryId")
+    body("positionId")
         .trim()
         .notEmpty().withMessage("position is required"),
-    body("stepId")
-        .trim()
-        .notEmpty().withMessage("step is required"),
     body("companyId")
         .trim()
         .notEmpty().withMessage("company is required"),
     body("departmentId")
         .trim()
         .notEmpty().withMessage("department is required"),
-    body("shiftId")
+    body("scheduleId")
         .trim()
         .notEmpty().withMessage("schedule shift is required"),
+    body("salaryRange")
+        .trim()
+        .notEmpty().withMessage("salary range is required"),
     body("date")
         .trim()
         .notEmpty().withMessage("date needed is required"),
@@ -31,19 +31,19 @@ exports.ValidateForm = () => [
     body("needBackgroundCheck")
         .trim()
         .notEmpty().withMessage("background check is required"),
-    body("sexId")
+    body("sex")
         .trim()
         .notEmpty().withMessage("sex is required"),
     body("ageRange")
         .trim()
         .notEmpty().withMessage("age range is required"),
-    body("levelId")
+    body("schoolLevel")
         .trim()
         .notEmpty().withMessage("school level is required"),
     body("yearExperience")
         .trim()
         .notEmpty().withMessage("year/s of experience is required"),
-    body("employmentId")
+    body("employmentStatus")
         .trim()
         .notEmpty().withMessage("employment status is required"),
     (req, res, next) => {

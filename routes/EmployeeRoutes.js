@@ -1,84 +1,80 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+
+const upload = require("../middlewares/Upload");
 
 const { ValidateForm } = require('../middlewares/EmployeeValidator');
 
-const { VerifyToken } = require('../middlewares/AuthMiddleware');
+const { VerifyToken, AuthorizeRoles } = require('../middlewares/AuthMiddleware');
 
 const { 
-    GetAll, 
+    GetAll,
+    GetApplicant,
+    GetPosition,
+    GetCompany,
+    GetDepartment,
+    GetSchedule,
+    GetSchool,
+    GetCourse,
+    GetPayrollGroup,
     Create, 
-    GetEmployeeProfile, 
-    GetEmployeeEmployment, 
-    GetEmployeeSchedule, 
-    GetEmployeeEducation, 
-    GetEmployeeTraining,
-    GetEmployeeExperience,
-    GetEmployeeDependent,
-    GetEmployeeApplication,
-    UpdateProfile,
-    UpdateEmployment,
-    CreateEducation,
-    CreateTraining,
-    CreateExperience,
-    CreateDependent,
-    GetEmployeeService,
-    GetEmployeeLeaveCredit,
-    GetEmployeeLeaveApplication,
-    GetEmployeeDTR,
-    GeneratePDF,
-    GetSalaryOption,
-    CreateService,
-    GenerateServiceRecordPDF,
-    GetEmployeePhoto,
-    CreatePhoto,
-    CreateLeaveCredit,
-    GenerateLeavePDF
 } = require('../controllers/EmployeeController');
 
-router.get('/', VerifyToken, GetAll);
-router.post('/', upload.single('file'), VerifyToken, ValidateForm(), Create);
+router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
 
-router.get('/profile/:id', VerifyToken, GetEmployeeProfile);
-router.get('/application/:id', VerifyToken, GetEmployeeApplication);
-router.post('/profile/:id/update', VerifyToken, UpdateProfile);
+/**
+ * OPTIONS
+ */
+router.get('/option/applicant', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetApplicant);
+router.get('/option/position', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPosition);
+router.get('/option/company', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetCompany);
+router.get('/option/department', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetDepartment);
+router.get('/option/schedule', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetSchedule);
+router.get('/option/school', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetSchool);
+router.get('/option/course', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetCourse);
+router.get('/option/payrollgroup', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPayrollGroup);
 
-router.get('/employment/:id', VerifyToken, GetEmployeeEmployment);
-router.post('/employment/:id/update', VerifyToken, UpdateEmployment);
 
-router.get('/education/:id', VerifyToken, GetEmployeeEducation);
-router.post('/education/:id', VerifyToken, CreateEducation);
 
-router.get('/training/:id', VerifyToken, GetEmployeeTraining);
-router.post('/training/:id', VerifyToken, CreateTraining);
+router.post('/', upload.any(), VerifyToken, ValidateForm(), Create);
 
-router.get('/experience/:id', VerifyToken, GetEmployeeExperience);
-router.post('/experience/:id', VerifyToken, CreateExperience);
+// router.get('/profile/:id', VerifyToken, GetEmployeeProfile);
+// router.get('/application/:id', VerifyToken, GetEmployeeApplication);
+// router.post('/profile/:id/update', VerifyToken, UpdateProfile);
 
-router.get('/dependent/:id', VerifyToken, GetEmployeeDependent);
-router.post('/dependent/:id', VerifyToken, CreateDependent);
+// router.get('/employment/:id', VerifyToken, GetEmployeeEmployment);
+// router.post('/employment/:id/update', VerifyToken, UpdateEmployment);
 
-router.get('/service/:id', VerifyToken, GetEmployeeService);
-router.post('/service/:id', VerifyToken, CreateService);
-router.get('/service/:id/pdf', VerifyToken, GenerateServiceRecordPDF);
+// router.get('/education/:id', VerifyToken, GetEmployeeEducation);
+// router.post('/education/:id', VerifyToken, CreateEducation);
 
-router.get('/photo/:id', VerifyToken, GetEmployeePhoto);
-router.post('/photo/:id', upload.single('file'), VerifyToken, CreatePhoto);
+// router.get('/training/:id', VerifyToken, GetEmployeeTraining);
+// router.post('/training/:id', VerifyToken, CreateTraining);
 
-router.get('/document/:id', VerifyToken, GetEmployeeProfile);
-router.get('/digitalid/:id', VerifyToken, GetEmployeeProfile);
+// router.get('/experience/:id', VerifyToken, GetEmployeeExperience);
+// router.post('/experience/:id', VerifyToken, CreateExperience);
 
-router.get('/leave/credit/:id', VerifyToken, GetEmployeeLeaveCredit);
-router.post('/leave/credit/:id', VerifyToken, CreateLeaveCredit);
-router.get('/leave/application/:id', VerifyToken, GetEmployeeLeaveApplication);
-router.get('/leave/application/:id/pdf', VerifyToken, GenerateLeavePDF);
+// router.get('/dependent/:id', VerifyToken, GetEmployeeDependent);
+// router.post('/dependent/:id', VerifyToken, CreateDependent);
 
-router.get('/dtr/:id', VerifyToken, GetEmployeeDTR);
-router.get('/dtr/:id/:month/:year/pdf', VerifyToken, GeneratePDF);
+// router.get('/service/:id', VerifyToken, GetEmployeeService);
+// router.post('/service/:id', VerifyToken, CreateService);
+// router.get('/service/:id/pdf', VerifyToken, GenerateServiceRecordPDF);
 
-router.get('/option/salary', VerifyToken, GetSalaryOption);
+// router.get('/photo/:id', VerifyToken, GetEmployeePhoto);
+// router.post('/photo/:id', upload.single('file'), VerifyToken, CreatePhoto);
+
+// router.get('/document/:id', VerifyToken, GetEmployeeProfile);
+// router.get('/digitalid/:id', VerifyToken, GetEmployeeProfile);
+
+// router.get('/leave/credit/:id', VerifyToken, GetEmployeeLeaveCredit);
+// router.post('/leave/credit/:id', VerifyToken, CreateLeaveCredit);
+// router.get('/leave/application/:id', VerifyToken, GetEmployeeLeaveApplication);
+// router.get('/leave/application/:id/pdf', VerifyToken, GenerateLeavePDF);
+
+// router.get('/dtr/:id', VerifyToken, GetEmployeeDTR);
+// router.get('/dtr/:id/:month/:year/pdf', VerifyToken, GeneratePDF);
+
+// router.get('/option/salary', VerifyToken, GetSalaryOption);
 
 module.exports = router;

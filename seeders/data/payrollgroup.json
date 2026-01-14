@@ -1,0 +1,18 @@
+[
+    { 
+        "name": "Weekly",
+        "cycle": "Weekly"
+    },
+    { 
+        "name": "Bi-Weekly",
+        "cycle": "Bi-Weekly"
+    },
+    { 
+        "name": "Semi-Monthly",
+        "cycle": "Semi-Monthly"
+    },
+    { 
+        "name": "Monthly",
+        "cycle": "Monthly"
+    }
+]

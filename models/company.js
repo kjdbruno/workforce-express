@@ -12,16 +12,15 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Association with Vacancy
+      // Vacancies
       Company.hasMany(models.Vacancy, {
-        foreignKey: 'companyId',
+        foreignKey: 'company_id',
         as: 'vacancies'
       });
 
-      // Association with EmploymentInformation
-      Company.hasMany(models.EmploymentInformation, {
-        foreignKey: 'companyId',
-        as: 'employmentInformations'
+      Company.hasMany(models.Employment, {
+        foreignKey: 'company_id',
+        as: 'employments'
       });
     }
   }
@@ -40,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
-    isActive: {
+    is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
     },

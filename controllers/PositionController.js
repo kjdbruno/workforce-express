@@ -17,16 +17,6 @@ exports.GetAll = async (req, res) => {
         }
 
         const { count, rows } = await Position.findAndCountAll({
-            include: [
-                {
-                    model: PositionQualification,
-                    as: 'qualifications',
-                    where: {
-                        isActive: true
-                    },
-                    required: false
-                }
-            ],
             where,
             limit: Limit,
             offset: Offset,
@@ -51,40 +41,11 @@ exports.GetAll = async (req, res) => {
     }
 };
 
-const Get = async (id) => {
-    return await Position.findOne({
-        where: {
-            id
-        },
-        include: [
-            {
-                model: Salary,
-                as: 'salary',
-                include: [
-                    {
-                        model: SalaryGrade,
-                        as: 'grade'
-                    }
-                ]
-            },
-            {
-                model: PositionQualification,
-                as: 'qualifications',
-                where: {
-                    isActive: true
-                },
-                required: false
-            }
-        ],
-    });
-};
-
-
 exports.Create = async (req, res) => {
 
     const { 
-        salaryId,
         name,
+        amount,
         description,
         qualifications
     } = req.body;
@@ -110,28 +71,15 @@ exports.Create = async (req, res) => {
         }
 
         const position = await Position.create({
-            salaryId,
             name,
-            description
+            amount,
+            description,
+            qualification: qualifications
         });
-
-        if (Array.isArray(qualifications) && qualifications.length > 0) {
-            const records = qualifications
-                .filter(q => q.name && q.name.trim())
-                .map(q => ({
-                    positionId: position.id,
-                    name: q.name
-                }));
-            if (records.length) {
-                await PositionQualification.bulkCreate(records);
-            }
-        }
-
-        const p = await Get(position.id);
 
         res.status(201).json({
             message: "Record Saved!", 
-            position: p
+            data: position
         });
 
     } catch (error) {
@@ -150,106 +98,60 @@ exports.Update = async (req, res) => {
     } = req.params;
 
     const { 
-        salaryId,
         name,
+        amount,
         description,
         qualifications
     } = req.body;
 
     try {
-    const position = await Position.findByPk(id, {
-        include: [
-                { 
-                model: PositionQualification, 
-                as: "qualifications" 
-            }
-        ],
-    });
+        const position = await Position.findByPk(id);
 
-    if (!position) {
-        return res.status(404).json({
-            errors: [
-                {
-                    type: "field",
-                    value: name,
-                    msg: "Record not found!",
-                    path: "name",
-                    location: "body",
-                },
-            ],
-        });
-    }
-    
-    const exist = await Position.findOne({
-        where: {
-            [Op.or]: [{ name }],
-            id: { [Op.ne]: id },
-        },
-    });
-    if (exist) {
-        return res.status(400).json({
-            errors: [
-                {
-                    type: "manual",
-                    value: "",
-                    msg: "Record already in use!",
-                    path: "name",
-                    location: "body",
-                },
-            ],
-        });
-    }
-    
-    await position.update({ 
-        salaryId,
-        name, 
-        description 
-    });
-    
-    const incoming = (qualifications || []).filter(
-        (q) => q.name && q.name.trim()
-    );
-
-    const existingQualifications = await PositionQualification.findAll({
-        where: { 
-            positionId: id 
-        },
-    });
-
-    const existingMap = new Map(
-      existingQualifications.map((eq) => [eq.id, eq])
-    );
-    const processedIds = new Set();
-
-    for (const q of incoming) {
-        if (q.id && existingMap.has(q.id)) {
-            const existing = existingMap.get(q.id);
-            existing.name = q.name.trim();
-            existing.isActive = true;
-            await existing.save();
-            processedIds.add(q.id);
-        } else {
-            await PositionQualification.create({
-                positionId: id,
-                name: q.name.trim(),
-                isActive: true,
+        if (!position) {
+            return res.status(404).json({
+                errors: [
+                    {
+                        type: "field",
+                        value: name,
+                        msg: "Record not found!",
+                        path: "name",
+                        location: "body",
+                    },
+                ],
             });
         }
-    }
     
-    for (const qual of existingQualifications) {
-        if (!processedIds.has(qual.id)) {
-            qual.isActive = false;
-            await qual.save();
+        const exist = await Position.findOne({
+            where: {
+                [Op.or]: [{ name }],
+                id: { [Op.ne]: id },
+            },
+        });
+        if (exist) {
+            return res.status(400).json({
+                errors: [
+                    {
+                        type: "manual",
+                        value: "",
+                        msg: "Record already in use!",
+                        path: "name",
+                        location: "body",
+                    },
+                ],
+            });
         }
-    }
     
-    const data = await Get(position.id);
+        await position.update({ 
+            name, 
+            amount,
+            description,
+            qualification: qualifications
+        });
 
-    return res.status(200).json({
-        message: "Record Modified!",
-        position: data,
-    });
+        return res.status(200).json({
+            message: "Record Modified!",
+            data: position,
+        });
 
     } catch (error) {
 
@@ -283,12 +185,12 @@ exports.Disable = async (req, res) => {
         }
 
         await position.update({ 
-            isActive: false
+            is_active: false
         });
 
         res.status(200).json({
             message: "Record Disabled!", 
-            position: position 
+            data: position 
         });
 
     } catch (error) {
@@ -323,12 +225,12 @@ exports.Enable = async (req, res) => {
         }
 
         await position.update({ 
-            isActive: true 
+            is_active: true 
         });
 
         res.status(200).json({
             message: "Record Enabled!.", 
-            position: position
+            data: position
         });
     } catch (error) {
 

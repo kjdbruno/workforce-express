@@ -11,66 +11,47 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
-      // Association with Application
-      Vacancy.hasMany(models.Application, {
-        foreignKey: 'vacancyId',
-        as: 'applications'
+      // Position
+      Vacancy.belongsTo(models.Position, {
+        foreignKey: 'position_id',
+        as: 'position'
       });
 
-      // Association with Salary
-      Vacancy.belongsTo(models.Salary, {
-        foreignKey: 'salaryId',
-        as: 'salary'
-      });
-
-      // Assocition with Company
+      // Company
       Vacancy.belongsTo(models.Company, {
-        foreignKey: 'companyId',
+        foreignKey: 'company_id',
         as: 'company'
       });
 
-      // Association with Department
+      // Department
       Vacancy.belongsTo(models.Department, {
-        foreignKey: 'departmentId',
+        foreignKey: 'department_id',
         as: 'department'
       });
 
-      // Assciation with ScheduleShift
-      Vacancy.belongsTo(models.ScheduleShift, {
-        foreignKey: 'shiftId',
-        as: 'shift'
+      // Work Schedule
+      Vacancy.belongsTo(models.Schedule, {
+        foreignKey: 'schedule_id',
+        as: 'schedule'
       });
 
-      // Association with Sex
-      Vacancy.belongsTo(models.Sex, {
-        foreignKey: 'sexId',
-        as: 'sex'
+      // Applications (Applicants who applied to this vacancy)
+      Vacancy.hasMany(models.Applicant, {
+        foreignKey: 'vacancy_id',
+        as: 'applications'
       });
 
-      // Association with SchoolLevel
-      Vacancy.belongsTo(models.SchoolLevel, {
-        foreignKey: 'levelId',
-        as: 'schoolLevel'
-      });
+      // // Hiring Requests / Approval Workflow
+      // Vacancy.hasMany(models.VacancyApproval, {
+      //   foreignKey: 'vacancy_id',
+      //   as: 'approvals'
+      // });
 
-      // Association with EmploymentStatus
-      Vacancy.belongsTo(models.EmploymentStatus, {
-        foreignKey: 'employmentId',
-        as: 'employmentStatus'
-      });
-
-      // Association with Increment
-      Vacancy.belongsTo(models.Increment, {
-        foreignKey: 'stepId',
-        as: 'increment'
-      });
-
-      // Association with VacancyRequest
-      Vacancy.hasMany(models.VacancyRequest, {
-        foreignKey: 'vacancyId',
-        as: 'requests'
-      });
+      // // Final hired employee (once filled)
+      // Vacancy.hasOne(models.Employee, {
+      //   foreignKey: 'vacancy_id',
+      //   as: 'hiredEmployee'
+      // });
     }
   }
   Vacancy.init({
@@ -80,31 +61,25 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    controlNo: {
+    control_no: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    salaryId: {
+    position_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Salaries',
+        model: 'Positions',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    stepId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Increments',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    salary_range: {
+      type: DataTypes.STRING,
+      allowNull: false
     },
-    companyId: {
+    company_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -114,7 +89,7 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    departmentId: {
+    department_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -124,17 +99,17 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    shiftId: {
+    schedule_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'ScheduleShifts',
+        model: 'Schedules',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    dateNeeded: {
+    date_needed: {
       type: DataTypes.DATE,
       allowNull: false
     },
@@ -150,54 +125,33 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT('long'),
       allowNull: true
     },
-    needBackgroundCheck: {
+    need_background_check: {
       type: DataTypes.BOOLEAN,
       allowNull: false
     },
-    sexId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Sexes',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    sex: {
+      type: DataTypes.ENUM('Male', 'Female'),
+      allowNull: false
     },
-    ageRange: {
-      type: DataTypes.STRING
+    age_range: {
+      type: DataTypes.STRING,
+      allowNull: true
     },
-    levelId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'SchoolLevels',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    school_level: {
+      type: DataTypes.ENUM('High School', 'Vocational', 'College', 'Graduate Studies'),
+      allowNull: false
     },
-    yearExperience: {
+    year_experience: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    employmentId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'EmploymentStatuses',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    employment_status: {
+      type: DataTypes.ENUM('Regular', 'Probationary', 'Contractual', 'Temporary', 'Intern'),
+      allowNull: false
     },
     status: {
       type: DataTypes.ENUM('Vacant', 'Requested', 'Approved', 'Rejected', 'Filled'),
       allowNull: false
-    },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
     },
   }, {
     sequelize,

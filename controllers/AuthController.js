@@ -99,26 +99,8 @@ module.exports = (_io) => {
                     where: {
                         id: user.id
                     },
-                    include: [
-                        {
-                            model: Profile,
-                            as: 'profile',
-                            attributes: [
-                                'firstname', 'middlename', 'lastname', 'suffix'
-                            ],
-                            include: [
-                                {
-                                    model: ProfilePhoto,
-                                    as: 'photos',
-                                    attributes: [
-                                        'file'
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
                     attributes: [
-                        'id', 'username', 'role', 'status'
+                        'id', 'username', 'name', 'role', 'status', 'avatar'
                     ]
                 })
                 const token = jwt.sign({ 

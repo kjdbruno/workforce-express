@@ -118,8 +118,8 @@ html
             tr
                 td(style="width: 25%;").label Position:
                 td(style="width: 25%;")= position
-                td(style="width: 25%;").label Salary:
-                td(style="width: 25%;")= salary
+                td(style="width: 25%;").label Salary Range:
+                td(style="width: 25%;")= salaryRange
             tr
                 td(style="width: 25%;").label Department:
                 td(style="width: 25%;")= department
@@ -132,7 +132,7 @@ html
                 td(style="width: 25%;")= employment
             tr
                 td(style="width: 25%;").label Work Schedule / Hours:
-                td(style="width: 25%;")= shiftTime
+                td(style="width: 25%;")= scheduleTime
                 td(style="width: 25%;").label Required No. of Employees:
                 td(style="width: 25%;") 1
             tr
@@ -171,7 +171,7 @@ html
                         div 
                             span #{index + 1}
                             span &nbsp;
-                            span #{q.name}
+                            span #{q}
         h3 3. Brief Job Description
         table(style="font-size: 10px;")
             tr
@@ -182,13 +182,13 @@ html
             tr
                 each s, index in signatories
                     td(style="width: 25%;")
-                        div #{s.signatoryName}
+                        div(style='text-transform: capitalize;') #{s.description}
                         div(style="margin-top: 25px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 75%; text-align: center;") 
                             if s.isSigned
                                 img(style='width: 100px; height: auto; position: relative; margin-bottom: 5px;' src=s.signature)
                             else
                                 div(style="height: 50px; line-height: 50px; font-style: italic; color: #666;") Unsigned
-                            div(style="font-size: 12px; text-transform: uppercase; font-weight: bold;") #{s.userName}
+                            div(style="font-size: 12px; text-transform: uppercase; font-weight: bold;") #{s.approver}
                         div(style="width: 75%; text-align: center; font-size: 11px;") #{s.position}
                         div(style="width: 75%; text-align: center; font-size: 10px;") #{s.date}
         footer( style="position: fixed; bottom: 0; left: 0; right: 0;width: 100%; text-align: center; font-size: 10px; color: #333; padding-top: 5px; background-color: #fff; line-height: 1.3;")

@@ -1,7 +1,7 @@
 const { Op } = require("sequelize");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { User, Role, Profile } = require("../models");
+const { User } = require("../models");
 
 exports.GetAll = async (req, res) => {
 
@@ -11,18 +11,6 @@ exports.GetAll = async (req, res) => {
 
     try {
         const { count, rows } = await User.findAndCountAll({
-            include: [
-                {
-                    model: Profile,
-                    as: 'profile',
-                    where: {
-                        isEmployee: true
-                    },
-                    attributes: [
-                        "firstname", "middlename", "lastname", "suffix"
-                    ]
-                }
-            ],
             limit: Limit,
             offset: Offset,
             order: [['createdAt', 'DESC']]

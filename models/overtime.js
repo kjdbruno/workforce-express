@@ -12,12 +12,6 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      // Association with Overtime Request
-      Overtime.hasMany(models.OvertimeRequest, {
-        foreignKey: 'overtimeId',
-        as: 'requests'
-      });
-
       // Association with ProfileOvertime
       Overtime.hasMany(models.ProfileOvertime, { 
         foreignKey: 'overtimeId', 
@@ -36,11 +30,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: false
     },
-    timeStart: {
+    time_start: {
       type: DataTypes.TIME,
       allowNull: false
     },
-    timeEnd: {
+    time_end: {
       type: DataTypes.TIME,
       allowNull: false
     },
@@ -52,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),
       defaultValue: 'Pending'
     },
-    isActive: {
+    is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
     },

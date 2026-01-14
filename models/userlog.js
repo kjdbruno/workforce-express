@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
 
       // Association with User 
       UserLog.belongsTo(models.User, {
-        foreignKey: 'userId',
+        foreignKey: 'user_id',
         as: 'User' 
       });
 
@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    userId: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       unique: true,
@@ -33,11 +33,11 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    socketId: {
+    socket_id: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    isOnline: {
+    is_online: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },

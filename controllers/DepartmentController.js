@@ -180,7 +180,7 @@ exports.Disable = async (req, res) => {
         }
 
         await department.update({ 
-            isActive: false
+            is_active: false
         });
 
         res.status(200).json({
@@ -220,7 +220,7 @@ exports.Enable = async (req, res) => {
         }
 
         await department.update({ 
-            isActive: true 
+            is_active: true 
         });
 
         res.status(200).json({
