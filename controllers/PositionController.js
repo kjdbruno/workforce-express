@@ -46,6 +46,7 @@ exports.Create = async (req, res) => {
     const { 
         name,
         amount,
+        salarytype,
         description,
         qualifications
     } = req.body;
@@ -73,6 +74,7 @@ exports.Create = async (req, res) => {
         const position = await Position.create({
             name,
             amount,
+            salary_type : salarytype,
             description,
             qualification: qualifications
         });
@@ -100,6 +102,7 @@ exports.Update = async (req, res) => {
     const { 
         name,
         amount,
+        salarytype,
         description,
         qualifications
     } = req.body;
@@ -144,6 +147,7 @@ exports.Update = async (req, res) => {
         await position.update({ 
             name, 
             amount,
+            salary_type: salarytype,
             description,
             qualification: qualifications
         });

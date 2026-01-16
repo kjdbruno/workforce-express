@@ -41,6 +41,20 @@ exports.GetAll = async (req, res) => {
     }
 };
 
+function formatTime(timeStr) {
+    const [time, modifier] = timeStr.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+
+    if (modifier === "PM" && hours !== 12) {
+        hours += 12;
+    } else if (modifier === "AM" && hours === 12) {
+        hours = 0;
+    }
+
+    // Return as "HH:mm:ss"
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
+}
+
 exports.Create = async (req, res) => {
 
     const { 
@@ -53,9 +67,7 @@ exports.Create = async (req, res) => {
 
         const exist = await Schedule.findOne({
             where: { 
-                name,
-                time_start: timeStart,
-                time_end: timeEnd
+                name
             }
         });
 
@@ -73,8 +85,8 @@ exports.Create = async (req, res) => {
 
         const schedule = await Schedule.create({
             name,
-            time_start: timeStart,
-            time_end: timeEnd
+            time_start: formatTime(timeStart),
+            time_end: formatTime(timeEnd)
         });
 
         res.status(201).json({

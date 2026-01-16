@@ -38,6 +38,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false
     },
+    salary_type: {
+      type: DataTypes.ENUM('Monthly', 'Daily', 'Hourly'),
+      allowNull: false
+    },
     description: {
       type: DataTypes.TEXT('long'),
       allowNull: false

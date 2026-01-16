@@ -17,6 +17,10 @@ module.exports = {
         type: Sequelize.DECIMAL(15, 2),
         allowNull: false
       },
+      salary_type: {
+        type: Sequelize.ENUM('Monthly', 'Daily', 'Hourly'),
+        allowNull: false
+      },
       description: {
         type: Sequelize.TEXT('long'),
         allowNull: false

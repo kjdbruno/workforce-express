@@ -1,4 +1,4 @@
-const { Op } = require("sequelize");
+const { Op, Sequelize  } = require("sequelize");
 const pug = require('pug');
 const fs = require('fs');
 const path = require('path');
@@ -22,7 +22,7 @@ exports.GetAll = async (req, res) => {
                     model: Position,
                     as: 'position',
                     attributes: [
-                        'name'
+                        'name', 'salary_type'
                     ]
                 }
             ],
@@ -66,7 +66,18 @@ exports.GetPosition = async (req, res) => {
                 ['id', 'value'],
                 ['name', "label"],
                 'description',
-                'qualification'
+                'qualification',
+                'salary_type',
+                [
+                    Sequelize.literal(`
+                        CONCAT(
+                        FORMAT(amount * 0.9, 2),
+                        ' - ',
+                        FORMAT(amount * 1.1, 2)
+                        )
+                    `),
+                    'amount'
+                ]
             ],
             order: [['id', 'ASC']]
         });

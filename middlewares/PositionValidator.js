@@ -9,6 +9,9 @@ exports.ValidateForm = () => [
     body("amount")
         .trim()
         .notEmpty().withMessage("amount is required"),
+    body("salarytype")
+        .trim()
+        .notEmpty().withMessage("salary type is required"),
     body("description")
         .trim()
         .notEmpty().withMessage("description is required"),
