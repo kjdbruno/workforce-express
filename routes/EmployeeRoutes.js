@@ -17,11 +17,32 @@ const {
     GetSchool,
     GetCourse,
     GetPayrollGroup,
-    Create, 
+    Create,
+    GetServiceRecord,
+    GetEducation,
+    GetTraining,
+    GetExperience,
+    GetDependent,
+    GetDocument,
+    GetLeaveBalance,
+    GetLeaveType,
+    GetLeaveApplication,
+    GetEmployeeRecord,
+    GetAttendance, 
 } = require('../controllers/EmployeeController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
 
+router.get('/information/:id', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetEmployeeRecord);
+router.get('/service', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetServiceRecord);
+router.get('/education', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetEducation);
+router.get('/training', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetTraining);
+router.get('/experience', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetExperience);
+router.get('/dependent', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetDependent);
+router.get('/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetDocument);
+router.get('/leave/balance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveBalance);
+router.get('/leave/application', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveApplication);
+router.get('/attendance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAttendance);
 /**
  * OPTIONS
  */
@@ -33,6 +54,7 @@ router.get('/option/schedule', VerifyToken, AuthorizeRoles('SuperAdmin', 'Superv
 router.get('/option/school', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetSchool);
 router.get('/option/course', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetCourse);
 router.get('/option/payrollgroup', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPayrollGroup);
+router.get('/option/leavetype', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveType);
 
 
 

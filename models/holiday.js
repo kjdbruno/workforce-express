@@ -11,12 +11,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
-      // Association with PremiumPay
-      Holiday.belongsTo(models.PremiumPay, {
-        foreignKey: 'payId',
-        as: 'premiumPay'
-      });
     }
   }
   Holiday.init({
@@ -33,16 +27,6 @@ module.exports = (sequelize, DataTypes) => {
     date: {
       type: DataTypes.DATEONLY,
       allowNull: false
-    },
-    payId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'PremiumPays',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
     },
     isActive: {
       type: DataTypes.BOOLEAN,

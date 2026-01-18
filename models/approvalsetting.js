@@ -21,6 +21,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'setting_id',
         as: 'approvals'
       });
+
+      // Association with User -> ownerId
+      ApprovalSetting.belongsTo(models.User, {
+        foreignKey: 'owner_id',
+        as: 'owner'
+      });
     }
   }
   ApprovalSetting.init({
@@ -33,6 +39,16 @@ module.exports = (sequelize, DataTypes) => {
     type: {
       type: DataTypes.ENUM('Vacancy', 'Leave', 'TimeCard', 'Overtime'),
       allowNull: false
+    },
+    owner_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     approver_id: {
       type: DataTypes.INTEGER,

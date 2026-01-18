@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      EmployeeDependent.belongsTo(models.Employee, {
+        foreignKey: 'employee_id',
+        as: 'employee'
+      });
     }
   }
   EmployeeDependent.init({
@@ -53,6 +57,22 @@ module.exports = (sequelize, DataTypes) => {
     birthdate: {
       type: DataTypes.DATEONLY,
       allowNull: false
+    },
+    contact_number: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    address: {
+      type: DataTypes.TEXT('long'),
+      allowNull: false
+    },
+    is_emergency: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     is_active: {
       type: DataTypes.BOOLEAN,

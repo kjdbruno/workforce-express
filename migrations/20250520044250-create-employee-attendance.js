@@ -19,13 +19,17 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      date: {
+      date_start: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      time: {
-        type: Sequelize.TIME,
+      date_end: {
+        type: Sequelize.DATEONLY,
         allowNull: false
+      },
+      status: {
+        type: Sequelize.ENUM('Pending', 'Approved'),
+        defaultValue: 'Pending'
       },
       createdAt: {
         allowNull: false,

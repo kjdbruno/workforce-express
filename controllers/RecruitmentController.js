@@ -64,30 +64,47 @@ exports.GetPosition = async (req, res) => {
             attributes: [
                 'id',
                 ['id', 'value'],
-                ['name', "label"],
+                ['name', 'label'],
                 'description',
                 'qualification',
                 'salary_type',
+                'status',
+                // Dynamic salary range based on salary_type
                 [
                     Sequelize.literal(`
-                        CONCAT(
-                        FORMAT(amount * 0.9, 2),
-                        ' - ',
-                        FORMAT(amount * 1.1, 2)
-                        )
+                        CASE salary_type
+                            WHEN 'Monthly' THEN CONCAT(
+                                FORMAT(monthly_salary * 0.9, 2),
+                                ' - ',
+                                FORMAT(monthly_salary * 1.1, 2)
+                            )
+                            WHEN 'Daily' THEN CONCAT(
+                                FORMAT(daily_salary * 0.9, 2),
+                                ' - ',
+                                FORMAT(daily_salary * 1.1, 2)
+                            )
+                            WHEN 'Hourly' THEN CONCAT(
+                                FORMAT(hourly_salary * 0.9, 2),
+                                ' - ',
+                                FORMAT(hourly_salary * 1.1, 2)
+                            )
+                            ELSE NULL
+                        END
                     `),
                     'amount'
                 ]
             ],
             order: [['id', 'ASC']]
         });
+
         return res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
+        res.status(500).json({
+            error: error.message
         });
     }
 };
+
 exports.GetCompany = async (req, res) => {
     try {
         const data = await Company.findAll({
@@ -205,6 +222,9 @@ exports.GetDetails = async (req, res) => {
                 {
                     model: ApprovalSetting,
                     as: 'setting',
+                    where: {
+                        type: 'Vacancy'
+                    },
                     include: [
                         {
                             model: User,
@@ -234,13 +254,37 @@ exports.GetDetails = async (req, res) => {
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            model: User,
+                            as: 'owner',
+                            attributes: ['id'],
+                            include: [
+                                {
+                                    model: EmployeeAccount,
+                                    as: 'employeeAccount',
+                                    include: [
+                                        {
+                                            model: Employee,
+                                            as: 'employee',
+                                            include: [
+                                                {
+                                                    model: Employment,
+                                                    as: 'employment',
+                                                    include: [
+                                                        {
+                                                            model: Position,
+                                                            as: 'position',
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
-                },
-                {
-                    model: User,
-                    as: 'owner',
-                    attributes: ['id']
                 }
             ],
             order: [
@@ -332,7 +376,8 @@ exports.Create = async (req, res) => {
         // Fetch approval settings by document type
         const signatories = await ApprovalSetting.findAll({
             where: {
-                type: 'Vacancy',        // 👈 use dynamic type
+                owner_id: req.user.id,
+                type: 'Vacancy',
                 is_active: true
             },
             order: [['order', 'ASC']]
@@ -340,21 +385,15 @@ exports.Create = async (req, res) => {
 
         for (const sig of signatories) {
 
-            const isOwner = sig.approver_id === req.user.id;
-            const isFirst = sig.order === 1;
+            const isFirstApprover = sig.order === 1;
 
             await Approval.create({
                 setting_id: sig.id,
                 document_id: vacancy.id,
-                owner_id: req.user.id,
-
-                // ✅ auto-approve ONLY if owner is first approver
-                status: (isOwner && isFirst) ? 'Approved' : 'Pending',
-
-                signed_at: (isOwner && isFirst) ? new Date() : null,
-                remarks: (isOwner && isFirst)
-                    ? 'Auto-approved (owner is first approver)'
-                    : null
+                status: isFirstApprover ? 'Approved' : 'Pending',
+                signed_at: isFirstApprover ? new Date() : null,
+                remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
+                is_active: true
             });
         }
 
@@ -601,6 +640,9 @@ exports.GeneratePDF = async (req, res) => {
                 {
                     model: ApprovalSetting,
                     as: 'setting',
+                    where: {
+                        type: 'Vacancy'
+                    },
                     include: [
                         {
                             model: User,

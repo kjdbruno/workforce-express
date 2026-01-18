@@ -13,7 +13,15 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      amount: {
+      monthly_salary: {
+        type: Sequelize.DECIMAL(15, 2),
+        allowNull: false
+      },
+      daily_salary: {
+        type: Sequelize.DECIMAL(15, 2),
+        allowNull: false
+      },
+      hourly_salary: {
         type: Sequelize.DECIMAL(15, 2),
         allowNull: false
       },

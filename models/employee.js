@@ -49,6 +49,42 @@
           foreignKey: 'employee_id',
           as: 'trainings'
         });
+        // Employee → Dependents
+        Employee.hasMany(models.EmployeeDependent, {
+          foreignKey: 'employee_id',
+          as: 'dependents'
+        });
+        // Employee → Daily Logs
+        Employee.hasMany(models.DailyTimeRecord, {
+          foreignKey: 'employee_id',
+          as: 'logs'
+        });
+        // Employee → Attendance (per cutoff / payroll period)
+        Employee.hasMany(models.EmployeeAttendance, {
+          foreignKey: 'employee_id',
+          as: 'attendances'
+        });
+        // Employee → Leave Applications
+        Employee.hasMany(models.EmployeeLeaveApplication, {
+          foreignKey: 'employee_id',
+          as: 'leaveApplications'
+        });
+        // Employee → Leave Balances
+        Employee.hasMany(models.EmployeeLeaveBalance, {
+          foreignKey: 'employee_id',
+          as: 'leaveBalances'
+        });
+        // Employee → Photo
+        Employee.hasOne(models.EmployeePhoto, {
+          foreignKey: 'employee_id',
+          as: 'photo'
+        });
+        // Employee → Overtime Applications
+        Employee.hasMany(models.EmployeeOvertimeApplication, {
+          foreignKey: 'employee_id',
+          as: 'overtimeApplications'
+        });
+
       }
     }
     Employee.init({

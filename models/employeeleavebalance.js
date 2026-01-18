@@ -11,6 +11,17 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // Leave Balance → Employee
+      EmployeeLeaveBalance.belongsTo(models.Employee, {
+        foreignKey: 'employee_id',
+        as: 'employee'
+      });
+
+      // Leave Balance → Leave Type
+      EmployeeLeaveBalance.belongsTo(models.LeaveType, {
+        foreignKey: 'leave_type_id',
+        as: 'leaveType'
+      });
     }
   }
   EmployeeLeaveBalance.init({

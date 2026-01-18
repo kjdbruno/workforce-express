@@ -1,14 +1,19 @@
 const { body, validationResult } = require("express-validator");
 
 exports.ValidateForm = () => [
-    body("userId")
+    body("type")
         .trim()
-        .notEmpty().withMessage("User/Employee is required"),
-    body("typeId")
+        .notEmpty().withMessage("document type is required"),
+    body("approverId")
         .trim()
-        .notEmpty().withMessage("signatory type is required"),
+        .notEmpty().withMessage("approver is required"),
+    body("description")
+        .trim()
+        .notEmpty().withMessage("description is required"),
+    body("order")
+        .trim()
+        .notEmpty().withMessage("order is required"),
     (req, res, next) => {
-        console.log("REQ BODY:", req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });

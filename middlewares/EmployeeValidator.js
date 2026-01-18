@@ -53,9 +53,6 @@ exports.ValidateForm = () => [
     body("dateHired")
         .trim()
         .notEmpty().withMessage("date Hired is required"),
-    body("salarytype")
-        .trim()
-        .notEmpty().withMessage("salary type is required"),
     body("salarygroup")
         .trim()
         .notEmpty().withMessage("salar ygroup is required"),

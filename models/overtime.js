@@ -11,11 +11,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
-      // Association with ProfileOvertime
-      Overtime.hasMany(models.ProfileOvertime, { 
-        foreignKey: 'overtimeId', 
-        as: 'profiles' 
+      // An overtime can have multiple employee applications
+      Overtime.hasMany(models.EmployeeOvertimeApplication, {
+        foreignKey: 'overtime_id',
+        as: 'applications'
       });
     }
   }

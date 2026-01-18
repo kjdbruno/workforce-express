@@ -7,7 +7,7 @@ const moment = require('moment');
 
 const pug = require('pug');
 const puppeteer = require('puppeteer');
-const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, PayrollGroup, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument } = require("../models");
+const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, PayrollGroup, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance } = require("../models");
 
 exports.GetAll = async (req, res) => {
 
@@ -114,18 +114,43 @@ exports.GetPosition = async (req, res) => {
             attributes: [
                 'id',
                 ['id', 'value'],
-                ['name', "label"],
-                'amount',
+                ['name', 'label'],
                 'description',
                 'qualification',
-                'status'
+                'salary_type',
+                'status',
+                // Dynamic salary range based on salary_type
+                [
+                    Sequelize.literal(`
+                        CASE salary_type
+                            WHEN 'Monthly' THEN CONCAT(
+                                FORMAT(monthly_salary * 0.9, 2),
+                                ' - ',
+                                FORMAT(monthly_salary * 1.1, 2)
+                            )
+                            WHEN 'Daily' THEN CONCAT(
+                                FORMAT(daily_salary * 0.9, 2),
+                                ' - ',
+                                FORMAT(daily_salary * 1.1, 2)
+                            )
+                            WHEN 'Hourly' THEN CONCAT(
+                                FORMAT(hourly_salary * 0.9, 2),
+                                ' - ',
+                                FORMAT(hourly_salary * 1.1, 2)
+                            )
+                            ELSE NULL
+                        END
+                    `),
+                    'amount'
+                ]
             ],
             order: [['id', 'ASC']]
         });
+
         return res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
+        res.status(500).json({
+            error: error.message
         });
     }
 };
@@ -236,6 +261,49 @@ exports.GetPayrollGroup = async (req, res) => {
         });
     }
 };
+exports.GetLeaveType = async (req, res) => {
+    try {
+        const data = await LeaveType.findAll({
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+const GetEmployee = async (id) => {
+    return await Employee.findOne({
+        include: [
+            {
+                model: Employment,
+                as: 'employment',
+                include: [
+                    {
+                        model: Position,
+                        as: 'position'
+                    }
+                ]
+            }
+        ],
+        where: {
+            id
+        },
+    });
+}
+
+const GetSalaryAmount = (position) => {
+    switch (position.salary_type) {
+        case 'Monthly':
+            return position.monthly_salary;
+        case 'Daily':
+            return position.daily_salary;
+        case 'Hourly':
+            return position.hourly_salary;
+        default:
+            throw new Error(`Invalid salary type: ${position.salary_type}`);
+    }
+};
 
 exports.Create = async (req, res) => {
 
@@ -255,7 +323,6 @@ exports.Create = async (req, res) => {
         contactNo,
         employeeNo,
         dateHired,
-        salarytype,
         salarygroup,
         payrollgroupId,
         taxstatus,
@@ -318,10 +385,11 @@ exports.Create = async (req, res) => {
         await position.update({
             status: 'Filled'
         })
+        const amount = GetSalaryAmount(position);
         const salary = await SalarySchedule.create({
             employee_id: employee.id,
-            amount: position.amount,
-            salary_type: salarytype,
+            amount: amount,
+            salary_type: position.salary_type,
             salary_group: salarygroup,
             effective_date: dateHired
         });
@@ -391,8 +459,11 @@ exports.Create = async (req, res) => {
                 );
         }
 
+        const data = await GetEmployee(employee.id);
+
         res.status(201).json({
-            message: "Record Saved!"
+            message: "Record Saved!",
+            employee: data
         });
 
     } catch (error) {
@@ -403,3 +474,366 @@ exports.Create = async (req, res) => {
 
     }
 };
+
+/**
+ * Employee
+ */
+exports.GetEmployeeRecord = async (req, res) => {
+
+    const id = parseInt(req.params.id);
+
+    try {
+
+        const rows = await Employee.findOne({
+            where: {
+                id
+            },
+            include: [
+                {
+                    model: Employment,
+                    as: 'employment',
+                    include: [
+                        {
+                            model: Position,
+                            as: 'position'
+                        }
+                    ]
+                },
+                {
+                    model: EmployeePhoto,
+                    as: 'photo',
+                    attributes: ['filename', 'avatar']
+                }
+            ]
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Employee
+ */
+
+/**
+ * Service Record
+ */
+exports.GetServiceRecord = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await SalarySchedule.findAll({
+            where: {
+                employee_id: id
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+/**
+ * Service Record
+ */
+
+/**
+ * Education
+ */
+exports.GetEducation = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeeEducation.findAll({
+            where: {
+                employee_id: id,
+                is_active: true
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Eduaction
+ */
+
+/**
+ * Training
+ */
+exports.GetTraining = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeeTraining.findAll({
+            where: {
+                employee_id: id,
+                is_active: true
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Training
+ */
+
+/**
+ * Experience
+ */
+exports.GetExperience = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeeExperience.findAll({
+            where: {
+                employee_id: id,
+                is_active: true
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Experience
+ */
+
+/**
+ * Dependent
+ */
+exports.GetDependent = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeeDependent.findAll({
+            where: {
+                employee_id: id,
+                is_active: true
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Dependent
+ */
+
+/**
+ * Document
+ */
+exports.GetDocument = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeeDocument.findAll({
+            where: {
+                employee_id: id,
+                is_active: true
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Document
+ */
+
+/**
+ * Attendance
+ */
+exports.GetAttendance = async (req, res) => {
+
+    const { id, year, month } = req.query;
+
+    const m = parseInt(month);
+    const y = parseInt(year);
+
+    const startDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").startOf("month");
+    const endDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").endOf("month");
+
+    const startDate = startDateMoment.format("YYYY-MM-DD");
+    const endDate = endDateMoment.format("YYYY-MM-DD");
+
+    try {
+
+        const rows = await EmployeeAttendance.findAll({
+            where: {
+                employee_id: id,
+                [Op.and]: [
+                    { date_start: { [Op.lte]: endDate } }, // attendance starts before or on endDate
+                    { date_end: { [Op.gte]: startDate } }  // attendance ends after or on startDate
+                ]
+            }
+        });
+
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Attendance
+ */
+
+/**
+ * Leave
+ */
+exports.GetLeaveBalance = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeeLeaveBalance.findAll({
+            include: [
+                {
+                    model: LeaveType,
+                    as: 'leaveType'
+                }
+            ],
+            where: {
+                employee_id: id,
+                is_active: true
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.GetLeaveApplication = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    const month = req.query.month;
+    const year = req.query.year;
+
+    const startDate = moment(`${year}-${month}-01`).startOf('month').format('YYYY-MM-DD');
+    const endDate = moment(`${year}-${month}-01`).endOf('month').format('YYYY-MM-DD');
+
+    try {
+
+        const rows = await EmployeeLeaveApplication.findAll({
+            include: [
+                {
+                    model: LeaveType,
+                    as: 'leaveType'
+                }
+            ],
+            where: {
+                employee_id: id,
+                [Op.and]: [
+                    { date_from: { [Op.lte]: endDate } }, // leave starts before or on endOfMonth
+                    { date_to: { [Op.gte]: startDate } }  // leave ends after or on startOfMonth
+                ]
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Leave
+ */

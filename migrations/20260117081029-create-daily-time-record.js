@@ -2,42 +2,40 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Approvals', {
+    await queryInterface.createTable('DailyTimeRecords', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      setting_id: {
+      attendance_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'EmployeeAttendances',
+          key: 'id'
+        },
+        onUpdate: 'SET NULL',
+        onDelete: 'SET NULL'
+      },
+      employee_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'ApprovalSettings',
+          model: 'Employees',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      document_id: {
-        type: Sequelize.INTEGER,
+      date: {
+        type: Sequelize.DATEONLY,
         allowNull: false
       },
-      status: {
-        type: Sequelize.ENUM('Pending', 'Approved', 'Rejected'),
-        defaultValue: 'Pending'
-      },
-      remarks: {
-        type: Sequelize.TEXT('long'),
-        allowNull: true
-      },
-      signed_at: {
-        type: Sequelize.DATE,
-        allowNull: true
-      },
-      is_active: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true
+      time: {
+        type: Sequelize.TIME,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,
@@ -50,6 +48,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Approvals');
+    await queryInterface.dropTable('DailyTimeRecords');
   }
 };

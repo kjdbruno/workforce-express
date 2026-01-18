@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
       });
 
       // Asociaton with Approval -> ownerId
-      User.hasMany(models.Approval, {
+      User.hasMany(models.ApprovalSetting, {
         foreignKey: 'owner_id',
         as: 'approvals'
       });

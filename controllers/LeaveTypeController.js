@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { Position, PositionQualification, SalaryGrade, Salary } = require('../models');
+const { LeaveType } = require('../models');
 
 exports.GetAll = async (req, res) => {
 
@@ -16,7 +16,7 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await Position.findAndCountAll({
+        const { count, rows } = await LeaveType.findAndCountAll({
             where,
             limit: Limit,
             offset: Offset,
@@ -44,18 +44,18 @@ exports.GetAll = async (req, res) => {
 exports.Create = async (req, res) => {
 
     const { 
+        code,
         name,
-        monthly,
-        daily,
-        hourly,
-        salarytype,
-        description,
-        qualifications
+        credit,
+        loatype,
+        annuallimit,
+        cancarryover,
+        affectspayroll
     } = req.body;
 
     try {
 
-        const exist = await Position.findOne({
+        const exist = await LeaveType.findOne({
             where: { 
                 name 
             }
@@ -73,19 +73,19 @@ exports.Create = async (req, res) => {
             });
         }
 
-        const position = await Position.create({
+        const leavetype = await LeaveType.create({
+            code,
             name,
-            monthly_salary: monthly,
-            daily_salary: daily,
-            hourly_salary: hourly,
-            salary_type : salarytype,
-            description,
-            qualification: qualifications
+            credit,
+            loa_type: loatype,
+            annual_limit: annuallimit,
+            can_carry_over: cancarryover,
+            affects_payroll: affectspayroll
         });
 
         res.status(201).json({
             message: "Record Saved!", 
-            data: position
+            leavetype: leavetype
         });
 
     } catch (error) {
@@ -104,65 +104,62 @@ exports.Update = async (req, res) => {
     } = req.params;
 
     const { 
+        code,
         name,
-        monthly,
-        daily,
-        hourly,
-        salarytype,
-        description,
-        qualifications
+        credit,
+        loatype,
+        annuallimit,
+        cancarryover,
+        affectspayroll
     } = req.body;
 
     try {
-        const position = await Position.findByPk(id);
 
-        if (!position) {
-            return res.status(404).json({
-                errors: [
-                    {
-                        type: "field",
-                        value: name,
-                        msg: "Record not found!",
-                        path: "name",
-                        location: "body",
-                    },
-                ],
+        const leavetype = await LeaveType.findByPk(id);
+        
+        if (!leavetype) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: name,
+                    msg: "Record not found!",
+                    path: "name",
+                    location: "body",
+                }],
             });
         }
-    
-        const exist = await Position.findOne({
+
+        const exist = await LeaveType.findOne({
             where: {
                 [Op.or]: [{ name }],
-                id: { [Op.ne]: id },
+                id: { [Op.ne]: id }
             },
         });
         if (exist) {
-            return res.status(400).json({
-                errors: [
-                    {
-                        type: "manual",
-                        value: "",
-                        msg: "Record already in use!",
-                        path: "name",
-                        location: "body",
-                    },
-                ],
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: name,
+                    msg: "Record already in use!",
+                    path: "name",
+                    location: "body",
+                }],
             });
         }
-    
-        await position.update({ 
-            name, 
-            monthly_salary: monthly,
-            daily_salary: daily,
-            hourly_salary: hourly,
-            salary_type: salarytype,
-            description,
-            qualification: qualifications
+
+        await leavetype.update({ 
+            code,
+            name,
+            credit,
+            loa_type: loatype,
+            annual_limit: annuallimit,
+            can_carry_over: cancarryover,
+            affects_payroll: affectspayroll
         });
 
-        return res.status(200).json({
-            message: "Record Modified!",
-            data: position,
+        res.status(201).json({
+            message: "Record Modified!", 
+            leavetype: leavetype
         });
 
     } catch (error) {
@@ -182,9 +179,9 @@ exports.Disable = async (req, res) => {
   
     try {
 
-        const position = await Position.findByPk(id);
+        const leavetype = await LeaveType.findByPk(id);
 
-        if (!position) {
+        if (!leavetype) {
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -196,13 +193,13 @@ exports.Disable = async (req, res) => {
             });
         }
 
-        await position.update({ 
+        await leavetype.update({ 
             is_active: false
         });
 
         res.status(200).json({
             message: "Record Disabled!", 
-            data: position 
+            leavetype: leavetype 
         });
 
     } catch (error) {
@@ -222,9 +219,9 @@ exports.Enable = async (req, res) => {
   
     try {
 
-        const position = await Position.findByPk(id);
+        const leavetype = await LeaveType.findByPk(id);
 
-        if (!position) {
+        if (!leavetype) {
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -236,13 +233,13 @@ exports.Enable = async (req, res) => {
             });
         }
 
-        await position.update({ 
+        await leavetype.update({ 
             is_active: true 
         });
 
         res.status(200).json({
             message: "Record Enabled!.", 
-            data: position
+            leavetype: leavetype
         });
     } catch (error) {
 

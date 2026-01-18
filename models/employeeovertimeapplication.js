@@ -11,6 +11,17 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // Each overtime application belongs to one employee
+      EmployeeOvertimeApplication.belongsTo(models.Employee, {
+        foreignKey: 'employee_id',
+        as: 'employee'
+      });
+
+      // Each overtime application belongs to one overtime schedule
+      EmployeeOvertimeApplication.belongsTo(models.Overtime, {
+        foreignKey: 'overtime_id',
+        as: 'overtime'
+      });
     }
   }
   EmployeeOvertimeApplication.init({

@@ -34,7 +34,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    amount: {
+    monthly_salary: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false
+    },
+    daily_salary: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false
+    },
+    hourly_salary: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false
     },

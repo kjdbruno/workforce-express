@@ -17,12 +17,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'setting_id',
         as: 'setting'
       });
-
-      // Association with User -> ownerId
-      Approval.belongsTo(models.User, {
-        foreignKey: 'owner_id',
-        as: 'owner'
-      });
     }
   }
   Approval.init({
@@ -45,16 +39,6 @@ module.exports = (sequelize, DataTypes) => {
     document_id: {
       type: DataTypes.INTEGER,
       allowNull: false
-    },
-    owner_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Users',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
     },
     status: {
       type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),

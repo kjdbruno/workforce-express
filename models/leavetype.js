@@ -11,6 +11,17 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // Leave Type → Leave Applications
+      LeaveType.hasMany(models.EmployeeLeaveApplication, {
+        foreignKey: 'leave_type_id',
+        as: 'applications'
+      });
+
+      // Leave Type → Leave Balances
+      LeaveType.hasMany(models.EmployeeLeaveBalance, {
+        foreignKey: 'leave_type_id',
+        as: 'balances'
+      });
     }
   }
   LeaveType.init({
@@ -37,10 +48,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('Paid', 'Unpaid'),
       allowNull: false
     },
-    annual_limit: {
-      type: DataTypes.FLOAT,
-      allowNull: false
-    },
     can_carry_over: {
       type: DataTypes.BOOLEAN,
       allowNull: false
@@ -48,6 +55,10 @@ module.exports = (sequelize, DataTypes) => {
     affects_payroll: {
       type: DataTypes.BOOLEAN,
       allowNull: false
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
     },
   }, {
     sequelize,

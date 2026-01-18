@@ -43,6 +43,22 @@ module.exports = {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
+      contact_number: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      address: {
+        type: Sequelize.TEXT('long'),
+        allowNull: false
+      },
+      is_emergency: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
       is_active: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

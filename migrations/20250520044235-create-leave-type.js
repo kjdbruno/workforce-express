@@ -26,10 +26,6 @@ module.exports = {
         type: Sequelize.ENUM('Paid', 'Unpaid'),
         allowNull: false
       },
-      annual_limit: {
-        type: Sequelize.FLOAT,
-        allowNull: false
-      },
       can_carry_over: {
         type: Sequelize.BOOLEAN,
         allowNull: false

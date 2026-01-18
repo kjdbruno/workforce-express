@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class EmployeeAttendance extends Model {
+  class DailyTimeRecord extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,25 +11,34 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // EmployeeAttendance → Employee
-      EmployeeAttendance.belongsTo(models.Employee, {
+      // DailyTimeRecord → EmployeeAttendance
+      DailyTimeRecord.belongsTo(models.EmployeeAttendance, {
+        foreignKey: 'attendance_id',
+        as: 'attendance'
+      });
+      // DailyLog → Employee
+      DailyTimeRecord.belongsTo(models.Employee, {
         foreignKey: 'employee_id',
         as: 'employee'
       });
-
-      // EmployeeAttendance → DailyTimeRecords
-      EmployeeAttendance.hasMany(models.DailyTimeRecord, {
-        foreignKey: 'attendance_id',
-        as: 'logs'
-      });
     }
   }
-  EmployeeAttendance.init({
+  DailyTimeRecord.init({
     id: {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
+    },
+    attendance_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'EmployeeAttendances',
+        key: 'id'
+      },
+      onUpdate: 'SET NULL',
+      onDelete: 'SET NULL'
     },
     employee_id: {
       type: DataTypes.INTEGER,
@@ -41,23 +50,19 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    date_start: {
+    date: {
       type: DataTypes.DATEONLY,
       allowNull: false
     },
-    date_end: {
-      type: DataTypes.DATEONLY,
+    time: {
+      type: DataTypes.TIME,
       allowNull: false
-    },
-    status: {
-      type: DataTypes.ENUM('Pending', 'Approved'),
-      defaultValue: 'Pending'
     },
   }, {
     sequelize,
-    modelName: 'EmployeeAttendance',
-    tableName: 'EmployeeAttendances',
+    modelName: 'DailyTimeRecord',
+    tableName: 'DailyTimeRecords',
     timestamps: true
   });
-  return EmployeeAttendance;
+  return DailyTimeRecord;
 };

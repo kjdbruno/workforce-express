@@ -86,26 +86,26 @@ html
         table.leaves
             tbody
                 tr
-                    td(style="width: 50%;")
+                    td(style="width: 50%; text-transform: capitalize;")
                         span(style="font-weight: bold; margin-bottom: 8px;") Employee Name:&nbsp;
                         span #{name}
-                    td(style="width: 50%;")
+                    td(style="width: 50%; text-transform: capitalize;")
                         span(style="font-weight: bold; margin-bottom: 8px;") Date Filed:&nbsp;
                         span #{dateFiled}
                 tr
-                    td(style="width: 50%;") 
+                    td(style="width: 50%; text-transform: capitalize;") 
                         span(style="font-weight: bold; margin-bottom: 8px;") Company:&nbsp;
                         span #{company}
-                    td(style="width: 50%;")
+                    td(style="width: 50%; text-transform: capitalize;")
                         span(style="font-weight: bold; margin-bottom: 8px;") Department/Position:&nbsp;
                         span #{departmentPosition}
 
                 tr
-                    td(colspan="2" style="width: 100%;")
+                    td(colspan="2" style="width: 100%; text-transform: capitalize;")
                         span(style="font-weight: bold; margin-bottom: 8px;") Contact Number:&nbsp;
                         span #{contactNo}
                 tr 
-                    td(style="width: 50%;")
+                    td(style="width: 50%; text-transform: capitalize;")
                         each lt in leaves
                             div(style="display:block; margin-bottom:4px;")
                                 input(type="checkbox" name="leaveTypes[]" value=lt.id checked=lt.active)
@@ -119,16 +119,16 @@ html
                         div 
                             span(style="font-weight: bold;") Status:&nbsp;
                             span #{status}
-                    td(style="padding: 0px 20px 10px 20px; width: 50%;")
+                    td(style="padding: 0px 30px 10px 30px; width: 50%;")
                         each s, index in signatories
                             div(style="text-align: center; margin-top: 15px;")
-                                div #{s.signatoryName}
+                                div(style='text-transform: capitalize; font-size: 10px;') #{s.description}
                                 div(style="margin-top: 25px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 100%; text-align: center;") 
                                     if s.isSigned
                                         img(style='width: 100px; height: auto; position: relative; margin-bottom: 5px;' src=s.signature)
                                     else
                                         div(style="height: 50px; line-height: 50px; font-style: italic; color: #666;") Unsigned
-                                    div(style="font-size: 12px; text-transform: uppercase; font-weight: bold;") #{s.userName}
+                                    div(style="font-size: 12px; text-transform: uppercase; font-weight: bold;") #{s.approver}
                                 div(style="width: 100%; text-align: center; font-size: 11px;") #{s.position}
                                 div(style="width: 100%; text-align: center; font-size: 10px;") #{s.date}
                 tr 
@@ -149,6 +149,10 @@ html
                     td(style="border:1px solid #000; font-weight:bold; text-align:left;") Leave Type
                     each lb in balance
                         td(style="border:1px solid #000;") #{lb.leaveType}
+                tr
+                    td(style="border:1px solid #000; font-weight:bold; text-align:left;") Earned
+                    each lb in balance
+                        td(style="border:1px solid #000;") #{lb.earned}
                 tr
                     td(style="border:1px solid #000; font-weight:bold; text-align:left;") Used
                     each lb in balance

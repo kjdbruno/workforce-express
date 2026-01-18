@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { Position, PositionQualification, SalaryGrade, Salary } = require('../models');
+const { ApprovalSetting } = require('../models');
 
 exports.GetAll = async (req, res) => {
 
@@ -16,7 +16,7 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await Position.findAndCountAll({
+        const { count, rows } = await ApprovalSetting.findAndCountAll({
             where,
             limit: Limit,
             offset: Offset,

@@ -59,10 +59,12 @@ app.use('/api/position', require('./routes/PositionRoutes'));
 app.use('/api/department', require('./routes/DepartmentRoutes'));
 app.use('/api/company', require('./routes/CompanyRoutes'));
 app.use('/api/schedule', require('./routes/ScheduleRoutes'));
+app.use('/api/signatory', require('./routes/SignatoryRoutes'));
+app.use('/api/leavetype', require('./routes/LeaveTypeRoutes'));
 // app.use('/api/employmentstatus', require('./routes/EmploymentStatusRoutes'));
 // app.use('/api/appointmentstatus', require('./routes/AppointmentmentStatusRoutes'));
 // app.use('/api/taxcode', require('./routes/TaxCodeRoutes'));
-// app.use('/api/leavetype', require('./routes/LeaveTypeRoutes'));
+
 // app.use('/api/governmentagency', require('./routes/GovernmentAgencyRoutes'));
 
 // app.use('/api/school', require('./routes/SchoolRoutes'));
@@ -89,8 +91,8 @@ app.use('/api/application', require('./routes/ApplicationRoutes'));
 app.use('/api/employee', require('./routes/EmployeeRoutes'));
 // app.use('/api/employment', require('./routes/EmploymentRoutes'));
 // app.use('/api/face', require('./routes/FaceRoutes'));
-// app.use('/api/leave', require('./routes/LeaveRoutes'));
-// app.use('/api/dtr', require('./routes/DTRRoutes'));
+app.use('/api/leave', require('./routes/LeaveRoutes'));
+app.use('/api/attendance', require('./routes/AttendanceRoutes'));
 
 app.use(express.static('public'));
 

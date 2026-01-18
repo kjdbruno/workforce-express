@@ -13,6 +13,16 @@ module.exports = {
         type: Sequelize.ENUM('Vacancy', 'Leave', 'TimeCard', 'Overtime'),
         allowNull: false
       },
+      owner_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       approver_id: {
         type: Sequelize.INTEGER,
         allowNull: false,

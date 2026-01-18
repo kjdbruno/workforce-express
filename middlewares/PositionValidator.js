@@ -6,9 +6,15 @@ exports.ValidateForm = () => [
         .notEmpty().withMessage("name is required")
         .isAlpha('en-US', { ignore: " " })
         .withMessage("Invalid name format"),
-    body("amount")
+    body("monthly")
         .trim()
-        .notEmpty().withMessage("amount is required"),
+        .notEmpty().withMessage("monthly is required"),
+    body("daily")
+        .trim()
+        .notEmpty().withMessage("daily is required"),
+    body("hourly")
+        .trim()
+        .notEmpty().withMessage("hourly is required"),
     body("salarytype")
         .trim()
         .notEmpty().withMessage("salary type is required"),

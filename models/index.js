@@ -31,14 +31,25 @@ db.ApplicantExperience = require('./applicantexperience')(sequelize, Sequelize.D
 db.ApplicantTraining = require('./applicanttraining')(sequelize, Sequelize.DataTypes);
 db.ApplicantDocument = require('./applicantdocument')(sequelize, Sequelize.DataTypes);
 
+db.Holiday = require('./holiday')(sequelize, Sequelize.DataTypes);
+db.LeaveType = require('./leavetype')(sequelize, Sequelize.DataTypes);
+db.SalarySchedule = require('./salaryschedule')(sequelize, Sequelize.DataTypes);
+
 db.Employee = require('./employee')(sequelize, Sequelize.DataTypes);
 db.EmployeeAccount = require('./employeeaccount')(sequelize, Sequelize.DataTypes);
 db.Employment = require('./employment')(sequelize, Sequelize.DataTypes);
-db.SalarySchedule = require('./salaryschedule')(sequelize, Sequelize.DataTypes);
+db.EmployeePhoto = require('./employeephoto')(sequelize, Sequelize.DataTypes);
 db.EmployeeEducation = require('./employeeeducation')(sequelize, Sequelize.DataTypes);
 db.EmployeeExperience = require('./employeeexperience')(sequelize, Sequelize.DataTypes);
 db.EmployeeTraining = require('./employeetraining')(sequelize, Sequelize.DataTypes);
 db.EmployeeDocument = require('./employeedocument')(sequelize, Sequelize.DataTypes);
+db.EmployeeDependent = require('./employeedependent')(sequelize, Sequelize.DataTypes);
+db.EmployeeAttendance = require('./employeeattendance')(sequelize, Sequelize.DataTypes);
+db.DailyTimeRecord = require('./dailytimerecord')(sequelize, Sequelize.DataTypes);
+db.EmployeeLeaveApplication = require('./employeeleaveapplication')(sequelize, Sequelize.DataTypes);
+db.EmployeeLeaveBalance = require('./employeeleavebalance')(sequelize, Sequelize.DataTypes);
+db.Overtime = require('./overtime')(sequelize, Sequelize.DataTypes);
+db.EmployeeOvertimeApplication = require('./employeeovertimeapplication')(sequelize, Sequelize.DataTypes);
 
 db.ApprovalSetting = require('./approvalsetting')(sequelize, Sequelize.DataTypes);
 db.Approval = require('./approval')(sequelize, Sequelize.DataTypes);
