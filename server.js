@@ -93,6 +93,7 @@ app.use('/api/employee', require('./routes/EmployeeRoutes'));
 // app.use('/api/face', require('./routes/FaceRoutes'));
 app.use('/api/leave', require('./routes/LeaveRoutes'));
 app.use('/api/attendance', require('./routes/AttendanceRoutes'));
+app.use('/api/salary', require('./routes/SalaryRoutes'));
 
 app.use(express.static('public'));
 

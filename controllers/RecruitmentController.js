@@ -5,7 +5,6 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const moment = require('moment');
 const { Approval, ApprovalSetting, Vacancy, Position, Company, Department, Schedule, SchoolLevel, User, EmployeeAccount, Employee, Employment } = require('../models');
-const { schedule } = require("node-cron");
 
 exports.GetAll = async (req, res) => {
 

@@ -82,27 +82,33 @@ html
         table.services
             thead
                 tr
-                    th(style="width: 10%;") Position
+                    th(style="width: 15%;") Position
                     th(style="width: 10%;") Salary
-                    th(style="width: 10%;") Employment status 
-                    th(style="width: 10%;") appointment status 
+                    th(style="width: 15%;") Employment status 
+                    th(style="width: 10%;") Salary Type
+                    th(style="width: 10%;") Salary Group 
                     th(style="width: 10%;") start date
                     th(style="width: 10%;") end date
+                    th(style="width: 12%;") notes
             tbody
                 each row in services
-                    - const position = row.salary.positions.name;
-                    - const salary = row.rate.monthlyCompensation;
-                    - const employmentStatus = row.employmentStatus.name;
-                    - const appointmentStatus = row.appointmentStatus.name;
-                    - const startDate = moment(row.dateStart).format("MMMM D, YYYY");
-                    - const endDate = row.dateEnd ? moment(row.dateEnd).format("MMMM D, YYYY") : "Present";
+                    - const position = row.position;
+                    - const salary = row.salary;
+                    - const employment_status = row.employment_status;
+                    - const salary_type = row.salary_type;
+                    - const salary_group = row.salary_group;
+                    - const start_date = moment(row.start_date).format("MMMM D, YYYY");
+                    - const end_date = row.end_date ? moment(row.end_date).format("MMMM D, YYYY") : "Present";
+                    - const notes = row.notes;
                     tr 
-                        td #{position}
+                        td(style='text-transform: uppercase;') #{position}
                         td #{new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(salary)}
-                        td #{employmentStatus}
-                        td #{appointmentStatus}
-                        td #{startDate}
-                        td #{endDate}
+                        td #{employment_status}
+                        td(style='text-transform: capitalize;') #{salary_type}
+                        td(style='text-transform: capitalize;') #{salary_group}
+                        td #{start_date}
+                        td #{end_date}
+                        td #{notes}
         footer( style="position: fixed; bottom: 0; left: 0; right: 0;width: 100%; text-align: center; font-size: 10px; color: #333; padding-top: 5px; background-color: #fff; line-height: 1.3;")
             div(style="font-weight: bold; text-transform: uppercase;") Centurion Collection Management, Inc.
             div(style="margin-top: 3px;") © #{new Date().getFullYear()} All rights reserved.

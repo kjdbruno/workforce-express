@@ -519,8 +519,216 @@ exports.GetEmployeeRecord = async (req, res) => {
 
     }
 };
+exports.UpdateEmployee = async (req, res) => {
+
+    const { 
+        id 
+    } = req.params;
+
+    const {
+        firstname,
+        middlename,
+        lastname,
+        suffix,
+        sex,
+        civilstatus,
+        birthdate,
+        birthplace,
+        address,
+        bloodtype,
+        email,
+        contactNo,
+    } = req.body;
+
+    try {
+
+        const employee = await Employee.findByPk(id);
+        if (!employee) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: firstname,
+                    msg: "Record not found!",
+                    path: "firstname",
+                    location: "body",
+                }],
+            });
+        }
+
+        await employee.update({ 
+            first_name: firstname,
+            middle_name: middlename,
+            last_name: lastname,
+            suffix,
+            sex,
+            civil_status: civilstatus,
+            birthdate,
+            birthplace,
+            blood_type: bloodtype,
+            address,
+            email,
+            contact_number: contactNo
+        });
+
+        res.status(201).json({
+            message: "Record Saved!",
+            employee
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
 /**
  * Employee
+ */
+
+/**
+ * Employment
+ */
+exports.UpdateEmployment = async (req, res) => {
+
+    const { 
+        id 
+    } = req.params;
+
+    const {
+        employeeNo,
+        dateHired,
+        companyId,
+        departmentId,
+        scheduleId,
+        employmentstatus,
+        tin,
+        sssNo,
+        philhealthNo,
+        pagibigNo,
+        taxstatus
+    } = req.body;
+
+    try {
+
+        const employee = await Employment.findByPk(id);
+        if (!employee) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: employeeNo,
+                    msg: "Record not found!",
+                    path: "employeeNo",
+                    location: "body",
+                }],
+            });
+        }
+
+        await employee.update({ 
+            employee_no: employeeNo,
+            date_hired: dateHired,
+            company_id: companyId,
+            department_id: departmentId,
+            schedule_id: scheduleId,
+            employment_status: employmentstatus,
+            tin,
+            sss_no: sssNo,
+            philhealth_no: philhealthNo,
+            pagibig_no: pagibigNo,
+            tax_status: taxstatus
+        });
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Employment
+ */
+
+/**
+ * Salary
+ */
+exports.CreateSalary = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        positionid,
+        effectivedate,
+        salarygroup,
+        payrollgroupid,
+        amount
+    } = req.body;
+    
+    try {
+        // 1️⃣ Get current employment
+        const employment = await Employment.findOne({ where: { id } })
+        if (!employment) {
+        return res.status(404).json({ error: 'Employment not found.' })
+        }
+
+        const isNewPosition = positionid && Number(positionid) !== employment.position_id
+
+        // 2️⃣ Update previous active SalarySchedule (only current active)
+        const previousSalary = await SalarySchedule.findOne({
+        where: {
+            employee_id: employment.employee_id,
+            end_date: null, // currently active
+        },
+        order: [['effective_date', 'DESC']]
+        })
+
+        if (previousSalary) {
+        previousSalary.end_date = moment(effectivedate).subtract(1, 'days').format('YYYY-MM-DD')
+        previousSalary.is_active = false
+        await previousSalary.save()
+        }
+
+        // 3️⃣ Update Employment position if it's a new position
+        if (isNewPosition) {
+        employment.position_id = positionid
+        await employment.save()
+        }
+
+        // 4️⃣ Create new SalarySchedule (always)
+        const salarySchedule = await SalarySchedule.create({
+        employee_id: employment.employee_id,
+        amount: Number(String(amount).replace(/,/g, '')), // remove commas
+        salary_type: salarytype,
+        salary_group: salarygroup,
+        effective_date: effectivedate,
+        end_date: null,                // Present
+        notes: notes ?? '',
+        is_active: true
+        })
+
+        return res.status(201).json({
+        message: 'Salary schedule created successfully.',
+        salarySchedule
+        })
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Salary
  */
 
 /**
@@ -550,7 +758,6 @@ exports.GetServiceRecord = async (req, res) => {
 
     }
 };
-
 /**
  * Service Record
  */
@@ -573,6 +780,82 @@ exports.GetEducation = async (req, res) => {
 
         res.json({
             record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.UpdateEducation = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        educations
+    } = req.body;
+    
+    try {
+        const educ = Array.isArray(educations) ? educations : [];
+        
+        const existingRecords = await EmployeeEducation.findAll({
+            where: {
+                employee_id: id, 
+                is_active: true 
+            }
+        });
+        
+        const existingIds = existingRecords.map(e => e.id);
+        const sentIds = educ.filter(e => e.id).map(e => e.id);
+
+        for (const edu of educ) {
+            if (edu.id && existingIds.includes(edu.id)) {
+                // UPDATE if exists
+                await EmployeeEducation.update({
+                    school_level: edu.schoollevel,
+                    school_id: edu.schoolId,
+                    course_id: edu.courseId,
+                    start_date: edu.startDate,
+                    end_date: edu.endDate
+                }, {
+                    where: { 
+                        id: edu.id 
+                    }
+                });
+            } else {
+                // INSERT new record
+                await EmployeeEducation.create({
+                    employee_id: id,
+                    school_level: edu.schoollevel,
+                    school_id: edu.schoolId,
+                    course_id: edu.courseId,
+                    start_date: edu.startDate,
+                    end_date: edu.endDate
+                });
+            }
+        }
+
+        const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
+        if (toDeactivate.length > 0) {
+            await EmployeeEducation.update(
+                { 
+                    is_active: false 
+                },
+                { 
+                    where: { 
+                        id: toDeactivate 
+                    }
+                }
+            );
+        }
+
+        res.status(201).json({
+            message: "Record Saved!"
         });
 
     } catch (error) {
@@ -615,6 +898,82 @@ exports.GetTraining = async (req, res) => {
 
     }
 };
+exports.UpdateTraining = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        trainings
+    } = req.body;
+
+    try {
+        const training = Array.isArray(trainings) ? trainings : [];
+
+        const existingRecords = await EmployeeTraining.findAll({
+            where: { 
+                employee_id: id, 
+                is_active: true 
+            }
+        });
+
+        const existingIds = existingRecords.map(e => e.id);
+        const sentIds = training.filter(e => e.id).map(e => e.id);
+
+        for (const tr of training) {
+            if (tr.id && existingIds.includes(tr.id)) {
+                // UPDATE if exists
+                await EmployeeTraining.update({
+                    title: tr.title,
+                    type: tr.trainingtype,
+                    start_date: tr.startDate,
+                    end_date: tr.endDate,
+                    hour: tr.hour
+                }, {
+                    where: { 
+                        id: tr.id 
+                    }
+                });
+            } else {
+                // INSERT new record
+                await EmployeeTraining.create({
+                    employee_id: id,
+                    title: tr.title,
+                    type: tr.trainingtype,
+                    start_date: tr.startDate,
+                    end_date: tr.endDate,
+                    hour: tr.hour
+                });
+            }
+        }
+
+        const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
+        if (toDeactivate.length > 0) {
+            await EmployeeTraining.update(
+                { 
+                    is_active: false 
+                },
+                { 
+                    where: { 
+                        id: toDeactivate 
+                    } 
+                }
+            );
+        }
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+        
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
 /**
  * Training
  */
@@ -639,6 +998,79 @@ exports.GetExperience = async (req, res) => {
             record: rows
         });
 
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.UpdateExperience = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        experiences
+    } = req.body;
+
+    try {
+        const experience = Array.isArray(experiences) ? experiences : [];
+
+        const existingRecords = await EmployeeExperience.findAll({
+            where: { 
+                employee_id: id, 
+                is_active: true 
+            }
+        });
+        const existingIds = existingRecords.map(e => e.id);
+        const sentIds = experience.filter(e => e.id).map(e => e.id);
+
+        for (const exp of experience) {
+            if (exp.id && existingIds.includes(exp.id)) {
+                // UPDATE if exists
+                await EmployeeExperience.update({
+                    position: exp.position,
+                    start_date: exp.startDate,
+                    end_date: exp.endDate,
+                    description: exp.description
+                }, {
+                    where: { 
+                        id: exp.id 
+                    }
+                });
+            } else {
+                // INSERT new record
+                await EmployeeExperience.create({
+                    employee_id: id,
+                    position: exp.position,
+                    start_date: exp.startDate,
+                    end_date: exp.endDate,
+                    description: exp.description
+                });
+            }
+        }
+
+        const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
+        if (toDeactivate.length > 0) {
+            await EmployeeExperience.update(
+                { 
+                    isActive: false 
+                },
+                { 
+                    where: { 
+                        id: toDeactivate 
+                    }
+                }
+            );
+        }
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+        
     } catch (error) {
 
         res.status(500).json({ 
@@ -679,6 +1111,91 @@ exports.GetDependent = async (req, res) => {
 
     }
 };
+exports.UpdateDependent = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        dependents
+    } = req.body;
+
+    try {
+        const dependent = Array.isArray(dependents) ? dependents : [];
+
+        const existingRecords = await EmployeeDependent.findAll({
+            where: { 
+                employee_id: id, 
+                is_active: true 
+            }
+        });
+        const existingIds = existingRecords.map(e => e.id);
+        const sentIds = dependent.filter(e => e.id).map(e => e.id);
+
+        for (const dep of dependent) {
+            if (dep.id && existingIds.includes(dep.id)) {
+                // UPDATE if exists
+                await EmployeeDependent.update({
+                    relationship: dep.relationship,
+                    first_name: dep.firstname,
+                    middle_name: dep.middlename,
+                    last_name: dep.lastname,
+                    suffix: dep.suffix,
+                    birthdate: dep.birthdate,
+                    contact_number: dep.contactNo,
+                    email: dep.email,
+                    address: dep.address,
+                    isEmergency: dep.isEmergency
+                }, {
+                    where: { 
+                        id: dep.id 
+                    }
+                });
+            } else {
+                // INSERT new record
+                await EmployeeDependent.create({
+                    employee_id: id,
+                    relationship: dep.relationship,
+                    first_name: dep.firstname,
+                    middle_name: dep.middlename,
+                    last_name: dep.lastname,
+                    suffix: dep.suffix,
+                    birthdate: dep.birthdate,
+                    contact_number: dep.contactNo,
+                    email: dep.email,
+                    address: dep.address,
+                    isEmergency: dep.isEmergency
+                });
+            }
+        }
+
+        const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
+        if (toDeactivate.length > 0) {
+            await EmployeeDependent.update(
+                { 
+                    is_active: false 
+                },
+                { 
+                    where: { 
+                        id: toDeactivate 
+                    }
+                }
+            );
+        }
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+        
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
 /**
  * Dependent
  */
@@ -703,6 +1220,37 @@ exports.GetDocument = async (req, res) => {
             record: rows
         });
 
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.CreateDocument = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const files = req.files || [];
+
+    try {
+
+        for (const file of files) {
+            const filePath = `/documents/${file.filename}`;
+            await EmployeeDocument.create({
+                employee_id: id,
+                document: filePath,
+                filename: file.originalname
+            });
+        }
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+        
     } catch (error) {
 
         res.status(500).json({ 
