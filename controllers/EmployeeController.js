@@ -7,7 +7,7 @@ const moment = require('moment');
 
 const pug = require('pug');
 const puppeteer = require('puppeteer');
-const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, PayrollGroup, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance } = require("../models");
+const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, PayrollGroup, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance, EmployeeFace } = require("../models");
 
 exports.GetAll = async (req, res) => {
 
@@ -659,74 +659,85 @@ exports.UpdateEmployment = async (req, res) => {
  * Salary
  */
 exports.CreateSalary = async (req, res) => {
+  const { id } = req.params
+  const { positionid, dateStart, dateEnd, salarygroup, amount, salarytype, notes } = req.body
 
-    const {
-        id
-    } = req.params;
+  try {
+    if (!dateStart || !moment(dateStart, 'YYYY-MM-DD', true).isValid()) {
+      return res.status(400).json({ error: 'Invalid or missing dateStart.' })
+    }
 
-    const { 
-        positionid,
-        effectivedate,
-        salarygroup,
-        payrollgroupid,
-        amount
-    } = req.body;
-    
-    try {
-        // 1️⃣ Get current employment
-        const employment = await Employment.findOne({ where: { id } })
-        if (!employment) {
-        return res.status(404).json({ error: 'Employment not found.' })
-        }
+    const parsedEndDate =
+      dateEnd && moment(dateEnd, 'YYYY-MM-DD', true).isValid()
+        ? dateEnd
+        : null
 
-        const isNewPosition = positionid && Number(positionid) !== employment.position_id
+    const employment = await Employment.findOne({ where: { id } })
+    if (!employment) {
+      return res.status(404).json({ error: 'Employment not found.' })
+    }
 
-        // 2️⃣ Update previous active SalarySchedule (only current active)
-        const previousSalary = await SalarySchedule.findOne({
+    const isNewPosition = positionid && Number(positionid) !== employment.position_id
+
+    // 🔁 Only close previous salary IF position changed
+    if (isNewPosition) {
+      const previousSalary = await SalarySchedule.findOne({
         where: {
-            employee_id: employment.employee_id,
-            end_date: null, // currently active
+          employee_id: employment.employee_id,
+          is_active: true,
+          end_date: null
         },
         order: [['effective_date', 'DESC']]
-        })
+      })
 
-        if (previousSalary) {
-        previousSalary.end_date = moment(effectivedate).subtract(1, 'days').format('YYYY-MM-DD')
+      if (previousSalary) {
+        const newEndDate = moment(dateStart)
+          .subtract(1, 'days')
+          .format('YYYY-MM-DD')
+
+        if (!moment(newEndDate, 'YYYY-MM-DD', true).isValid()) {
+          return res.status(400).json({ error: 'Computed end date is invalid.' })
+        }
+
+        previousSalary.end_date = newEndDate
         previousSalary.is_active = false
         await previousSalary.save()
-        }
+      }
 
-        // 3️⃣ Update Employment position if it's a new position
-        if (isNewPosition) {
-        employment.position_id = positionid
-        await employment.save()
-        }
+      // Update positions
+      if (employment.position_id) {
+        await Position.update({ status: 'Vacant' }, { where: { id: employment.position_id } })
+      }
 
-        // 4️⃣ Create new SalarySchedule (always)
-        const salarySchedule = await SalarySchedule.create({
-        employee_id: employment.employee_id,
-        amount: Number(String(amount).replace(/,/g, '')), // remove commas
-        salary_type: salarytype,
-        salary_group: salarygroup,
-        effective_date: effectivedate,
-        end_date: null,                // Present
-        notes: notes ?? '',
-        is_active: true
-        })
+      await Position.update({ status: 'Filled' }, { where: { id: positionid } })
 
-        return res.status(201).json({
-        message: 'Salary schedule created successfully.',
-        salarySchedule
-        })
-
-    } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
+      employment.position_id = positionid
+      await employment.save()
     }
-};
+
+    // Always create new salary record
+    const salarySchedule = await SalarySchedule.create({
+      employee_id: employment.employee_id,
+      amount: Number(String(amount).replace(/,/g, '')),
+      salary_type: salarytype,
+      salary_group: salarygroup,
+      effective_date: dateStart,
+      end_date: parsedEndDate,
+      notes: notes ?? '',
+      is_active: true
+    })
+
+    return res.status(201).json({
+      message: 'Record Saved!',
+      salarySchedule
+    })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: error.message })
+  }
+}
+
 /**
  * Salary
  */
@@ -743,7 +754,8 @@ exports.GetServiceRecord = async (req, res) => {
         const rows = await SalarySchedule.findAll({
             where: {
                 employee_id: id
-            }
+            },
+            order: [['effective_date', 'DESC']]
         });
 
         res.json({
@@ -760,6 +772,33 @@ exports.GetServiceRecord = async (req, res) => {
 };
 /**
  * Service Record
+ */
+
+/**
+ * Face Recognition
+ */
+exports.CreateBiometric = async (req, res) => {
+  const { id } = req.params;
+    const { descriptor, imageBase64 } = req.body;
+  try {
+    
+    const biometric = await EmployeeFace.create({
+        employee_id: id,
+        descriptor: JSON.stringify(descriptor),
+        image_file: imageBase64
+    })
+
+    return res.status(201).json({
+      message: 'Record Saved!'
+    })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: error.message })
+  }
+}
+/**
+ * Face Recognition
  */
 
 /**

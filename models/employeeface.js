@@ -11,6 +11,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // EmployeeFace → Employee
+      EmployeeFace.belongsTo(models.Employee, {
+        foreignKey: 'employee_id',
+        as: 'employee'
+      });
     }
   }
   EmployeeFace.init({
@@ -30,12 +35,12 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    desciptor: {
-      type: DataTypes.STRING,
+    descriptor: {
+      type: DataTypes.JSON('long'),
       allowNull: false
     },
     image_file: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT('long'),
       allowNull: false
     },
     is_active: {

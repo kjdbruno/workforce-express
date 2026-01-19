@@ -19,12 +19,12 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      desciptor: {
-        type: Sequelize.STRING,
+      descriptor: {
+        type: Sequelize.JSON('long'),
         allowNull: false
       },
       image_file: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT('long'),
         allowNull: false
       },
       is_active: {

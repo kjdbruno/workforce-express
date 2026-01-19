@@ -35,7 +35,9 @@ const {
     UpdateExperience,
     UpdateDependent,
     CreateDocument,
-    UpdateEmployment, 
+    UpdateEmployment,
+    CreateSalary,
+    CreateBiometric, 
 } = require('../controllers/EmployeeController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
@@ -69,6 +71,8 @@ router.post('/', upload.any(), VerifyToken, ValidateForm(), Create);
 
 router.post('/:id/information', VerifyToken, UpdateEmployee);
 router.post('/:id/employment', VerifyToken, UpdateEmployment);
+router.post('/:id/salary', VerifyToken, CreateSalary);
+router.post('/:id/biometric', VerifyToken, CreateBiometric);
 router.post('/:id/education', VerifyToken, UpdateEducation);
 router.post('/:id/training', VerifyToken, UpdateTraining);
 router.post('/:id/experience', VerifyToken, UpdateExperience);

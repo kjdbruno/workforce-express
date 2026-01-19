@@ -101,12 +101,17 @@ exports.GenerateServicePDF = async (req, res) => {
                         'effective_date',
                         'end_date'
                     ],
-                    order: [['effective_date', 'DESC']]
+                    
+
                 }
             ]
         });
 
-        const result = employee.salarySchedules.map(salary => ({
+        const sortedSalaries = employee.salarySchedules.sort((a, b) => 
+            new Date(b.effective_date) - new Date(a.effective_date)
+        );
+
+        const result = sortedSalaries.map(salary => ({
             position: employee.employment?.position?.name || null,
             salary: salary.amount,
             employment_status: employee.employment?.employment_status,
@@ -138,7 +143,7 @@ exports.GenerateServicePDF = async (req, res) => {
         await page.setContent(html, { waitUntil: 'networkidle0' });
 
         await page.emulateMediaType('print');
-``
+
         const width = '8.5in'
         const height = '11in'
     

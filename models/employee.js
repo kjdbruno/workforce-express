@@ -85,6 +85,12 @@
           as: 'overtimeApplications'
         });
 
+        // Inside Employee.associate(models)
+        Employee.hasMany(models.EmployeeFace, {
+          foreignKey: 'employee_id',
+          as: 'faces' // you can access employee.faces
+        });
+
       }
     }
     Employee.init({
