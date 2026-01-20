@@ -12,7 +12,7 @@
       static associate(models) {
         // define association here
         // Employee → EmployeeAccount
-        Employee.hasOne(models.EmployeeAccount, {
+        Employee.hasMany(models.EmployeeAccount, {
           foreignKey: 'employee_id',
           as: 'account'
         });

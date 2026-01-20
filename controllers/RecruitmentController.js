@@ -477,13 +477,21 @@ exports.Approve = async (req, res) => {
             }
         });
         if (pendingApprovals === 0) {
-            await Vacancy.update(
-                { 
+            const vacancy = await Vacancy.update({ 
                     status: "Approved" 
                 },
                 { 
                     where: { 
                         id: vacancyId 
+                    } 
+                }
+            );
+            await Position.update({ 
+                    status: "Approved" 
+                },
+                { 
+                    where: { 
+                        id: vacancy.id 
                     } 
                 }
             );
@@ -671,13 +679,37 @@ exports.GeneratePDF = async (req, res) => {
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            model: User,
+                            as: 'owner',
+                            attributes: ['id'],
+                            include: [
+                                {
+                                    model: EmployeeAccount,
+                                    as: 'employeeAccount',
+                                    include: [
+                                        {
+                                            model: Employee,
+                                            as: 'employee',
+                                            include: [
+                                                {
+                                                    model: Employment,
+                                                    as: 'employment',
+                                                    include: [
+                                                        {
+                                                            model: Position,
+                                                            as: 'position',
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
-                },
-                {
-                    model: User,
-                    as: 'owner',
-                    attributes: ['id']
                 }
             ],
             order: [
@@ -733,7 +765,12 @@ exports.GeneratePDF = async (req, res) => {
             const employee = app?.setting?.approver?.employeeAccount?.employee;
             const profile = employee || {};
 
-            const position = app?.setting?.approver?.employeeAccount?.employment?.position?.name || '';
+            const position = app?.setting?.approver
+                ?.employeeAccount
+                ?.employee
+                ?.employment
+                ?.position
+                ?.name || '';
             // Format full name (First M. Last Suffix)
             const first = profile?.first_name || '';
             const middle = profile?.middle_name ? `${profile.middle_name.charAt(0)}.` : '';
@@ -781,8 +818,8 @@ exports.GeneratePDF = async (req, res) => {
             signatories
         });
         const browser = await puppeteer.launch({
-          headless: 'new',
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         
         const page = await browser.newPage();
@@ -790,7 +827,7 @@ exports.GeneratePDF = async (req, res) => {
         await page.setContent(html, { waitUntil: 'networkidle0' });
 
         await page.emulateMediaType('print');
-``
+
         const width = '8.5in'
         const height = '11in'
     

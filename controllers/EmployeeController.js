@@ -7,7 +7,11 @@ const moment = require('moment');
 
 const pug = require('pug');
 const puppeteer = require('puppeteer');
-const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, PayrollGroup, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance, EmployeeFace } = require("../models");
+
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, PayrollGroup, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance, EmployeeFace, EmployeeAccount, User } = require("../models");
 
 exports.GetAll = async (req, res) => {
 
@@ -740,6 +744,139 @@ exports.CreateSalary = async (req, res) => {
 
 /**
  * Salary
+ */
+
+/**
+ * Account
+ */
+exports.GetAccount = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeeAccount.findAll({
+            where: {
+                employee_id: id
+            },
+            include: [
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['username', 'role', 'status']
+                }
+            ]
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.CreateAccount = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        accounts
+    } = req.body;
+    
+    try {
+        const accs = Array.isArray(accounts) ? accounts : [];
+
+        const avatars = await EmployeePhoto.findOne({
+            where: {
+                employee_id: id
+            }
+        })
+
+        const existingAccounts = await EmployeeAccount.findAll({
+        where: { employee_id: id }
+        });
+
+        const existingIds = existingAccounts.map(e => e.id);
+        const sentIds = accs.filter(a => a.id).map(a => a.id);
+
+        for (const acc of accs) {
+        let user;
+
+        if (acc.id && existingIds.includes(acc.id)) {
+            // UPDATE existing account
+            const empAcc = await EmployeeAccount.findByPk(acc.id, {
+                include: [{ model: User, as: 'user' }]
+            });
+
+            if (!empAcc) continue;
+
+            user = empAcc.user;
+
+            await user.update({
+            username: acc.username,
+            role: acc.role,
+            status: acc.status
+            });
+
+            if (acc.password) {
+            const hashed = await bcrypt.hash(acc.password, 10);
+            await user.update({ password: hashed });
+            }
+
+            await empAcc.update({ is_active: true });
+
+        } else {
+            // CREATE new User + Account
+            const hashed = await bcrypt.hash(acc.password, 10);
+
+            user = await User.create({
+            name: acc.username,
+            username: acc.username,
+            password: hashed,
+            role: acc.role,
+            status: acc.status,
+            avatar: avatars.avatar
+            });
+
+            await EmployeeAccount.create({
+                employee_id: id,
+                user_id: user.id,
+                is_active: true
+            });
+        }
+        }
+
+        // DEACTIVATE removed accounts
+        const toDeactivate = existingIds.filter(id => !sentIds.includes(id));
+
+        if (toDeactivate.length > 0) {
+        await EmployeeAccount.update(
+            { is_active: false },
+            { where: { id: toDeactivate } }
+        );
+        }
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Account
  */
 
 /**

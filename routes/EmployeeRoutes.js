@@ -37,7 +37,9 @@ const {
     CreateDocument,
     UpdateEmployment,
     CreateSalary,
-    CreateBiometric, 
+    CreateBiometric,
+    GetAccount,
+    CreateAccount, 
 } = require('../controllers/EmployeeController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
@@ -52,6 +54,7 @@ router.get('/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 
 router.get('/leave/balance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveBalance);
 router.get('/leave/application', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveApplication);
 router.get('/attendance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAttendance);
+router.get('/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAccount);
 /**
  * OPTIONS
  */
@@ -78,6 +81,7 @@ router.post('/:id/training', VerifyToken, UpdateTraining);
 router.post('/:id/experience', VerifyToken, UpdateExperience);
 router.post('/:id/dependent', VerifyToken, UpdateDependent);
 router.post('/:id/document', upload.any(), VerifyToken, CreateDocument);
+router.post('/:id/account', upload.any(), VerifyToken, CreateAccount);
 
 // router.get('/profile/:id', VerifyToken, GetEmployeeProfile);
 // router.get('/application/:id', VerifyToken, GetEmployeeApplication);

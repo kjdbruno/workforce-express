@@ -38,7 +38,7 @@ module.exports = {
         allowNull: false
       },
       status: {
-        type: Sequelize.ENUM('Vacant', 'Requested', 'Filled'),
+        type: Sequelize.ENUM('Vacant', 'Requested', 'Approved', 'Filled'),
         defaultValue: 'Vacant'
       },
       is_active: {

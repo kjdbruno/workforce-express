@@ -458,7 +458,7 @@ exports.Create = async (req, res) => {
         console.error('Error creating application:', error);
         res.status(400).json({
             message: "Failed to create record.",
-            error: error.message
+            error: error
         });
     }
 };
@@ -503,16 +503,18 @@ exports.Update = async (req, res) => {
                 }],
             });
         }
-        await vacancy.update({ 
-            status: 'Filled'
-        });
-        await Position.update({ 
-            status: 'Filled' 
-        }, {
-            where: {
-                id: vacancy.position_id
-            }
-        });
+        if (status == 'Hired') {
+            await vacancy.update({ 
+                status: 'Filled'
+            });
+            await Position.update({ 
+                status: 'Filled' 
+            }, {
+                where: {
+                    id: vacancy.position_id
+                }
+            });
+        }
 
         const data = await GetApplicant(application.id);
         const email = data.email;
@@ -703,14 +705,14 @@ exports.GeneratePDF = async (req, res) => {
         })) || [];
         const trainings = rows?.trainings?.map(t => ({
             title: t?.title || '',
-            type: t?.training_ype || null,
+            type: t?.type,
             startDate: t?.start_date
                 ? moment(t.start_date).format('MMMM YYYY')
                 : '',
             endDate: t?.end_date
                 ? moment(t.end_date).format('MMMM YYYY')
                 : '',
-            hours: t?.hour || ''
+            hours: t?.hour
         })) || [];
         const experiences = rows?.experiences?.map(e => ({
             position: e?.position || '',

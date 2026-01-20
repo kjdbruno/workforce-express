@@ -125,7 +125,7 @@ html
                 td(colspan='3' style="width: 75%; text-transform: capitalize;")= address
             tr
                 td(style="width: 25%;").label Birthplace:
-                td(style="width: 25%;")= birthplace
+                td(style="width: 25%; text-transform: capitalize;")= birthplace
                 td(style="width: 25%;").label Blood Type:
                 td(style="width: 25%;")= bloodType
             tr
@@ -143,11 +143,11 @@ html
                 td(style="").label End Date
             each e, index in educations
                 tr
-                    td #{e.level}
-                    td #{e.school}
-                    td #{e.course}
-                    td #{e.startDate}
-                    td #{e.endDate}
+                    td(style="text-transform: capitalize;") #{e.level}
+                    td(style="text-transform: capitalize;") #{e.school}
+                    td(style="text-transform: capitalize;") #{e.course}
+                    td(style="text-transform: capitalize;") #{e.startDate}
+                    td(style="text-transform: capitalize;") #{e.endDate}
         h3 3. Training Information
         table(style="font-size: 10px;")
             tr
@@ -158,11 +158,11 @@ html
                 td(style="").label Hour/s
             each t, index in trainings
                 tr
-                    td #{t.title}
-                    td #{t.type}
-                    td #{t.startDate}
-                    td #{t.endDate}
-                    td #{t.hour}
+                    td(style="text-transform: capitalize;") #{t.title}
+                    td(style="text-transform: capitalize;") #{t.type}
+                    td(style="text-transform: capitalize;") #{t.startDate}
+                    td(style="text-transform: capitalize;") #{t.endDate}
+                    td(style="text-transform: capitalize;") #{t.hours}
         h3 4. Experience Information
         table(style="font-size: 10px;")
             tr
@@ -172,10 +172,10 @@ html
                 td(style="").label End Date
             each e, index in experiences
                 tr
-                    td #{e.position}
-                    td #{e.jobDescription}
-                    td #{e.startDate}
-                    td #{e.endDate}
+                    td(style="text-transform: capitalize;") #{e.position}
+                    td(style="text-transform: capitalize;") #{e.jobDescription}
+                    td(style="text-transform: capitalize;") #{e.startDate}
+                    td(style="text-transform: capitalize;") #{e.endDate}
         h3 5. Submitted Documents
         table(style="font-size: 10px;")
             each e, index in documents
