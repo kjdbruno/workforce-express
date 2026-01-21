@@ -880,6 +880,92 @@ exports.CreateAccount = async (req, res) => {
  */
 
 /**
+ * Photo
+ */
+exports.GetPhoto = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await EmployeePhoto.findOne({
+            where: {
+                employee_id: id
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.CreatePhoto = async (req, res) => {
+
+    const { id } = req.params;
+    const file = req.file;
+    
+    try {
+
+        const exist = await EmployeePhoto.findOne({
+            where: { employee_id: id }
+        });
+
+        if (file) {
+            const filename = file.originalname;
+            const ext = path.extname(file.originalname).toLowerCase();
+            const uploadPath = path.join(__dirname, '../public/signatures', filename);
+
+            let sharpPipeline = sharp(file.buffer).resize({ width: 800 });
+
+            if (ext === '.png') {
+                sharpPipeline = sharpPipeline.png({ quality: 80 });
+            } else {
+                sharpPipeline = sharpPipeline
+                .flatten({ background: { r: 255, g: 255, b: 255 } })
+                .jpeg({ quality: 80 });
+            }
+
+            await sharpPipeline.toFile(uploadPath);
+
+            if (exist) {
+                await exist.update({
+                    filename,
+                    avatar: `/avatar/${filename}`
+                })
+            } else {
+                await EmployeePhoto.create({
+                    employee_id: id,
+                    filename,
+                    avatar: `/avatar/${filename}`
+                })
+            }
+
+            res.status(201).json({
+                message: "Record Saved!",
+            });
+
+        }
+
+    } catch (error) {
+
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Photo
+ */
+
+/**
  * Service Record
  */
 exports.GetServiceRecord = async (req, res) => {
@@ -918,12 +1004,23 @@ exports.CreateBiometric = async (req, res) => {
   const { id } = req.params;
     const { descriptor, imageBase64 } = req.body;
   try {
-    
-    const biometric = await EmployeeFace.create({
-        employee_id: id,
-        descriptor: JSON.stringify(descriptor),
-        image_file: imageBase64
-    })
+
+    const face = await EmployeeFace.findOne({
+        where: { employee_id: id }
+    });
+
+    if (face) {
+        await face.update({
+            descriptor: JSON.stringify(descriptor),
+            image_file: imageBase64
+        }) 
+    } else {
+        await EmployeeFace.create({
+            employee_id: id,
+            descriptor: JSON.stringify(descriptor),
+            image_file: imageBase64
+        })
+    }
 
     return res.status(201).json({
       message: 'Record Saved!'

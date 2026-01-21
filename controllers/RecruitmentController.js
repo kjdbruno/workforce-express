@@ -58,7 +58,8 @@ exports.GetPosition = async (req, res) => {
     try {
         const data = await Position.findAll({
             where: {
-                is_active: true
+                is_active: true,
+                status: 'Vacant'
             },
             attributes: [
                 'id',
@@ -477,7 +478,7 @@ exports.Approve = async (req, res) => {
             }
         });
         if (pendingApprovals === 0) {
-            const vacancy = await Vacancy.update({ 
+            await Vacancy.update({ 
                     status: "Approved" 
                 },
                 { 
@@ -486,12 +487,13 @@ exports.Approve = async (req, res) => {
                     } 
                 }
             );
+            const vacancy = await Vacancy.findByPk(vacancyId);
             await Position.update({ 
                     status: "Approved" 
                 },
                 { 
                     where: { 
-                        id: vacancy.id 
+                        id: vacancy.position_id 
                     } 
                 }
             );

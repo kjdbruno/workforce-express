@@ -3,6 +3,10 @@ const router = express.Router();
 
 const upload = require("../middlewares/Upload");
 
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const uploading = multer({ storage });
+
 const { ValidateForm } = require('../middlewares/EmployeeValidator');
 
 const { VerifyToken, AuthorizeRoles } = require('../middlewares/AuthMiddleware');
@@ -39,7 +43,9 @@ const {
     CreateSalary,
     CreateBiometric,
     GetAccount,
-    CreateAccount, 
+    CreateAccount,
+    GetPhoto,
+    CreatePhoto, 
 } = require('../controllers/EmployeeController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
@@ -55,6 +61,7 @@ router.get('/leave/balance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervis
 router.get('/leave/application', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveApplication);
 router.get('/attendance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAttendance);
 router.get('/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAccount);
+router.get('/photo', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPhoto);
 /**
  * OPTIONS
  */
@@ -70,7 +77,7 @@ router.get('/option/leavetype', VerifyToken, AuthorizeRoles('SuperAdmin', 'Super
 
 
 
-router.post('/', upload.any(), VerifyToken, ValidateForm(), Create);
+router.post('/', upload.any(), VerifyToken, Create);
 
 router.post('/:id/information', VerifyToken, UpdateEmployee);
 router.post('/:id/employment', VerifyToken, UpdateEmployment);
@@ -82,6 +89,7 @@ router.post('/:id/experience', VerifyToken, UpdateExperience);
 router.post('/:id/dependent', VerifyToken, UpdateDependent);
 router.post('/:id/document', upload.any(), VerifyToken, CreateDocument);
 router.post('/:id/account', upload.any(), VerifyToken, CreateAccount);
+router.post('/:id/photo', uploading.single('file'), VerifyToken, CreatePhoto);
 
 // router.get('/profile/:id', VerifyToken, GetEmployeeProfile);
 // router.get('/application/:id', VerifyToken, GetEmployeeApplication);
