@@ -51,9 +51,9 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    is_active: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
+    status: {
+      type: DataTypes.ENUM('Pending', 'Approved', 'Cancelled'),
+      defaultValue: 'Pending'
     },
   }, {
     sequelize,

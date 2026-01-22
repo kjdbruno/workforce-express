@@ -820,14 +820,14 @@ exports.CreateAccount = async (req, res) => {
             user = empAcc.user;
 
             await user.update({
-            username: acc.username,
-            role: acc.role,
-            status: acc.status
+                username: acc.username,
+                role: acc.role,
+                status: acc.status
             });
 
             if (acc.password) {
-            const hashed = await bcrypt.hash(acc.password, 10);
-            await user.update({ password: hashed });
+                const hashed = await bcrypt.hash(acc.password, 10);
+                await user.update({ password: hashed });
             }
 
             await empAcc.update({ is_active: true });
@@ -837,12 +837,12 @@ exports.CreateAccount = async (req, res) => {
             const hashed = await bcrypt.hash(acc.password, 10);
 
             user = await User.create({
-            name: acc.username,
-            username: acc.username,
-            password: hashed,
-            role: acc.role,
-            status: acc.status,
-            avatar: avatars.avatar
+                name: acc.username,
+                username: acc.username,
+                password: hashed,
+                role: acc.role,
+                status: acc.status,
+                avatar: avatars.avatar
             });
 
             await EmployeeAccount.create({
@@ -920,7 +920,7 @@ exports.CreatePhoto = async (req, res) => {
         if (file) {
             const filename = file.originalname;
             const ext = path.extname(file.originalname).toLowerCase();
-            const uploadPath = path.join(__dirname, '../public/signatures', filename);
+            const uploadPath = path.join(__dirname, '../public/avatar', filename);
 
             let sharpPipeline = sharp(file.buffer).resize({ width: 800 });
 
@@ -1647,6 +1647,41 @@ exports.GetLeaveApplication = async (req, res) => {
             record: rows
         });
 
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.CreateLeave = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+    
+    const {
+        leaves
+    } = req.body;
+
+    try {
+
+        for (const leave of leaves) {
+            await EmployeeLeaveBalance.create({
+                employee_id: id,
+                leave_type_id: leave.leavetypeid,
+                credit: leave.credit,
+                earned: leave.earned,
+                used: leave.used,
+                balance: leave.balance
+            });
+        }
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+        
     } catch (error) {
 
         res.status(500).json({ 

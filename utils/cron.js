@@ -1,14 +1,14 @@
 // cron/loginResetJob.js
 const cron = require('node-cron');
 const { Op } = require('sequelize');
-const { User } = require('../models');
+const { User, EmployeeLeaveBalance, LeaveType } = require('../models');
 
 /**
  * Automatically resets failed login attempts (and optionally reactivates users)
  * every hour (configurable).
  */
 function loginResetJob(io) {
-    cron.schedule('* * * * *', async () => {
+    cron.schedule('0 * * * *', async () => {
         console.log('🕒 [CRON] Running automatic login attempt reset check...');
 
         try {
@@ -58,4 +58,58 @@ function loginResetJob(io) {
     });
 }
 
-module.exports = loginResetJob;
+function yearlyLeaveBalance(io) {
+    cron.schedule('0 0 1 1 *', async () => {
+        console.log('🕒 [CRON] Running automatic yearly leave balance check...');
+
+        try {
+            const balances = await EmployeeLeaveBalance.findAll({
+            include: [
+                {
+                model: LeaveType,
+                    as: 'leaveType',
+                    where: { 
+                        is_active: true 
+                    }
+                }
+            ]
+            });
+
+            for (const bal of balances) {
+                const leaveType = bal.leaveType;
+
+                if (!leaveType) continue;
+
+                let newCredit = parseFloat(bal.credit);
+                let newBalance = parseFloat(bal.balance);
+                const leaveTypeCredit = parseFloat(leaveType.credit);
+
+                if (leaveType.can_carry_over) {
+                    // Carry over existing balance + add new credit
+                    newCredit += leaveTypeCredit;
+                    newBalance += leaveTypeCredit;
+                } else {
+                    // Reset and apply new yearly credit only
+                    newCredit = leaveTypeCredit;
+                    newBalance = leaveTypeCredit;
+                }
+
+                await bal.update({
+                    credit: newCredit,
+                    earned: leaveTypeCredit,
+                    used: 0,
+                    balance: newBalance
+                });
+            }
+
+            console.log('✅ Yearly leave balance update completed!');
+        } catch (error) {
+            console.error('❌ Error updating leave balances:', error);
+        }
+    });
+}
+
+module.exports = {
+    loginResetJob,
+    yearlyLeaveBalance
+};

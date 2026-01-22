@@ -45,7 +45,8 @@ const {
     GetAccount,
     CreateAccount,
     GetPhoto,
-    CreatePhoto, 
+    CreatePhoto,
+    CreateLeave, 
 } = require('../controllers/EmployeeController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
@@ -88,6 +89,7 @@ router.post('/:id/training', VerifyToken, UpdateTraining);
 router.post('/:id/experience', VerifyToken, UpdateExperience);
 router.post('/:id/dependent', VerifyToken, UpdateDependent);
 router.post('/:id/document', upload.any(), VerifyToken, CreateDocument);
+router.post('/:id/leave', VerifyToken, CreateLeave);
 router.post('/:id/account', upload.any(), VerifyToken, CreateAccount);
 router.post('/:id/photo', uploading.single('file'), VerifyToken, CreatePhoto);
 

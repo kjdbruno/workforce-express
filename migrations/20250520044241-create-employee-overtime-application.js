@@ -29,9 +29,9 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      is_active: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true
+      status: {
+        type: Sequelize.ENUM('Pending', 'Approved', 'Cancelled'),
+        defaultValue: 'Pending'
       },
       createdAt: {
         allowNull: false,

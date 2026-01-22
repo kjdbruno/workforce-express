@@ -7,7 +7,7 @@ const { Sequelize } = require('sequelize');
 const path = require('path');
 const app = express();
 const server = http.createServer(app);
-const loginResetJob = require('./utils/cron');
+const { loginResetJob, yearlyLeaveBalance } = require('./utils/cron');
 
 const io = socketIo(server, {
   pingInterval: 25000,
@@ -30,6 +30,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 loginResetJob(io);
+yearlyLeaveBalance(io);
 
 // Initialize Sequelize
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
@@ -93,6 +94,8 @@ app.use('/api/employee', require('./routes/EmployeeRoutes'));
 // app.use('/api/face', require('./routes/FaceRoutes'));
 app.use('/api/leave', require('./routes/LeaveRoutes'));
 app.use('/api/attendance', require('./routes/AttendanceRoutes'));
+app.use('/api/overtime', require('./routes/OvertimeRoutes'));
+
 app.use('/api/salary', require('./routes/SalaryRoutes'));
 
 app.use(express.static('public'));
