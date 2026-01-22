@@ -187,7 +187,7 @@ exports.GetAttendance = async (req, res) => {
 
         // 4️⃣ Approved overtime
         const overtimes = await EmployeeOvertimeApplication.findAll({
-            where: { employee_id: attendance.employee_id, is_active: true },
+            where: { employee_id: attendance.employee_id, status: 'Approved' },
             include: [
                 {
                     model: Overtime,
@@ -426,7 +426,7 @@ exports.GenerateAttendancePDF = async (req, res) => {
 
         // 4️⃣ Fetch approved overtime
         const overtimes = await EmployeeOvertimeApplication.findAll({
-            where: { employee_id: attendance.employee_id, is_active: true },
+            where: { employee_id: attendance.employee_id, status: 'Approved' },
             include: [
                 {
                     model: Overtime,

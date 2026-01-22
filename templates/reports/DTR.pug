@@ -109,8 +109,7 @@ html
                         - for (let i = 0; i < 6; i++)
                             td(style="width: 10%;") 
                                 - const timeValue = row.times[i];
-                                - const formattedTime = timeValue ? moment(timeValue, "HH:mm").format("h:mm A") : '';
-                                | #{formattedTime}
+                                | #{timeValue}
                         // Remarks column (always last)
                         td #{remarks}
         table.noborder

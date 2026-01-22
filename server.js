@@ -98,6 +98,11 @@ app.use('/api/overtime', require('./routes/OvertimeRoutes'));
 
 app.use('/api/salary', require('./routes/SalaryRoutes'));
 
+/**
+ * PORTAL
+ */
+app.use('/api/portal', require('./routes/BiometricRoutes'));
+
 app.use(express.static('public'));
 
 require('./sockets')(io);
