@@ -5,7 +5,7 @@ const router = express.Router();
 
 const { VerifyToken, AuthorizeRoles } = require('../middlewares/AuthMiddleware');
 
-const { GenerateServicePDF, GetPosition, GetPayrollGroup } = require('../controllers/SalaryController');
+const { GenerateServicePDF, GetPosition } = require('../controllers/SalaryController');
 
 // router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), GetAll);
 // router.get('/:id', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), GetDetails);
@@ -16,7 +16,6 @@ const { GenerateServicePDF, GetPosition, GetPayrollGroup } = require('../control
 router.get('/service/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), GenerateServicePDF);
 
 router.get('/option/position', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPosition);
-router.get('/option/payrollgroup', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPayrollGroup);
 
 // router.get('/option/employee', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetEmployee);
 // router.get('/option/leavetype', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveType);

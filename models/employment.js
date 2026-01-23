@@ -40,12 +40,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'position_id',
         as: 'position'
       });
-
-      // Employment → Payroll Group
-      Employment.belongsTo(models.PayrollGroup, {
-        foreignKey: 'payroll_group_id',
-        as: 'payrollGroup'
-      });
     }
   }
   Employment.init({
@@ -138,15 +132,9 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     },
-    payroll_group_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'PayrollGroups',
-        key: 'id'
-      },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
+    payroll_group: {
+      type: DataTypes.ENUM('Monthly', 'Semi-Monthly', 'Weekly'),
+      allowNull: false
     },
   }, {
     sequelize,

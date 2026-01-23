@@ -11,7 +11,7 @@ const puppeteer = require('puppeteer');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, PayrollGroup, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance, EmployeeFace, EmployeeAccount, User } = require("../models");
+const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance, EmployeeFace, EmployeeAccount, User } = require("../models");
 
 exports.GetAll = async (req, res) => {
 
@@ -249,22 +249,6 @@ exports.GetSchool = async (req, res) => {
         });
     }
 };
-exports.GetPayrollGroup = async (req, res) => {
-    try {
-        const data = await PayrollGroup.findAll({
-            attributes: [
-                ['id', 'value'],
-                ['name', "label"]
-            ],
-            order: [['id', 'ASC']]
-        });
-        return res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
-        });
-    }
-};
 exports.GetLeaveType = async (req, res) => {
     try {
         const data = await LeaveType.findAll({
@@ -328,7 +312,7 @@ exports.Create = async (req, res) => {
         employeeNo,
         dateHired,
         salarygroup,
-        payrollgroupId,
+        payrollgroup,
         taxstatus,
         companyId,
         departmentId,
@@ -382,7 +366,7 @@ exports.Create = async (req, res) => {
             tax_status: taxstatus,
             schedule_id: scheduleId,
             position_id: positionId,
-            payroll_group_id: payrollgroupId
+            payroll_group: payrollgroup
         });
 
         const position = await Position.findByPk(positionId)
@@ -611,7 +595,8 @@ exports.UpdateEmployment = async (req, res) => {
         sssNo,
         philhealthNo,
         pagibigNo,
-        taxstatus
+        taxstatus,
+        payrollgroup
     } = req.body;
 
     try {
@@ -640,7 +625,8 @@ exports.UpdateEmployment = async (req, res) => {
             sss_no: sssNo,
             philhealth_no: philhealthNo,
             pagibig_no: pagibigNo,
-            tax_status: taxstatus
+            tax_status: taxstatus,
+            payroll_group: payrollgroup
         });
 
         res.status(201).json({
@@ -800,57 +786,59 @@ exports.CreateAccount = async (req, res) => {
         })
 
         const existingAccounts = await EmployeeAccount.findAll({
-        where: { employee_id: id }
+            where: { employee_id: id }
         });
 
         const existingIds = existingAccounts.map(e => e.id);
         const sentIds = accs.filter(a => a.id).map(a => a.id);
 
         for (const acc of accs) {
-        let user;
+            let user;
 
-        if (acc.id && existingIds.includes(acc.id)) {
-            // UPDATE existing account
-            const empAcc = await EmployeeAccount.findByPk(acc.id, {
-                include: [{ model: User, as: 'user' }]
-            });
+            if (acc.id && existingIds.includes(acc.id)) {
+                // UPDATE existing account
+                const empAcc = await EmployeeAccount.findByPk(acc.id, {
+                    include: [{ model: User, as: 'user' }]
+                });
 
-            if (!empAcc) continue;
+                if (!empAcc) continue;
 
-            user = empAcc.user;
+                user = empAcc.user;
 
-            await user.update({
-                username: acc.username,
-                role: acc.role,
-                status: acc.status
-            });
+                await user.update({
+                    username: acc.username,
+                    role: acc.role,
+                    status: acc.status
+                });
 
-            if (acc.password) {
+                if (acc.password) {
+                    const hashed = await bcrypt.hash(acc.password, 10);
+                    await user.update({ password: hashed });
+                }
+
+                await empAcc.update({ is_active: true });
+
+            } else {
+                // CREATE new User + Account
                 const hashed = await bcrypt.hash(acc.password, 10);
-                await user.update({ password: hashed });
+                const emp = await Employee.findByPk(id);
+                const middleInitial = emp.middle_name ? `${emp.middle_name.charAt(0)}.` : ''
+                const fullName = `${emp.first_name} ${middleInitial} ${emp.last_name}`.trim() + (emp.suffix ? ` ${emp.suffix}` : '')
+                user = await User.create({
+                    name: fullName,
+                    username: acc.username,
+                    password: hashed,
+                    role: acc.role,
+                    status: acc.status,
+                    avatar: avatars.avatar
+                });
+
+                await EmployeeAccount.create({
+                    employee_id: id,
+                    user_id: user.id,
+                    is_active: true
+                });
             }
-
-            await empAcc.update({ is_active: true });
-
-        } else {
-            // CREATE new User + Account
-            const hashed = await bcrypt.hash(acc.password, 10);
-
-            user = await User.create({
-                name: acc.username,
-                username: acc.username,
-                password: hashed,
-                role: acc.role,
-                status: acc.status,
-                avatar: avatars.avatar
-            });
-
-            await EmployeeAccount.create({
-                employee_id: id,
-                user_id: user.id,
-                is_active: true
-            });
-        }
         }
 
         // DEACTIVATE removed accounts

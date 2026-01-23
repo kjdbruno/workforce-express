@@ -60,10 +60,7 @@ exports.GetUser = async (req, res) => {
     try {
         const data = await User.findAll({
             where: {
-                status: 'Active',
-                role: {
-                    [Op.ne]: 'Employee' // NOT Employee
-                }
+                status: 'Active'
             },
             attributes: [
                 ['id', 'value'],

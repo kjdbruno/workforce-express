@@ -20,15 +20,9 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    payroll_group_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'PayrollGroups',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    payroll_group: {
+      type: DataTypes.ENUM('Monthly', 'Semi-Monthly', 'Weekly'),
+      allowNull: false
     },
     date_from: {
       type: DataTypes.DATEONLY,

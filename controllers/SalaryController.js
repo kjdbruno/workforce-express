@@ -1,5 +1,5 @@
 const { Op, Sequelize } = require("sequelize");
-const { SalarySchedule, Employee, Employment, Position, PayrollGroup } = require('../models');
+const { SalarySchedule, Employee, Employment, Position } = require('../models');
 
 const fs = require('fs');
 const path = require('path');
@@ -44,22 +44,6 @@ exports.GetPosition = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             error: error.message
-        });
-    }
-};
-exports.GetPayrollGroup = async (req, res) => {
-    try {
-        const data = await PayrollGroup.findAll({
-            attributes: [
-                ['id', 'value'],
-                ['name', "label"]
-            ],
-            order: [['id', 'ASC']]
-        });
-        return res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
         });
     }
 };
@@ -122,7 +106,14 @@ exports.GenerateServicePDF = async (req, res) => {
             notes: salary.notes
         }));
 
+        const fullName = [
+            employee.first_name,
+            employee.middle_name,
+            employee.last_name
+        ].filter(Boolean).join(' ');
 
+        // Get position safely
+        const position = employee.employment?.position?.name || 'N/A';
 
         const templatePath = path.join(__dirname, '../templates/reports/ServiceRecord.pug');
 
@@ -131,6 +122,8 @@ exports.GenerateServicePDF = async (req, res) => {
         const html = pug.renderFile(templatePath, { 
             seal, 
             services: result,
+            name: fullName,
+            position,
             moment
         });
         const browser = await puppeteer.launch({

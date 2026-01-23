@@ -92,15 +92,9 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
       },
-      payroll_group_id: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'PayrollGroups',
-          key: 'id'
-        },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
+      payroll_group: {
+        type: Sequelize.ENUM('Monthly', 'Semi-Monthly', 'Weekly'),
+        allowNull: false
       },
       createdAt: {
         allowNull: false,

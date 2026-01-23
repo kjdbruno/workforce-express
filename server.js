@@ -62,6 +62,7 @@ app.use('/api/company', require('./routes/CompanyRoutes'));
 app.use('/api/schedule', require('./routes/ScheduleRoutes'));
 app.use('/api/signatory', require('./routes/SignatoryRoutes'));
 app.use('/api/leavetype', require('./routes/LeaveTypeRoutes'));
+app.use('/api/holiday', require('./routes/HolidayRoutes'));
 // app.use('/api/employmentstatus', require('./routes/EmploymentStatusRoutes'));
 // app.use('/api/appointmentstatus', require('./routes/AppointmentmentStatusRoutes'));
 // app.use('/api/taxcode', require('./routes/TaxCodeRoutes'));

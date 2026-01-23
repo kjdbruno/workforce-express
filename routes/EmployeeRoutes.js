@@ -20,7 +20,6 @@ const {
     GetSchedule,
     GetSchool,
     GetCourse,
-    GetPayrollGroup,
     Create,
     GetServiceRecord,
     GetEducation,
@@ -73,7 +72,6 @@ router.get('/option/department', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supe
 router.get('/option/schedule', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetSchedule);
 router.get('/option/school', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetSchool);
 router.get('/option/course', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetCourse);
-router.get('/option/payrollgroup', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPayrollGroup);
 router.get('/option/leavetype', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveType);
 
 

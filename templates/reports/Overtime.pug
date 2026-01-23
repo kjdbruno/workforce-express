@@ -1,0 +1,160 @@
+html
+    head
+        meta(charset="utf-8")
+        title Overtime Form
+        style.
+            * {
+                font-family: Century Gothic, CenturyGothic, AppleGothic, sans-serif;
+                color: #262626;
+            }
+            h2 {
+                text-align: center;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+            }
+            h3 {
+                margin-top: 10px;
+                font-size: 12px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 10px;
+            }
+            td, th {
+                border: 1px solid #000;
+                padding: 5px 8px;
+                vertical-align: top;
+            }
+            .noborder td {
+                border: none;
+                padding: 3px;
+            }
+            .label {
+                width: 200px;
+                font-weight: bold;
+            }
+            .signature {
+                padding-top: 40px;
+                text-align: center;
+                font-style: italic;
+            }
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 10px;
+                margin-bottom: 10px;
+            }
+            .note {
+                font-size: 10px;
+                background-color: #f5f5f5;
+                border-left: 3px solid #000;
+                padding: 5px 10px;
+            }
+            input[type="checkbox"] {
+                accent-color: black;
+            }
+            .leaves {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 15px;
+            }
+            .leaves th, .leaves td {
+                border: 1px solid #000;
+                padding: 2px;
+                font-size: 11px;
+            }
+            .leaves th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+            }
+            .holiday {
+                background-color: #ffe6e6;
+            }
+            .leave {
+                background-color: #e6f3ff;
+            }
+            .employees {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 15px;
+            }
+            .employees th, .employees td {
+                border: 1px solid #000;
+                padding: 2px;
+                text-align: center;
+                font-size: 11px;
+            }
+            .employees th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+
+    body
+        table.noborder(style="width: 100%; margin-bottom: 10px;")
+            td(style="width: 50%;")
+                img(style='width: 300px; height: auto;' src= seal)
+            td(style="width: 50%;")
+                div(style="background: #FAFAFA; text-align: center; font-size: 1.2em; text-transform: uppercase; padding: 20px; color: #7A1D1F;")
+                    div(style="color: #7A1D1F;") overtime form
+        table.leaves
+            tbody
+                tr
+                    td(style="width: 50%; text-transform: capitalize;")
+                        span(style="font-weight: bold; margin-bottom: 8px;") Date Filed:&nbsp;
+                        span #{dateFiled}
+                    td(style="width: 50%; text-transform: capitalize;")
+                        span(style="font-weight: bold; margin-bottom: 8px;") Date of Overtime:&nbsp;
+                        span #{date}
+                tr
+                    td(style="width: 50%; text-transform: capitalize;") 
+                        span(style="font-weight: bold; margin-bottom: 8px;") time:&nbsp;
+                        span #{time}
+                    td(style="width: 50%; text-transform: capitalize;") 
+                        span(style="font-weight: bold; margin-bottom: 8px;") status:&nbsp;
+                        span #{status}
+                tr
+                    td(colspan="2" style="width: 100%;")
+                        div(style="font-weight: bold; margin-bottom: 5px;") Description:
+                        div= description
+        table.employees
+            thead
+                tr
+                    th(style="width: 15%;") name
+                    th(style="width: 10%;") position
+                    th(style="width: 15%;") hourly rate 
+                    th(style="width: 10%;") number of hour
+                    th(style="width: 10%;") estimated rate 
+            tbody
+                each row in employees
+                    - const name = row.name;
+                    - const position = row.position;
+                    - const hourly_rate = row.hourly_rate;
+                    - const hours = row.hours;
+                    - const estimated_rate = row.estimated_rate;
+                    tr 
+                        td(style='text-transform: uppercase;') #{name}
+                        td(style='text-transform: uppercase;') #{position}
+                        td #{hourly_rate}
+                        td #{hours}
+                        td #{estimated_rate}
+        footer( style="position: fixed; bottom: 0; left: 0; right: 0;width: 100%; text-align: center; font-size: 10px; color: #333; padding-top: 5px; background-color: #fff; line-height: 1.3;")
+            table.noborder(style="font-size: 10px; margin-bottom: 50px;")
+                tr
+                    each s, index in signatories
+                        td(style="width: 25%; padding: 0px 20px 0px 20px;")
+                            div(style="text-align: center; margin-top: 15px;")
+                                div(style='text-transform: capitalize; font-size: 10px; text-transform: capitalize;') #{s.description}
+                                div(style="margin-top: 25px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 100%; text-align: center;") 
+                                    if s.isSigned
+                                        img(style='width: 100px; height: auto; position: relative; margin-bottom: 5px;' src=s.signature)
+                                    else
+                                        div(style="width: 100px; height: auto; line-height: 50px; font-style: italic; color: #666; text-transform: capitalize;") Unsigned
+                                    div(style="font-size: 12px; text-transform: uppercase; font-weight: bold;") #{s.approver}
+                                div(style="width: 100%; text-align: center; font-size: 11px; text-transform: capitalize;") #{s.position}
+                                div(style="width: 100%; text-align: center; font-size: 8px; text-transform: capitalize; font-style: italic;") #{s.date}
+            div(style="font-weight: bold; text-transform: uppercase;") Centurion Collection Management, Inc.
+            div(style="margin-top: 3px;") © #{new Date().getFullYear()} All rights reserved.
+            div(style="margin-top: 3px; font-size: 9px;") This document was system-generated. No signature is required.

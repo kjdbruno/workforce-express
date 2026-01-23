@@ -17,6 +17,10 @@ module.exports = {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
+      multiplier: {
+        type: Sequelize.FLOAT,
+        allowNull: true
+      },
       isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

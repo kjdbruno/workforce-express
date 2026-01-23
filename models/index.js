@@ -22,7 +22,6 @@ db.Position = require('./position')(sequelize, Sequelize.DataTypes);
 db.Company = require('./company')(sequelize, Sequelize.DataTypes);
 db.Department = require('./department')(sequelize, Sequelize.DataTypes);
 db.Schedule = require('./schedule')(sequelize, Sequelize.DataTypes);
-db.PayrollGroup = require('./payrollgroup')(sequelize, Sequelize.DataTypes);
 db.Applicant = require('./applicant')(sequelize, Sequelize.DataTypes);
 db.School = require('./school')(sequelize, Sequelize.DataTypes);
 db.Course = require('./course')(sequelize, Sequelize.DataTypes);

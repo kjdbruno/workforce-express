@@ -5,7 +5,7 @@ const router = express.Router();
 
 const { VerifyToken, AuthorizeRoles } = require('../middlewares/AuthMiddleware');
 
-const { GetAll, Create, GetAttendance, Approve, GenerateAttendancePDF } = require('../controllers/AttendanceController');
+const { GetAll, Create, GetAttendance, Approve, GenerateAttendancePDF, UpdateDTR } = require('../controllers/AttendanceController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), GetAll);
 // router.get('/option/employee', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), GetAllUsers);
@@ -14,6 +14,7 @@ router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor',
 router.post('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), Create);
 router.get('/:id', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), GetAttendance);
 router.post('/:id/approve', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), Approve);
+router.post('/dtr/:id/update', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), UpdateDTR);
 
 router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance', 'Employee'), GenerateAttendancePDF);
 

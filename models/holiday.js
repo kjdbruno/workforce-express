@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: false
     },
+    multiplier: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

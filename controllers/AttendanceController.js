@@ -85,55 +85,136 @@ exports.Create = async (req, res) => {
 
     try {
 
-        // 1️⃣ Get all employee accounts
-const accounts = await EmployeeAccount.findAll();
-
-// 2️⃣ Loop through employees
-for (const emp of accounts) {
-    // 2a️⃣ Create attendance
-    const attendance = await EmployeeAttendance.create({
-        employee_id: emp.employee_id,
-        date_start: dateStart,
-        date_end: dateEnd,
-        status: 'Pending'
-    });
-
-    // 2b️⃣ Assign DTRs
-    await DailyTimeRecord.update(
-        { attendance_id: attendance.id },
-        {
+        const existingAttendance = await EmployeeAttendance.findOne({
             where: {
+                date_start: dateStart,
+                date_end: dateEnd
+            }
+        });
+
+        if (existingAttendance) {
+            return res.status(400).json({
+                message: 'Attendance for this period already exists.'
+            });
+        }
+
+        // 1️⃣ Get all employee accounts
+        const accounts = await EmployeeAccount.findAll();
+
+        // 2️⃣ Loop through employees
+        for (const emp of accounts) {
+            // 2a️⃣ Create attendance
+            const attendance = await EmployeeAttendance.create({
                 employee_id: emp.employee_id,
-                date: { [Op.between]: [attendance.date_start, attendance.date_end] }
+                date_start: dateStart,
+                date_end: dateEnd,
+                status: 'Pending'
+            });
+
+            // 2b️⃣ Assign DTRs
+            await DailyTimeRecord.update(
+                { attendance_id: attendance.id },
+                {
+                    where: {
+                        employee_id: emp.employee_id,
+                        date: { [Op.between]: [attendance.date_start, attendance.date_end] }
+                    }
+                }
+            );
+
+            // 2c️⃣ Fetch approval settings for this employee
+            const empSignatories = await ApprovalSetting.findAll({
+                where: {
+                    owner_id: emp.user_id,
+                    type: 'TimeCard',
+                    is_active: true
+                },
+                order: [['order', 'ASC']]
+            });
+
+            // 2d️⃣ Create approvals
+            for (const sig of empSignatories) {
+                const isFirstApprover = sig.order === 1; // first approver auto-approve
+
+                await Approval.create({
+                    setting_id: sig.id,
+                    document_id: attendance.id,
+                    status: isFirstApprover ? 'Approved' : 'Pending',
+                    signed_at: isFirstApprover ? new Date() : null,
+                    remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
+                    is_active: true
+                });
             }
         }
-    );
 
-    // 2c️⃣ Fetch approval settings for this employee
-    const empSignatories = await ApprovalSetting.findAll({
-        where: {
-            owner_id: emp.user_id,
-            type: 'TimeCard',
-            is_active: true
-        },
-        order: [['order', 'ASC']]
-    });
 
-    // 2d️⃣ Create approvals
-    for (const sig of empSignatories) {
-        const isFirstApprover = sig.order === 1; // first approver auto-approve
-
-        await Approval.create({
-            setting_id: sig.id,
-            document_id: attendance.id,
-            status: isFirstApprover ? 'Approved' : 'Pending',
-            signed_at: isFirstApprover ? new Date() : null,
-            remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
-            is_active: true
+        res.status(201).json({
+            message: "Record Saved!"
         });
-    }
-}
 
+    } catch (error) {
+
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+exports.UpdateDTR = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        employeeid,
+        attendances
+    } = req.body;
+
+    const { date, times } = attendances;
+
+    try {
+
+        if (!attendances || !date || !Array.isArray(times)) {
+            return res.status(400).json({ message: 'Invalid payload structure.' });
+        }
+
+        const recordsToInsert = [];
+
+        for (const t of times) {
+            if (!t || t.trim() === '') continue;
+
+            // Format time to DB TIME
+            const formattedTime = moment(t, ['h:mm A', 'hh:mm A']).format('HH:mm:ss');
+
+            // Check if record already exists
+            const exists = await DailyTimeRecord.findOne({
+                where: {
+                    employee_id: employeeid,
+                    date,
+                    time: formattedTime
+                }
+            });
+
+            if (!exists) {
+                recordsToInsert.push({
+                    employee_id: employeeid,
+                    attendance_id: id,
+                    date,
+                    time: formattedTime
+                });
+            }
+        }
+
+        if (!recordsToInsert.length) {
+            return res.status(400).json({
+                message: 'No new time entries to save (all duplicates).'
+            });
+        }
+
+        // Bulk insert only new records
+        await DailyTimeRecord.bulkCreate(recordsToInsert);
 
         res.status(201).json({
             message: "Record Saved!"
@@ -236,9 +317,16 @@ exports.GetAttendance = async (req, res) => {
         while (day.isSameOrBefore(endDay)) {
             const formatted = day.format('YYYY-MM-DD');
 
+            // const times = attendance.logs
+            //     .filter(l => moment(l.date).format('YYYY-MM-DD') === formatted)
+            //     .map(l => l.time ? moment(l.time, ['HH:mm', 'HH:mm:ss']).format('h:mm A') : '');
+            // Use raw time from logs (no formatting)
             const times = attendance.logs
                 .filter(l => moment(l.date).format('YYYY-MM-DD') === formatted)
-                .map(l => l.time ? moment(l.time, ['HH:mm', 'HH:mm:ss']).format('h:mm A') : '');
+                .map(l => l.time 
+                    ? moment(l.time, ['HH:mm', 'HH:mm:ss']).format('HH:mm') 
+                    : ''
+                );
 
             const paddedTimes = times.length < 4 ? [...times, ...Array(4 - times.length).fill('')] :
                                 times.length > 4 ? times.slice(0, 4) : times;
