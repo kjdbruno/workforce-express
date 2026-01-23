@@ -127,21 +127,9 @@ exports.GetPosition = async (req, res) => {
                 [
                     Sequelize.literal(`
                         CASE salary_type
-                            WHEN 'Monthly' THEN CONCAT(
-                                FORMAT(monthly_salary * 0.9, 2),
-                                ' - ',
-                                FORMAT(monthly_salary * 1.1, 2)
-                            )
-                            WHEN 'Daily' THEN CONCAT(
-                                FORMAT(daily_salary * 0.9, 2),
-                                ' - ',
-                                FORMAT(daily_salary * 1.1, 2)
-                            )
-                            WHEN 'Hourly' THEN CONCAT(
-                                FORMAT(hourly_salary * 0.9, 2),
-                                ' - ',
-                                FORMAT(hourly_salary * 1.1, 2)
-                            )
+                            WHEN 'Monthly' THEN FORMAT(monthly_salary, 2)
+                            WHEN 'Daily' THEN FORMAT(daily_salary, 2)
+                            WHEN 'Hourly' THEN FORMAT(hourly_salary, 2)
                             ELSE NULL
                         END
                     `),
@@ -1662,7 +1650,7 @@ exports.CreateLeave = async (req, res) => {
                 credit: leave.credit,
                 earned: leave.earned,
                 used: leave.used,
-                balance: leave.balance
+                balance: (Number(leave.earned) || 0) - (Number(leave.used) || 0)
             });
         }
 

@@ -148,6 +148,10 @@
         type: DataTypes.STRING,
         allowNull: false
       },
+      status: {
+        type: DataTypes.ENUM('Active', 'Inactive'),
+        defaultValue: 'Active'
+      }
     }, {
       sequelize,
       modelName: 'Employee',

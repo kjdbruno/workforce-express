@@ -71,6 +71,11 @@ html
                 font-weight: bold;
                 text-transform: uppercase;
             }
+            .current-row {
+                font-weight: bold;
+                background-color: #f3f8ff;
+            }
+
 
     body
         table.noborder(style="width: 100%; margin-bottom: 10px;")
@@ -102,7 +107,7 @@ html
                     - const start_date = moment(row.start_date).format("MMMM D, YYYY");
                     - const end_date = row.end_date ? moment(row.end_date).format("MMMM D, YYYY") : "Present";
                     - const notes = row.notes;
-                    tr 
+                    tr(class=end_date === 'Present' ? 'current-row' : '') 
                         td(style='text-transform: uppercase;') #{position}
                         td #{new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(salary)}
                         td #{employment_status}

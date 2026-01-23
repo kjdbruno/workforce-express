@@ -48,6 +48,43 @@ exports.GetPosition = async (req, res) => {
     }
 };
 
+exports.RemoveSalary = async (req, res) => {
+
+    const { 
+        salaryId 
+    } = req.body;
+
+    const id = salaryId;
+    
+    try {
+
+        const salary = await SalarySchedule.findByPk(id);
+
+        if (!salary) {
+            return res.status(404).json({
+                error: 'Salary record not found'
+            });
+        }
+
+        // Set end_date to today and deactivate
+        await salary.update({
+            end_date: new Date(),
+            is_active: false
+        });
+
+        res.json({
+            message: 'Record Updated!'
+        });
+
+    } catch (error) {
+
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
 exports.GenerateServicePDF = async (req, res) => {
     const { 
         id
@@ -91,9 +128,14 @@ exports.GenerateServicePDF = async (req, res) => {
             ]
         });
 
-        const sortedSalaries = employee.salarySchedules.sort((a, b) => 
-            new Date(b.effective_date) - new Date(a.effective_date)
-        );
+        const sortedSalaries = employee.salarySchedules.sort((a, b) => {
+            // Put active (Present) first
+            if (!a.end_date && b.end_date) return -1;
+            if (a.end_date && !b.end_date) return 1;
+
+            // If both active or both inactive → latest first
+            return new Date(b.effective_date) - new Date(a.effective_date);
+        });
 
         const result = sortedSalaries.map(salary => ({
             position: employee.employment?.position?.name || null,

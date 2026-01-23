@@ -459,7 +459,7 @@ exports.Approve = async (req, res) => {
             }
 
             const newUsed = parseFloat(leaveBalance.used) + daysUsed;
-            const newBalance = parseFloat(leaveBalance.credit) + parseFloat(leaveBalance.earned) - newUsed;
+            const newBalance = parseFloat(leaveBalance.earned) - newUsed;
 
             await leaveBalance.update({
                 used: newUsed,

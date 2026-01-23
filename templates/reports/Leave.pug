@@ -119,7 +119,7 @@ html
                         div 
                             span(style="font-weight: bold;") Status:&nbsp;
                             span #{status}
-                    td(style="padding: 0px 30px 10px 30px; width: 50%;")
+                    td(style="padding: 0px 30px 10px 30px; width: 50%; text-transform: capitalize;")
                         each s, index in signatories
                             div(style="text-align: center; margin-top: 15px;")
                                 div(style='text-transform: capitalize; font-size: 10px;') #{s.description}
@@ -136,7 +136,7 @@ html
                         div(style="font-weight: bold; margin-bottom: 5px;") Reason for Leave:
                         div= reason
 
-        table.leave-balance(style="width:100%; border-collapse:collapse; font-size:0.7em; text-align:center;")
+        table.leave-balance(style="width:100%; border-collapse:collapse; font-size:0.7em; text-align:center; text-transform: capitalize;")
             thead
                 tr
                     td(
