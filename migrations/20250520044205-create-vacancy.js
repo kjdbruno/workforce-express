@@ -27,16 +27,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      company_id: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Companies',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
       department_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -47,11 +37,11 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      schedule_id: {
+      shift_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Schedules',
+          model: 'Shifts',
           key: 'id'
         },
         onUpdate: 'CASCADE',

@@ -23,18 +23,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'department'
       });
 
-      // Employment → Company
-      Employment.belongsTo(models.Company, {
-        foreignKey: 'company_id',
-        as: 'company'
-      });
-
-      // Employment → Schedule
-      Employment.belongsTo(models.Schedule, {
-        foreignKey: 'schedule_id',
-        as: 'schedule'
-      });
-
       // Employment → Position
       Employment.belongsTo(models.Position, {
         foreignKey: 'position_id',
@@ -102,25 +90,15 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     },
-    company_id: {
+    shift_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Companies',
+        model: 'Shifts',
         key: 'id'
       },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
-    },
-    schedule_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Schedules',
-        key: 'id'
-      },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     position_id: {
       type: DataTypes.INTEGER,

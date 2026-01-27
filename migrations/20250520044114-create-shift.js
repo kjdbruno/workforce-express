@@ -2,60 +2,48 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Employees', {
+    await queryInterface.createTable('Shifts', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      first_name: {
+      code: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      middle_name: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      last_name: {
-        type: Sequelize.STRING,
+      start_time: {
+        type: Sequelize.TIME,
         allowNull: false
       },
-      suffix: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      sex: {
-        type: Sequelize.ENUM('Male', 'Female'),
+      end_time: {
+        type: Sequelize.TIME,
         allowNull: false
       },
-      civil_status: {
-        type: Sequelize.ENUM('Single', 'Married', 'Widowed', 'Divorced', 'Separated'),
+      break_minutes: {
+        type: Sequelize.FLOAT,
         allowNull: false
       },
-      birthdate: {
-        type: Sequelize.DATEONLY,
+      grace_minutes: {
+        type: Sequelize.FLOAT,
         allowNull: false
       },
-      birthplace: {
-        type: Sequelize.STRING,
+      earliest_minutes: {
+        type: Sequelize.FLOAT,
         allowNull: false
       },
-      address: {
-        type: Sequelize.TEXT('long'),
+      latest_minutes: {
+        type: Sequelize.FLOAT,
         allowNull: false
       },
-      email: {
-        type: Sequelize.STRING,
+      crosses_midnight: {
+        type: Sequelize.BOOLEAN,
         allowNull: false
-      },
-      contact_number: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      status: {
-        type: Sequelize.ENUM('Active', 'Inactive'),
-        defaultValue: 'Active'
       },
       createdAt: {
         allowNull: false,
@@ -68,6 +56,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Employees');
+    await queryInterface.dropTable('Shifts');
   }
 };

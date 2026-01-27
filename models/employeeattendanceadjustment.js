@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class EmployeeAttendance extends Model {
+  class EmployeeAttendanceAdjustment extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,14 +11,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // EmployeeAttendance → Employee
-      EmployeeAttendance.belongsTo(models.Employee, {
-        foreignKey: 'employee_id',
-        as: 'employee'
-      });
     }
   }
-  EmployeeAttendance.init({
+  EmployeeAttendanceAdjustment.init({
     id: {
       allowNull: false,
       autoIncrement: true,
@@ -35,57 +30,43 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    work_day: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
-    },
-    shift_id: {
+    employee_attendance_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Shifts',
+        model: 'EmployeeAttendances',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    time_in: {
+    adjusted_time_in: {
       type: DataTypes.DATETIME,
       allowNull: false
     },
-    time_out: {
+    adjusted_time_out: {
       type: DataTypes.DATETIME,
       allowNull: false
     },
-    late_minutes: {
-      type: DataTypes.INT,
+    reason: {
+      type: DataTypes.STRING,
       allowNull: false
     },
-    undertime_minutes: {
-      type: DataTypes.INT,
-      allowNull: false
-    },
-    overtime_minutes: {
-      type: DataTypes.INT,
-      allowNull: false
-    },
-    status: {
-      type: DataTypes.ENUM('Pending', 'Approved'),
-      defaultValue: 'Pending'
-    },
-    is_locked: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false
-    },
-    locked_at: {
-      type: DataTypes.DATETIME,
-      allowNull: true
+    created_by_user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
   }, {
     sequelize,
-    modelName: 'EmployeeAttendance',
-    tableName: 'EmployeeAttendances',
+    modelName: 'EmployeeAttendanceAdjustment',
+    tableName: 'EmployeeAttendanceAdjustments',
     timestamps: true
   });
-  return EmployeeAttendance;
+  return EmployeeAttendanceAdjustment;
 };

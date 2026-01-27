@@ -19,17 +19,51 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      date_start: {
+      work_day: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      date_end: {
-        type: Sequelize.DATEONLY,
+      shift_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Shifts',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      time_in: {
+        type: Sequelize.DATETIME,
+        allowNull: false
+      },
+      time_out: {
+        type: Sequelize.DATETIME,
+        allowNull: false
+      },
+      late_minutes: {
+        type: Sequelize.INT,
+        allowNull: false
+      },
+      undertime_minutes: {
+        type: Sequelize.INT,
+        allowNull: false
+      },
+      overtime_minutes: {
+        type: Sequelize.INT,
         allowNull: false
       },
       status: {
         type: Sequelize.ENUM('Pending', 'Approved'),
         defaultValue: 'Pending'
+      },
+      is_locked: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false
+      },
+      locked_at: {
+        type: Sequelize.DATETIME,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,

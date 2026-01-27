@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Schedule extends Model {
+  class Shift extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,47 +11,56 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
-      // Vacancies
-      Schedule.hasMany(models.Vacancy, {
-        foreignKey: 'schedule_id',
-        as: 'vacancies'
-      });
-
-      Schedule.hasMany(models.Employment, {
-        foreignKey: 'schedule_id',
-        as: 'employments'
-      });
     }
   }
-  Schedule.init({
+  Shift.init({
     id: {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
     },
+    code: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    time_start: {
+    start_time: {
       type: DataTypes.TIME,
       allowNull: false
     },
-    time_end: {
+    end_time: {
       type: DataTypes.TIME,
       allowNull: false
     },
-    is_active: {
+    break_minutes: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    grace_minutes: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    earliest_minutes: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    latest_minutes: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    crosses_midnight: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true
+      allowNull: false
     },
   }, {
     sequelize,
-    modelName: 'Schedule',
-    tableName: 'Schedules',
+    modelName: 'Shift',
+    tableName: 'Shifts',
     timestamps: true
   });
-  return Schedule;
+  return Shift;
 };

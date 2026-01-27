@@ -2,28 +2,26 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Schedules', {
+    await queryInterface.createTable('ShiftDays', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      name: {
+      shift_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Shifts',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      day_of_week: {
         type: Sequelize.STRING,
-        allowNull: false
-      },
-      time_start: {
-        type: Sequelize.TIME,
-        allowNull: false
-      },
-      time_end: {
-        type: Sequelize.TIME,
-        allowNull: false
-      },
-      is_active: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
@@ -36,6 +34,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Schedules');
+    await queryInterface.dropTable('ShiftDays');
   }
 };
