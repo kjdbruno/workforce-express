@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
-const { Position, PositionQualification, SalaryGrade, Salary } = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
 
@@ -16,7 +17,7 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await Position.findAndCountAll({
+        const { count, rows } = await db.Position.findAndCountAll({
             where,
             limit: Limit,
             offset: Offset,
@@ -53,9 +54,11 @@ exports.Create = async (req, res) => {
         qualifications
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const exist = await Position.findOne({
+        const exist = await db.Position.findOne({
             where: { 
                 name 
             }
@@ -73,7 +76,7 @@ exports.Create = async (req, res) => {
             });
         }
 
-        const position = await Position.create({
+        await db.Position.create({
             name,
             monthly_salary: monthly,
             daily_salary: daily,
@@ -81,15 +84,17 @@ exports.Create = async (req, res) => {
             salary_type : salarytype,
             description,
             qualification: qualifications
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(201).json({
-            message: "Record Saved!", 
-            data: position
+            message: "Record Saved!"
         });
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -113,8 +118,10 @@ exports.Update = async (req, res) => {
         qualifications
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
-        const position = await Position.findByPk(id);
+        const position = await db.Position.findByPk(id);
 
         if (!position) {
             return res.status(404).json({
@@ -130,7 +137,7 @@ exports.Update = async (req, res) => {
             });
         }
     
-        const exist = await Position.findOne({
+        const exist = await db.Position.findOne({
             where: {
                 [Op.or]: [{ name }],
                 id: { [Op.ne]: id },
@@ -158,15 +165,17 @@ exports.Update = async (req, res) => {
             salary_type: salarytype,
             description,
             qualification: qualifications
-        });
+        },  { transaction });
+
+        await transaction.commit();
 
         return res.status(200).json({
-            message: "Record Modified!",
-            data: position,
+            message: "Record Modified!"
         });
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -182,7 +191,7 @@ exports.Disable = async (req, res) => {
   
     try {
 
-        const position = await Position.findByPk(id);
+        const position = await db.Position.findByPk(id);
 
         if (!position) {
             return res.status(500).json({
@@ -198,7 +207,9 @@ exports.Disable = async (req, res) => {
 
         await position.update({ 
             is_active: false
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Disabled!", 
@@ -207,6 +218,7 @@ exports.Disable = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -219,10 +231,12 @@ exports.Enable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const position = await Position.findByPk(id);
+        const position = await db.Position.findByPk(id);
 
         if (!position) {
             return res.status(500).json({
@@ -238,7 +252,9 @@ exports.Enable = async (req, res) => {
 
         await position.update({ 
             is_active: true 
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Enabled!.", 
@@ -246,6 +262,7 @@ exports.Enable = async (req, res) => {
         });
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });

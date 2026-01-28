@@ -1,10 +1,6 @@
 const { Op, fn, col, literal } = require("sequelize");
-const { ApprovalSetting, User } = require('../models');
-
-const fs = require('fs');
-const path = require('path');
-const multer = require('multer');
-const sharp = require('sharp');
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
 
@@ -21,14 +17,14 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await ApprovalSetting.findAndCountAll({
+        const { count, rows } = await db.ApprovalSetting.findAndCountAll({
             include: [
                 {
-                    model: User,
+                    model: db.User,
                     as: 'owner'
                 },
                 {
-                    model: User,
+                    model: db.User,
                     as: 'approver'
                 }
             ],
@@ -58,7 +54,7 @@ exports.GetAll = async (req, res) => {
 
 exports.GetUser = async (req, res) => {
     try {
-        const data = await User.findAll({
+        const data = await db.User.findAll({
             where: {
                 status: 'Active'
             },
@@ -84,21 +80,19 @@ exports.Create = async (req, res) => {
 
     const { 
         type,
-        ownerid,
-        approverid,
-        description,
-        order
+        ownerid
     } = req.body;
 
-    const file = req.file;
+    const files = req.files || [];
+
+    const transaction = await sequelize.transaction();
 
     try {
 
-        const exist = await ApprovalSetting.findOne({
+        const exist = await db.ApprovalSetting.findOne({
             where: { 
                 type,
-                owner_id: ownerid,
-                approver_id: approverid 
+                owner_id: ownerid
             }
         });
 
@@ -113,42 +107,36 @@ exports.Create = async (req, res) => {
                 }],
             });
         }
+        
+        const rows = JSON.parse(req.body.signatories || "[]");
 
-        if (file) {
-            const filename = file.originalname;
-            const ext = path.extname(file.originalname).toLowerCase();
-            const uploadPath = path.join(__dirname, '../public/signatures', filename);
+        if (!rows.length) {
+            return res.status(400).json({ error: "signatories JSON is empty or missing" });
+        }
 
-            let sharpPipeline = sharp(file.buffer).resize({ width: 800 });
-
-            if (ext === '.png') {
-                sharpPipeline = sharpPipeline.png({ quality: 80 });
-            } else {
-                sharpPipeline = sharpPipeline
-                .flatten({ background: { r: 255, g: 255, b: 255 } })
-                .jpeg({ quality: 80 });
-            }
-
-            await sharpPipeline.toFile(uploadPath);
-
-            const signatory = await ApprovalSetting.create({
+        for (let i = 0; i < rows.length; i++) {
+            const r = rows[i];
+            const file = files[i];
+            const filePath = file?.filename ? `/uploads/${file.filename}` : null;
+            await db.ApprovalSetting.create({
                 type,
                 owner_id: ownerid,
-                approver_id: approverid,
-                description,
-                signature: `/signatures/${filename}`,
-                order
-            });
-
-            res.status(201).json({
-                message: "Record Saved!", 
-                signatory: signatory
-            });
-
+                approver_id: r.approverid,
+                description: r.description,
+                signature: filePath,
+                order: r.order
+            }, { transaction });
         }
+
+        await transaction.commit();
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -161,10 +149,12 @@ exports.Disable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const setting = await ApprovalSetting.findByPk(id);
+        const setting = await db.ApprovalSetting.findByPk(id);
 
         if (!setting) {
             return res.status(500).json({
@@ -180,11 +170,15 @@ exports.Disable = async (req, res) => {
 
         await setting.update({ 
             is_active: false
-        });
+        }, { transaction });
+
+        const a = await GetApprovalSetting(id);
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Disabled!", 
-            signatory: setting 
+            signatory: a 
         });
 
     } catch (error) {
@@ -201,10 +195,12 @@ exports.Enable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const setting = await ApprovalSetting.findByPk(id);
+        const setting = await db.ApprovalSetting.findByPk(id);
 
         if (!setting) {
             return res.status(500).json({
@@ -220,17 +216,41 @@ exports.Enable = async (req, res) => {
 
         await setting.update({ 
             is_active: true 
-        });
+        }, { transaction });
+
+        const a = await GetApprovalSetting(id);
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Enabled!.", 
-            signatory: setting
+            signatory: a
         });
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
 
     }
+};
+
+const GetApprovalSetting = async (id) => {
+
+    return await db.ApprovalSetting.findAndCountAll({
+        include: [
+            {
+                model: db.User,
+                as: 'owner'
+            },
+            {
+                model: db.User,
+                as: 'approver'
+            }
+        ],
+        where: {
+            id
+        }
+    });
 };

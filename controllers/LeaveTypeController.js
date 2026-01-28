@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
-const { LeaveType } = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
 
@@ -16,7 +17,7 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await LeaveType.findAndCountAll({
+        const { count, rows } = await db.LeaveType.findAndCountAll({
             where,
             limit: Limit,
             offset: Offset,
@@ -53,9 +54,11 @@ exports.Create = async (req, res) => {
         affectspayroll
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const exist = await LeaveType.findOne({
+        const exist = await db.LeaveType.findOne({
             where: { 
                 name 
             }
@@ -73,7 +76,7 @@ exports.Create = async (req, res) => {
             });
         }
 
-        const leavetype = await LeaveType.create({
+        await db.LeaveType.create({
             code,
             name,
             credit,
@@ -81,15 +84,17 @@ exports.Create = async (req, res) => {
             annual_limit: annuallimit,
             can_carry_over: cancarryover,
             affects_payroll: affectspayroll
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(201).json({
-            message: "Record Saved!", 
-            leavetype: leavetype
+            message: "Record Saved!"
         });
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -113,9 +118,11 @@ exports.Update = async (req, res) => {
         affectspayroll
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const leavetype = await LeaveType.findByPk(id);
+        const leavetype = await db.LeaveType.findByPk(id);
         
         if (!leavetype) {
             return res.status(500).json({
@@ -129,7 +136,7 @@ exports.Update = async (req, res) => {
             });
         }
 
-        const exist = await LeaveType.findOne({
+        const exist = await db.LeaveType.findOne({
             where: {
                 [Op.or]: [{ name }],
                 id: { [Op.ne]: id }
@@ -155,15 +162,17 @@ exports.Update = async (req, res) => {
             annual_limit: annuallimit,
             can_carry_over: cancarryover,
             affects_payroll: affectspayroll
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(201).json({
-            message: "Record Modified!", 
-            leavetype: leavetype
+            message: "Record Modified!"
         });
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -176,10 +185,12 @@ exports.Disable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const leavetype = await LeaveType.findByPk(id);
+        const leavetype = await db.LeaveType.findByPk(id);
 
         if (!leavetype) {
             return res.status(500).json({
@@ -195,7 +206,9 @@ exports.Disable = async (req, res) => {
 
         await leavetype.update({ 
             is_active: false
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Disabled!", 
@@ -204,6 +217,7 @@ exports.Disable = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -216,10 +230,12 @@ exports.Enable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const leavetype = await LeaveType.findByPk(id);
+        const leavetype = await db.LeaveType.findByPk(id);
 
         if (!leavetype) {
             return res.status(500).json({
@@ -235,7 +251,9 @@ exports.Enable = async (req, res) => {
 
         await leavetype.update({ 
             is_active: true 
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Enabled!.", 
@@ -243,6 +261,7 @@ exports.Enable = async (req, res) => {
         });
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
