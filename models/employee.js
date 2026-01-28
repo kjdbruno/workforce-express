@@ -54,16 +54,6 @@
           foreignKey: 'employee_id',
           as: 'dependents'
         });
-        // Employee → Daily Logs
-        Employee.hasMany(models.DailyTimeRecord, {
-          foreignKey: 'employee_id',
-          as: 'logs'
-        });
-        // Employee → Attendance (per cutoff / payroll period)
-        Employee.hasMany(models.EmployeeAttendance, {
-          foreignKey: 'employee_id',
-          as: 'attendances'
-        });
         // Employee → Leave Applications
         Employee.hasMany(models.EmployeeLeaveApplication, {
           foreignKey: 'employee_id',

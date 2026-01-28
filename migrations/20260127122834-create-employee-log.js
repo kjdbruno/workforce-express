@@ -20,7 +20,7 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       captured_at: {
-        type: Sequelize.DATETIME,
+        type: Sequelize.DATE,
         allowNull: false
       },
       recognition_score: {
@@ -56,11 +56,11 @@ module.exports = {
         allowNull: false
       },
       image_hash: {
-        type: Sequelize.CHAR(64),
+        type: Sequelize.STRING,
         allowNull: false
       },
       payload_hash: {
-        type: Sequelize.CHAR(64),
+        type: Sequelize.STRING,
         allowNull: false
       },
       createdAt: {

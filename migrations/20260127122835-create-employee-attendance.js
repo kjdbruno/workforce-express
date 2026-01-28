@@ -34,23 +34,23 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       time_in: {
-        type: Sequelize.DATETIME,
+        type: Sequelize.DATE,
         allowNull: false
       },
       time_out: {
-        type: Sequelize.DATETIME,
+        type: Sequelize.DATE,
         allowNull: false
       },
       late_minutes: {
-        type: Sequelize.INT,
+        type: Sequelize.FLOAT,
         allowNull: false
       },
       undertime_minutes: {
-        type: Sequelize.INT,
+        type: Sequelize.FLOAT,
         allowNull: false
       },
       overtime_minutes: {
-        type: Sequelize.INT,
+        type: Sequelize.FLOAT,
         allowNull: false
       },
       status: {
@@ -62,7 +62,7 @@ module.exports = {
         allowNull: false
       },
       locked_at: {
-        type: Sequelize.DATETIME,
+        type: Sequelize.DATE,
         allowNull: true
       },
       createdAt: {

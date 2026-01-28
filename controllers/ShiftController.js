@@ -17,7 +17,13 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await db.Department.findAndCountAll({
+        const { count, rows } = await db.Shift.findAndCountAll({
+            include: [
+                {
+                    model: db.ShiftDay,
+                    as: 'days'
+                }
+            ],
             where,
             limit: Limit,
             offset: Offset,
@@ -45,20 +51,25 @@ exports.GetAll = async (req, res) => {
 exports.Create = async (req, res) => {
 
     const { 
+        code,
         name,
-        alias
+        starttime,
+        endtime,
+        breakminutes,
+        graceminutes,
+        earliestminutes,
+        latestminutes,
+        crossesmidnight,
+        days
     } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
 
-        const exist = await db.Department.findOne({
-            where: {
-                [Op.or]: [
-                    { name },
-                    { alias }
-                ]
+        const exist = await db.Shift.findOne({
+            where: { 
+                code, name 
             }
         });
 
@@ -74,16 +85,31 @@ exports.Create = async (req, res) => {
             });
         }
 
-        const department = await db.Department.create({
+        const shift = await db.Shift.create({
+            code,
             name,
-            alias
+            start_time: starttime,
+            end_time: endtime,
+            break_minutes: breakminutes,
+            grace_minutes: graceminutes,
+            earliest_minutes: earliestminutes,
+            latest_minutes: latestminutes,
+            crosses_midnight: crossesmidnight
         }, { transaction });
+
+        const sd = days.map(day => ({
+            shift_id: shift.id,
+            day_of_week: day
+        }));
+        await db.ShiftDay.bulkCreate(sd, { transaction });
+
+        const s = await GetShift(shift.id);
 
         await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!", 
-            department: department
+            shift: s
         });
 
     } catch (error) {
@@ -102,18 +128,33 @@ exports.Update = async (req, res) => {
         id 
     } = req.params;
 
-    const { 
-        name,
-        alias
-    } = req.body;
-
     const transaction = await sequelize.transaction();
+
+    const { 
+        code,
+        name,
+        starttime,
+        endtime,
+        breakminutes,
+        graceminutes,
+        earliestminutes,
+        latestminutes,
+        crossesmidnight,
+        days
+    } = req.body;
 
     try {
 
-        const department = await db.Department.findByPk(id);
+        await db.ShiftDay.destroy({
+            where: { 
+                shift_id: id 
+            },
+            transaction
+        });
+
+        const shift = await db.Shift.findByPk(id);
         
-        if (!department) {
+        if (!shift) {
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -125,12 +166,9 @@ exports.Update = async (req, res) => {
             });
         }
 
-        const exist = await db.Department.findOne({
+        const exist = await db.Shift.findOne({
             where: {
-                [Op.or]: [
-                    { name },
-                    { alias }
-                ],
+                [Op.or]: [{ code }, { name }],
                 id: { [Op.ne]: id }
             },
         });
@@ -146,16 +184,31 @@ exports.Update = async (req, res) => {
             });
         }
 
-        await department.update({ 
+        await shift.update({ 
+            code,
             name,
-            alias
+            start_time: starttime,
+            end_time: endtime,
+            break_minutes: breakminutes,
+            grace_minutes: graceminutes,
+            earliest_minutes: earliestminutes,
+            latest_minutes: latestminutes,
+            crosses_midnight: crossesmidnight
         }, { transaction });
+
+        const sd = days.map(day => ({
+            shift_id: id,
+            day_of_week: day
+        }));
+        await db.ShiftDay.bulkCreate(sd, { transaction });
+
+        const s = await GetShift(id);
 
         await transaction.commit();
 
         res.status(201).json({
             message: "Record Modified!", 
-            department: department
+            shift: s
         });
 
     } catch (error) {
@@ -168,91 +221,18 @@ exports.Update = async (req, res) => {
     }
 };
 
-exports.Disable = async (req, res) => {
+const GetShift = async (id) => {
 
-    const { 
-        id 
-    } = req.params;
-
-    const transaction = await sequelize.transaction();
-  
-    try {
-
-        const department = await db.Department.findByPk(id);
-
-        if (!department) {
-            return res.status(500).json({
-                errors: [{
-                    type: "field",
-                    value: id,
-                    msg: "Record not found!",
-                    path: "name",
-                    location: "body",
-                }],
-            });
+    return await db.Shift.findOne({
+        include: [
+            {
+                model: db.ShiftDay,
+                as: 'days'
+            }
+        ],
+        where: {
+            id
         }
+    });
 
-        await department.update({ 
-            is_active: false
-        }, { transaction });
-
-        await transaction.commit();
-
-        res.status(200).json({
-            message: "Record Disabled!", 
-            department: department 
-        });
-
-    } catch (error) {
-
-        await transaction.rollback();
-        res.status(500).json({ 
-            error: error.message 
-        });
-
-    }
-};
-
-exports.Enable = async (req, res) => {
-
-    const { 
-        id 
-    } = req.params;
-
-    const transaction = await sequelize.transaction();
-  
-    try {
-
-        const department = await db.Department.findByPk(id);
-
-        if (!department) {
-            return res.status(500).json({
-                errors: [{
-                    type: "field",
-                    value: id,
-                    msg: "Record not found!",
-                    path: "name",
-                    location: "body",
-                }],
-            });
-        }
-
-        await department.update({ 
-            is_active: true 
-        }, { transaction });
-
-        await transaction.commit();
-
-        res.status(200).json({
-            message: "Record Enabled!.", 
-            department: department
-        });
-    } catch (error) {
-
-        await transaction.rollback();
-        res.status(500).json({ 
-            error: error.message 
-        });
-
-    }
 };

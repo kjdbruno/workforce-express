@@ -75,10 +75,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      school_level: {
-        type: Sequelize.ENUM('High School', 'Vocational', 'College', 'Graduate Studies'),
-        allowNull: false
-      },
       year_experience: {
         type: Sequelize.INTEGER,
         allowNull: false

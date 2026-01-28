@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 const moment = require('moment');
-const { Approval, ApprovalSetting, Vacancy, Position, Company, Department, Schedule, SchoolLevel, User, EmployeeAccount, Employee, Employment } = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
 
@@ -13,12 +14,14 @@ exports.GetAll = async (req, res) => {
     const Filter = req.query.Filter ? req.query.Filter.trim() : "";
     const Offset = (Page - 1) * Limit;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const { count, rows } = await Vacancy.findAndCountAll({
+        const { count, rows } = await db.Vacancy.findAndCountAll({
             include: [
                 {
-                    model: Position,
+                    model: db.Position,
                     as: 'position',
                     attributes: [
                         'name', 'salary_type'
@@ -33,8 +36,10 @@ exports.GetAll = async (req, res) => {
             offset: Offset,
             order: [
                 ['createdAt', 'DESC']
-            ]
+            ], transaction
         });
+
+        await transaction.commit();
 
         res.json({
             data: rows,
@@ -47,6 +52,7 @@ exports.GetAll = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -55,8 +61,11 @@ exports.GetAll = async (req, res) => {
 };
 
 exports.GetPosition = async (req, res) => {
+
+    const transaction = await sequelize.transaction();
+
     try {
-        const data = await Position.findAll({
+        const data = await db.Position.findAll({
             where: {
                 is_active: true,
                 status: 'Vacant'
@@ -95,38 +104,28 @@ exports.GetPosition = async (req, res) => {
                 ]
             ],
             order: [['id', 'ASC']]
-        });
+        }, transaction);
+
+        await transaction.commit();
 
         return res.status(200).json(data);
+
     } catch (error) {
+
+        await transaction.rollback();
         res.status(500).json({
             error: error.message
         });
+
     }
 };
 
-exports.GetCompany = async (req, res) => {
-    try {
-        const data = await Company.findAll({
-            where: {
-                is_active: true
-            },
-            attributes: [
-                ['id', 'value'],
-                ['name', "label"]
-            ],
-            order: [['id', 'ASC']]
-        });
-        return res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
-        });
-    }
-};
 exports.GetDepartment = async (req, res) => {
+
+    const transaction = await sequelize.transaction();
+
     try {
-        const data = await Department.findAll({
+        const data = await db.Department.findAll({
             where: {
                 is_active: true
             },
@@ -135,49 +134,55 @@ exports.GetDepartment = async (req, res) => {
                 ['name', "label"]
             ],
             order: [['id', 'ASC']]
-        });
+        }, transaction);
+
+        await transaction.commit();
         return res.status(200).json(data);
+
     } catch (error) {
+
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
+
     }
 };
-exports.GetSchedule = async (req, res) => {
+exports.GetShift = async (req, res) => {
+
+    const transaction = await sequelize.transaction();
+
     try {
-        const data = await Schedule.findAll({
-            where: {
-                is_active: true
-            },
+        const data = await db.Shift.findAll({
             attributes: [
                 ['id', 'value'],
-                ['name', "label"],
-                'time_start',
-                'time_end'
-            ],
+                [
+                    Sequelize.literal(`
+                        CONCAT(
+                            code, ' - ',
+                            name, ' (',
+                                TIME_FORMAT(start_time, '%h:%i %p'),
+                                ' - ',
+                                TIME_FORMAT(end_time, '%h:%i %p'),
+                            ')'
+                        )
+                    `),
+                    'label'
+                ]
+        ],
             order: [['id', 'ASC']]
-        });
+        }, transaction);
+
+        await transaction.commit();
         return res.status(200).json(data);
+
     } catch (error) {
+
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
-    }
-};
-exports.GetSchoolLevel = async (req, res) => {
-    try {
-        const data = await SchoolLevel.findAll({
-            attributes: [
-                ['id', 'value'],
-                ['name', "label"]
-            ],
-            order: [['id', 'ASC']]
-        });
-        return res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
-        });
+
     }
 };
 
@@ -185,66 +190,69 @@ exports.GetDetails = async (req, res) => {
 
     const { id } = req.params;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const vacancy = await Vacancy.findOne({
+        const vacancy = await db.Vacancy.findOne({
             where: { 
                 id 
             },
             include: [
                 {
-                    model: Position,
+                    model: db.Position,
                     as: 'position'
                 },
                 {
-                    model: Company,
-                    as: 'company',
-                    attributes: ['name']
-                },
-                {
-                    model: Department,
+                    model: db.Department,
                     as: 'department',
                     attributes: ['name']
                 },
                 {
-                    model: Schedule,
-                    as: 'schedule'
+                    model: db.Shift,
+                    as: 'shift',
+                    include: [
+                        {
+                            model: db.ShiftDay,
+                            as: 'days'
+                        }
+                    ]
                 }
             ]
-        });
+        }, transaction);
 
-        const approvals = await Approval.findAll({
+        const approvals = await db.Approval.findAll({
             where: {
                 document_id: vacancy.id,
                 is_active: true
             },
             include: [
                 {
-                    model: ApprovalSetting,
+                    model: db.ApprovalSetting,
                     as: 'setting',
                     where: {
                         type: 'Vacancy'
                     },
                     include: [
                         {
-                            model: User,
+                            model: db.User,
                             as: 'approver',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
                                                     include: [
                                                         {
-                                                            model: Position,
+                                                            model: db.Position,
                                                             as: 'position',
                                                         }
                                                     ]
@@ -256,24 +264,24 @@ exports.GetDetails = async (req, res) => {
                             ]
                         },
                         {
-                            model: User,
+                            model: db.User,
                             as: 'owner',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
                                                     include: [
                                                         {
-                                                            model: Position,
+                                                            model: db.Position,
                                                             as: 'position',
                                                         }
                                                     ]
@@ -288,9 +296,14 @@ exports.GetDetails = async (req, res) => {
                 }
             ],
             order: [
-                [{ model: ApprovalSetting, as: 'setting' }, 'order', 'ASC']
+                [
+                    { 
+                        model: db.ApprovalSetting, 
+                        as: 'setting' 
+                    }, 
+                    'order', 'ASC']
             ]
-        });
+        }, transaction);
 
         // 3️⃣ Combine vacancy + approvals
         const result = {
@@ -298,10 +311,13 @@ exports.GetDetails = async (req, res) => {
             approvals
         };
 
+        await transaction.commit();
+
         res.json({ data: result });
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ error: error.message });
 
     }
@@ -311,9 +327,8 @@ exports.Create = async (req, res) => {
 
     const { 
         positionId,
-        companyId,
         departmentId,
-        scheduleId,
+        shiftId,
         salaryRange,
         date,
         location,
@@ -327,13 +342,19 @@ exports.Create = async (req, res) => {
         employmentStatus
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
         const year = new Date().getFullYear().toString();
-        const latest = await Vacancy.findOne({
-            where: { control_no: { [Op.like]: `${year}-%` } },
+        const latest = await db.Vacancy.findOne({
+            where: { 
+                control_no: { 
+                    [Op.like]: `${year}-%` 
+                } 
+            },
             order: [['control_no', 'DESC']]
-        });
+        }, transaction);
         let nextSeq = 1;
 
         if (latest) {
@@ -342,12 +363,11 @@ exports.Create = async (req, res) => {
         }
         const newNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
 
-        const vacancy = await Vacancy.create({
+        const vacancy = await db.Vacancy.create({
             control_no: newNo,
             position_id: positionId,
-            company_id: companyId,
             department_id: departmentId,
-            schedule_id: scheduleId,
+            shift_id: shiftId,
             salary_range: salaryRange,
             date_needed: date,
             location,
@@ -360,43 +380,41 @@ exports.Create = async (req, res) => {
             year_experience: yearExperience,
             employment_status: employmentStatus,
             status: 'Requested'
-        });
+        }, transaction);
 
-        await Position.update(
-            { 
-                status: 'Requested' 
-            },
-            { 
-                where: { 
-                    id: positionId 
-                } 
-            }
+        await db.Position.update(
+            { status: 'Requested' },
+            { where: { 
+                id: positionId 
+            }, transaction }
         );
 
+
         // Fetch approval settings by document type
-        const signatories = await ApprovalSetting.findAll({
+        const signatories = await db.ApprovalSetting.findAll({
             where: {
                 owner_id: req.user.id,
                 type: 'Vacancy',
                 is_active: true
             },
             order: [['order', 'ASC']]
-        });
+        }, transaction);
 
         for (const sig of signatories) {
 
             const isFirstApprover = sig.order === 1;
 
-            await Approval.create({
+            await db.Approval.create({
                 setting_id: sig.id,
                 document_id: vacancy.id,
                 status: isFirstApprover ? 'Approved' : 'Pending',
                 signed_at: isFirstApprover ? new Date() : null,
                 remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
                 is_active: true
-            });
+            }, transaction);
         }
 
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!", 
@@ -405,6 +423,7 @@ exports.Create = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -414,10 +433,10 @@ exports.Create = async (req, res) => {
 
 const GetRecruitment = async (id) => {
 
-    return await Vacancy.findOne({
+    return await db.Vacancy.findOne({
         include: [
                 {
-                    model: Position,
+                    model: db.Position,
                     as: 'position'
                 },
                 
@@ -435,16 +454,18 @@ exports.Approve = async (req, res) => {
         vacancyId
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
         // 1️⃣ Find the Approval record for this approver
-        const approval = await Approval.findOne({
+        const approval = await db.Approval.findOne({
             where: {
                 document_id: vacancyId,
                 is_active: true
             },
             include: [
                 {
-                    model: ApprovalSetting,
+                    model: db.ApprovalSetting,
                     as: 'setting',
                     where: {
                         type: 'Vacancy',
@@ -453,7 +474,7 @@ exports.Approve = async (req, res) => {
                     }
                 }
             ]
-        });
+        }, transaction);
 
         if (!approval) {
             return res.status(404).json({
@@ -465,10 +486,10 @@ exports.Approve = async (req, res) => {
         await approval.update({
             status: 'Approved',
             signed_at: moment().toDate()
-        });
+        }, transaction);
 
         // 3️⃣ Check if all approvals for this document are now approved
-        const pendingApprovals = await Approval.count({
+        const pendingApprovals = await db.Approval.count({
             where: {
                 document_id: vacancyId,
                 status: {
@@ -476,18 +497,18 @@ exports.Approve = async (req, res) => {
                 },
                 is_active: true
             }
-        });
+        }, transaction);
         if (pendingApprovals === 0) {
-            await Vacancy.update({ 
+            await db.Vacancy.update({ 
                     status: "Approved" 
                 },
                 { 
                     where: { 
                         id: vacancyId 
                     } 
-                }
+                }, { transaction }
             );
-            const vacancy = await Vacancy.findByPk(vacancyId);
+            const vacancy = await db.Vacancy.findByPk(vacancyId, { transaction });
             await Position.update({ 
                     status: "Approved" 
                 },
@@ -495,11 +516,13 @@ exports.Approve = async (req, res) => {
                     where: { 
                         id: vacancy.position_id 
                     } 
-                }
+                }, { transaction }
             );
         }
 
         const data = await GetRecruitment(vacancyId);
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!", 
@@ -508,6 +531,7 @@ exports.Approve = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -520,10 +544,12 @@ exports.Disable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const vacancy = await Vacancy.findByPk(id);
+        const vacancy = await db.Vacancy.findByPk(id, { transaction });
 
         if (!vacancy) {
             return res.status(500).json({
@@ -537,16 +563,15 @@ exports.Disable = async (req, res) => {
             });
         }
 
-        await vacancy.update({ 
-            isActive: false
-        });
+        await vacancy.update({ status: 'Rejected' }, { transaction });
 
-        const salary = await Salary.findByPk(vacancy.salaryId);
-        await salary.update({ 
-            status: 'Vacant'
-        });
+        const position = await db.Position.findByPk(vacancy.position_id, { transaction });
+        await position.update({ status: 'Vacant' }, { transaction });
+
 
         const data = await GetRecruitment(vacancy.id);
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Disabled!", 
@@ -555,52 +580,7 @@ exports.Disable = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({ 
-            error: error.message 
-        });
-
-    }
-};
-
-exports.Enable = async (req, res) => {
-
-    const { 
-        id 
-    } = req.params;
-  
-    try {
-
-        const vacancy = await Vacancy.findByPk(id);
-
-        if (!vacancy) {
-            return res.status(500).json({
-                errors: [{
-                    type: "manual",
-                    value: "",
-                    msg: "Record not found!",
-                    path: "",
-                    location: "body",
-                }],
-            });
-        }
-
-        await vacancy.update({ 
-            isActive: true 
-        });
-
-        const salary = await Salary.findByPk(vacancy.salaryId);
-        await salary.update({ 
-            status: 'Requested'
-        });
-
-        const data = await GetRecruitment(vacancy.id);
-
-        res.status(200).json({
-            message: "Record Enabled!.", 
-            vacancy: data
-        });
-    } catch (error) {
-
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -613,65 +593,68 @@ exports.GeneratePDF = async (req, res) => {
         id 
     } = req.params;
     let browser;
+
+    const transaction = await sequelize.transaction();
+
     try {
-        const vacancy = await Vacancy.findOne({
+        const vacancy = await db.Vacancy.findOne({
             where: { id },
 
             include: [
                 {
-                    model: Position,
+                    model: db.Position,
                     as: 'position'
                 },
                 {
-                    model: Company,
-                    as: 'company',
-                    attributes: ['name']
-                },
-                {
-                    model: Department,
+                    model: db.Department,
                     as: 'department',
                     attributes: ['name']
                 },
                 {
-                    model: Schedule,
+                    model: db.Shift,
                     as: 'schedule',
-                    attributes: ['time_start', 'time_end']
+                    include: [
+                        {
+                            model: db.ShiftDay,
+                            as: 'days'
+                        }
+                    ]
                 }
             ]
-        });
+        }, transaction);
 
-        const approvals = await Approval.findAll({
+        const approvals = await db.Approval.findAll({
             where: {
                 document_id: vacancy.id,
                 is_active: true
             },
             include: [
                 {
-                    model: ApprovalSetting,
+                    model: db.ApprovalSetting,
                     as: 'setting',
                     where: {
                         type: 'Vacancy'
                     },
                     include: [
                         {
-                            model: User,
+                            model: db.User,
                             as: 'approver',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
                                                     include: [
                                                         {
-                                                            model: Position,
+                                                            model: db.Position,
                                                             as: 'position',
                                                         }
                                                     ]
@@ -683,24 +666,24 @@ exports.GeneratePDF = async (req, res) => {
                             ]
                         },
                         {
-                            model: User,
+                            model: db.User,
                             as: 'owner',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
                                                     include: [
                                                         {
-                                                            model: Position,
+                                                            model: db.Position,
                                                             as: 'position',
                                                         }
                                                     ]
@@ -715,14 +698,10 @@ exports.GeneratePDF = async (req, res) => {
                 }
             ],
             order: [
-                [
-                    { 
-                        model: ApprovalSetting, as: 'setting' 
-                    }, 
-                    'order', 'ASC'
-                ]
+                [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC']
             ]
-        });
+
+        }, transaction);
 
         // 3️⃣ Combine vacancy + approvals
         const result = {
@@ -738,20 +717,29 @@ exports.GeneratePDF = async (req, res) => {
         const position = result?.position?.name;
         const department = result?.department?.name;
         const location = result?.location;
-        const formatTime = (t) =>
-            t
-                ? new Date(`1970-01-01T${t}`).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                })
-                : '';
-
-        const timeStart = formatTime(result?.schedule?.time_start);
-        const timeEnd = formatTime(result?.schedule?.time_end);
-        const scheduleTime = `${timeStart} - ${timeEnd}`;
+        const FormatTime = (time) => {
+            if (!time) return '';
+            const [h, m] = time.split(':').map(Number);
+            const d = new Date();
+            d.setHours(h, m, 0, 0);
+            return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        };
+        const DayName = (n) => {
+            const map = {
+                1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday',
+                5: 'Friday', 6: 'Saturday', 7: 'Sunday'
+            };
+            return map[Number(n)] || '';
+        };
+        // after you fetch vacancy:
+        const days = (vacancy.shift?.days || [])
+            .map(d => Number(d.day_of_week))
+            .sort((a,b) => a-b)
+            .map(DayName);
+        const timeRange = `${FormatTime(vacancy.shift?.start_time)} to ${FormatTime(vacancy.shift?.end_time)}`;
+        const shift = `${days.join(', ')} ${timeRange}`;
         const dateNeeded = moment(result?.date_needed).format('MMMM DD, YYYY'); 
         const salaryRange = result?.salary_range || 0;
-        const company = result?.company?.name;
         const employment = result?.employment_status;
         const needBackgroundCheck = result?.need_background_check;
         const movement = result?.movement;
@@ -803,10 +791,9 @@ exports.GeneratePDF = async (req, res) => {
             position,
             department,
             location,
-            scheduleTime,
+            shift,
             dateNeeded,
             salaryRange,
-            company,
             employment,
             needBackgroundCheck,
             movement,
@@ -848,9 +835,13 @@ exports.GeneratePDF = async (req, res) => {
         });
 
         const buffer = Buffer.from(pdfBuffer);
+
+        await transaction.commit();
+
         res.send(buffer)
 
     } catch (error) {
+        await transaction.rollback();
         res.status(500).json({ error: error.message });
     } finally {
         if (browser) {

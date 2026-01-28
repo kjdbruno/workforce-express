@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
-const { Holiday, PremiumPay } = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
 
@@ -16,7 +17,7 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await Holiday.findAndCountAll({
+        const { count, rows } = await db.Holiday.findAndCountAll({
             where,
             limit: Limit,
             offset: Offset,
@@ -49,9 +50,11 @@ exports.Create = async (req, res) => {
         multiplier
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const exist = await Holiday.findOne({
+        const exist = await db.Holiday.findOne({
             where: { 
                 name 
             }
@@ -69,11 +72,13 @@ exports.Create = async (req, res) => {
             });
         }
 
-        await Holiday.create({
+        await db.Holiday.create({
             name,
             date,
             multiplier
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!"
@@ -81,6 +86,7 @@ exports.Create = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -100,9 +106,11 @@ exports.Update = async (req, res) => {
         multiplier
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const holiday = await Holiday.findByPk(id);
+        const holiday = await db.Holiday.findByPk(id);
         
         if (!holiday) {
             return res.status(500).json({
@@ -116,7 +124,7 @@ exports.Update = async (req, res) => {
             });
         }
 
-        const exist = await Holiday.findOne({
+        const exist = await db.Holiday.findOne({
             where: {
                 name,
                 date,
@@ -139,7 +147,9 @@ exports.Update = async (req, res) => {
             name,
             date,
             multiplier
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Modified!", 
@@ -148,6 +158,7 @@ exports.Update = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -160,10 +171,12 @@ exports.Disable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const holiday = await Holiday.findByPk(id);
+        const holiday = await db.Holiday.findByPk(id);
 
         if (!holiday) {
             return res.status(500).json({
@@ -179,7 +192,9 @@ exports.Disable = async (req, res) => {
 
         await holiday.update({ 
             isActive: false
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Disabled!", 
@@ -188,6 +203,7 @@ exports.Disable = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -200,10 +216,12 @@ exports.Enable = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
   
     try {
 
-        const holiday = await Holiday.findByPk(id);
+        const holiday = await db.Holiday.findByPk(id);
 
         if (!holiday) {
             return res.status(500).json({
@@ -219,7 +237,9 @@ exports.Enable = async (req, res) => {
 
         await holiday.update({ 
             isActive: true 
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(200).json({
             message: "Record Enabled!.", 
@@ -227,6 +247,7 @@ exports.Enable = async (req, res) => {
         });
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });

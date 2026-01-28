@@ -30,11 +30,11 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       adjusted_time_in: {
-        type: Sequelize.DATETIME,
+        type: Sequelize.DATE,
         allowNull: false
       },
       adjusted_time_out: {
-        type: Sequelize.DATETIME,
+        type: Sequelize.DATE,
         allowNull: false
       },
       reason: {

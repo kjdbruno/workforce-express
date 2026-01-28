@@ -11,6 +11,18 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      //Shift -> ShiftDay
+      Shift.hasMany(models.ShiftDay, {
+        foreignKey: 'shift_id',
+        as: 'days'
+      });
+
+      // Shift -> Vacancy
+      Shift.hasMany(models.Vacancy, {
+        foreignKey: 'shift_id',
+        as: 'vacancies'
+      });
     }
   }
   Shift.init({
