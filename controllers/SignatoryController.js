@@ -183,6 +183,7 @@ exports.Disable = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });

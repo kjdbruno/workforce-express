@@ -312,6 +312,7 @@ const GetSalaryAmount = (position) => {
 exports.Create = async (req, res) => {
 
     const { 
+        //employee
         applicantId,
         firstname,
         middlename,
@@ -325,34 +326,47 @@ exports.Create = async (req, res) => {
         bloodtype,
         email,
         contactNo,
+        //employment
         employeeNo,
         dateHired,
-        salarygroup,
-        payrollgroup,
-        taxstatus,
-        companyId,
         departmentId,
-        scheduleId,
         positionId,
         employmentstatus,
         tin,
         sssNo,
         philhealthNo,
-        pagibigNo
+        pagibigNo,
+        //salary
+        salarygroup,
+        payrollgroup,
+        taxstatus,
+        // shift
+        shiftId,
+        effectiveFrom,
+        effectiveTo,
+        notes
     } = req.body;
-    // const t = await Employee.sequelize.transaction();
+    
+    const transaction = await sequelize.transaction();
 
     try {
 
-        const year = new Date().getFullYear().toString();
+        const year = new Date(dateHired).getFullYear().toString();
         const latest = await db.Employment.findOne({
-            where: { employee_no: { [Op.like]: `${year}%` } },
-            order: [['employee_no', 'DESC']]
+        where: {
+            employee_no: {
+            [Op.like]: `${year}-%`
+            }
+        },
+        order: [['employee_no', 'DESC']]
         });
-        const newEmployeeNo = `${year}${String(
-            latest ? parseInt(latest.employee_no.slice(4)) + 1 : 1
-        ).padStart(5, '0')}`;
+        const nextSeq = latest
+            ? parseInt(latest.employee_no.split('-')[1], 10) + 1
+            : 1;
+        const newEmployeeNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
 
+
+        //employee
         const employee = await db.Employee.create({
             first_name: firstname,
             middle_name: middlename,
@@ -366,9 +380,9 @@ exports.Create = async (req, res) => {
             address,
             email,
             contact_number: contactNo
-        });
-        
-        const employment = await db.Employment.create({
+        }, { transaction });
+        //employment
+        await db.Employment.create({
             employee_id: employee.id,
             employee_no: (employeeNo?.trim() ? employeeNo : newEmployeeNo),
             date_hired: dateHired,
@@ -376,28 +390,33 @@ exports.Create = async (req, res) => {
             sss_no: sssNo,
             philhealth_no: philhealthNo,
             pagibig_no: pagibigNo,
-            company_id: companyId,
             department_id: departmentId,
             employment_status: employmentstatus,
             tax_status: taxstatus,
-            schedule_id: scheduleId,
             position_id: positionId,
             payroll_group: payrollgroup
-        });
-
-        const position = await db.Position.findByPk(positionId)
-        await position.update({
-            status: 'Filled'
-        })
+        }, { transaction });
+        // salary
+        const position = await db.Position.findByPk(positionId);
         const amount = GetSalaryAmount(position);
-        const salary = await db.SalarySchedule.create({
+        await db.SalarySchedule.create({
             employee_id: employee.id,
             amount: amount,
             salary_type: position.salary_type,
             salary_group: salarygroup,
             effective_date: dateHired
-        });
-
+        }, { transaction });
+        await position.update({
+            status: 'Filled'
+        }, { transaction })
+        //shift
+        await db.EmployeeShift.create({
+            employee_id: employee.id,
+            shift_id: shiftId,
+            effective_from: effectiveFrom,
+            effective_to: effectiveTo || null,
+            notes
+        }, { transaction })
         
         if (applicantId) {
             // EDUCATIONS
@@ -426,7 +445,7 @@ exports.Create = async (req, res) => {
                         start_date: t.start_date,
                         end_date: t.end_date,
                         hour: t.hour
-                    }))
+                    })), { transaction }
                 );
             }
 
@@ -440,7 +459,7 @@ exports.Create = async (req, res) => {
                         description: x.description,
                         start_date: x.start_date,
                         end_date: x.end_date
-                    }))
+                    })), { transaction }
                 );
             }
 
@@ -452,26 +471,25 @@ exports.Create = async (req, res) => {
                         employee_id: employee.id,
                         document: f.document,
                         filename: f.filename
-                    }))
+                    })), { transaction }
                 );
             }
 
             // DEACTIVATE APPLICANT (only if applicantId is valid)
             await db.Applicant.update(
                     { is_active: false },
-                    { where: { id: applicantId } }
+                    { where: { id: applicantId }, transaction }
                 );
         }
 
-        const data = await GetEmployee(employee.id);
+        await transaction.commit();
 
         res.status(201).json({
-            message: "Record Saved!",
-            employee: data
+            message: "Record Saved!"
         });
 
     } catch (error) {
-        console.log(error)
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -539,10 +557,11 @@ exports.UpdateEmployee = async (req, res) => {
         birthdate,
         birthplace,
         address,
-        bloodtype,
         email,
         contactNo,
     } = req.body;
+
+    const transaction = await sequelize.transaction();
 
     try {
 
@@ -568,19 +587,20 @@ exports.UpdateEmployee = async (req, res) => {
             civil_status: civilstatus,
             birthdate,
             birthplace,
-            blood_type: bloodtype,
             address,
             email,
             contact_number: contactNo
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(201).json({
-            message: "Record Saved!",
-            employee
+            message: "Record Saved!"
         });
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -600,25 +620,23 @@ exports.UpdateEmployment = async (req, res) => {
         id 
     } = req.params;
 
+    const transaction = await sequelize.transaction();
+
     const {
         employeeNo,
         dateHired,
-        companyId,
         departmentId,
-        scheduleId,
         employmentstatus,
         tin,
         sssNo,
         philhealthNo,
-        pagibigNo,
-        taxstatus,
-        payrollgroup
+        pagibigNo
     } = req.body;
 
     try {
 
-        const employee = await db.Employment.findByPk(id);
-        if (!employee) {
+        const employment = await db.Employment.findByPk(id);
+        if (!employment) {
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -630,20 +648,18 @@ exports.UpdateEmployment = async (req, res) => {
             });
         }
 
-        await employee.update({ 
+        await employment.update({ 
             employee_no: employeeNo,
             date_hired: dateHired,
-            company_id: companyId,
             department_id: departmentId,
-            schedule_id: scheduleId,
             employment_status: employmentstatus,
             tin,
             sss_no: sssNo,
             philhealth_no: philhealthNo,
-            pagibig_no: pagibigNo,
-            tax_status: taxstatus,
-            payroll_group: payrollgroup
-        });
+            pagibig_no: pagibigNo
+        }, { transaction });
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!"
@@ -651,6 +667,7 @@ exports.UpdateEmployment = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -665,87 +682,188 @@ exports.UpdateEmployment = async (req, res) => {
  * Salary
  */
 exports.CreateSalary = async (req, res) => {
-  const { id } = req.params
-  const { positionid, dateStart, dateEnd, salarygroup, amount, salarytype, notes } = req.body
+    const { 
+        id 
+    } = req.params
+    const { 
+        positionid, 
+        datestart, 
+        dateend, 
+        salarygroup, 
+        amount, 
+        salarytype, 
+        notes,
+        payrollgroup,
+        taxstatus
+    } = req.body
 
-  try {
-    if (!dateStart || !moment(dateStart, 'YYYY-MM-DD', true).isValid()) {
-      return res.status(400).json({ error: 'Invalid or missing dateStart.' })
-    }
+    const transaction = await sequelize.transaction();
 
-    const parsedEndDate =
-      dateEnd && moment(dateEnd, 'YYYY-MM-DD', true).isValid()
-        ? dateEnd
-        : null
+    try {
 
-    const employment = await db.Employment.findOne({ where: { id } })
-    if (!employment) {
-      return res.status(404).json({ error: 'Employment not found.' })
-    }
-
-    const isNewPosition = positionid && Number(positionid) !== employment.position_id
-
-    // 🔁 Only close previous salary IF position changed
-    if (isNewPosition) {
-      const previousSalary = await db.SalarySchedule.findOne({
-        where: {
-          employee_id: employment.employee_id,
-          is_active: true,
-          end_date: null
-        },
-        order: [['effective_date', 'DESC']]
-      })
-
-      if (previousSalary) {
-        const newEndDate = moment(dateStart)
-          .subtract(1, 'days')
-          .format('YYYY-MM-DD')
-
-        if (!moment(newEndDate, 'YYYY-MM-DD', true).isValid()) {
-          return res.status(400).json({ error: 'Computed end date is invalid.' })
+        if (!datestart || !moment(datestart, 'YYYY-MM-DD', true).isValid()) {
+            return res.status(400).json({ error: 'Invalid or missing dateStart.' })
         }
 
-        previousSalary.end_date = newEndDate
-        previousSalary.is_active = false
-        await previousSalary.save()
-      }
+        const parsedEndDate =
+            dateend && moment(dateend, 'YYYY-MM-DD', true).isValid()
+                ? dateend
+                : null
 
-      // Update positions
-      if (employment.position_id) {
-        await db.Position.update({ status: 'Vacant' }, { where: { id: employment.position_id } })
-      }
+        const employment = await db.Employment.findOne({ 
+            where: { 
+                id 
+            } 
+        })
+        if (!employment) {
+            return res.status(404).json({ error: 'Employment not found.' })
+        }
 
-      await db.Position.update({ status: 'Filled' }, { where: { id: positionid } })
+        const isNewPosition = positionid && Number(positionid) !== employment.position_id
 
-      employment.position_id = positionid
-      await employment.save()
+        if (isNewPosition) {
+            const previousSalary = await db.SalarySchedule.findOne({
+                where: {
+                    employee_id: employment.employee_id,
+                    is_active: true,
+                    end_date: null
+                },
+                order: [['effective_date', 'DESC']]
+            })
+
+            if (previousSalary) {
+                const newEndDate = moment(datestart)
+                    .subtract(1, 'days')
+                    .format('YYYY-MM-DD')
+
+                if (!moment(newEndDate, 'YYYY-MM-DD', true).isValid()) {
+                    return res.status(400).json({ error: 'Computed end date is invalid.' })
+                }
+
+                previousSalary.end_date = newEndDate
+                previousSalary.is_active = false
+                await previousSalary.save({ transaction })
+            }
+
+            if (employment.position_id) {
+                await db.Position.update({ 
+                    status: 'Vacant' 
+                }, { 
+                    where: { 
+                        id: employment.position_id 
+                    },
+                    transaction
+                })
+            }
+
+            await db.Position.update({ 
+                status: 'Filled' 
+            }, { 
+                where: { 
+                    id: positionid 
+                }, transaction
+            })
+
+            employment.position_id = positionid
+            await employment.save({ transaction })
+        }
+
+        await db.SalarySchedule.create({
+            employee_id: employment.employee_id,
+            amount: Number(String(amount).replace(/,/g, '')),
+            salary_type: salarytype,
+            salary_group: salarygroup,
+            effective_date: datestart,
+            end_date: parsedEndDate,
+            notes: notes ?? '',
+            is_active: true
+        }, { transaction })
+
+        await employment.update({
+            tax_status: taxstatus,
+            payroll_group: payrollgroup
+        }, { transaction })
+
+        await transaction.commit();
+
+        return res.status(201).json({
+            message: 'Record Saved!'
+        })
+
+    } catch (error) {
+        await transaction.rollback();
+        res.status(500).json({ error: error.message })
     }
-
-    // Always create new salary record
-    const salarySchedule = await db.SalarySchedule.create({
-      employee_id: employment.employee_id,
-      amount: Number(String(amount).replace(/,/g, '')),
-      salary_type: salarytype,
-      salary_group: salarygroup,
-      effective_date: dateStart,
-      end_date: parsedEndDate,
-      notes: notes ?? '',
-      is_active: true
-    })
-
-    return res.status(201).json({
-      message: 'Record Saved!',
-      salarySchedule
-    })
-
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: error.message })
-  }
 }
 
 /**
  * Salary
+ */
+
+/**
+ * Service Record
+ */
+exports.GetServiceRecord = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await db.SalarySchedule.findAll({
+            where: {
+                employee_id: id
+            },
+            order: [['effective_date', 'DESC']]
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.RemoveSalary = async (req, res) => {
+
+    const { 
+        id 
+    } = req.params;
+    
+    try {
+
+        const salary = await db.SalarySchedule.findByPk(id);
+
+        if (!salary) {
+            return res.status(404).json({
+                error: 'Salary record not found'
+            });
+        }
+
+        // Set end_date to today and deactivate
+        await salary.update({
+            end_date: new Date(),
+            is_active: false
+        });
+
+        res.json({
+            message: 'Record Updated!'
+        });
+
+    } catch (error) {
+
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Service Record
  */
 
 /**
@@ -969,37 +1087,7 @@ exports.CreatePhoto = async (req, res) => {
  * Photo
  */
 
-/**
- * Service Record
- */
-exports.GetServiceRecord = async (req, res) => {
 
-    const id = parseInt(req.query.id);
-
-    try {
-
-        const rows = await db.SalarySchedule.findAll({
-            where: {
-                employee_id: id
-            },
-            order: [['effective_date', 'DESC']]
-        });
-
-        res.json({
-            record: rows
-        });
-
-    } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
-    }
-};
-/**
- * Service Record
- */
 
 /**
  * Face Recognition

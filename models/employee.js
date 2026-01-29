@@ -81,6 +81,12 @@
           as: 'faces' // you can access employee.faces
         });
 
+        // Employee -> EmployeeShift
+        Employee.hasMany(models.EmployeeShift, {
+          foreignKey: "employee_id",
+          as: "employeeShifts",
+        });
+
       }
     }
     Employee.init({

@@ -23,6 +23,13 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'shift_id',
         as: 'vacancies'
       });
+
+       // Shift -> EmployeeShift
+      Shift.hasMany(models.EmployeeShift, {
+        foreignKey: "shift_id",
+        as: "employeeShifts",
+      });
+      
     }
   }
   Shift.init({

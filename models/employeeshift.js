@@ -11,6 +11,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // EmployeeShift -> Employee
+      EmployeeShift.belongsTo(models.Employee, {
+        foreignKey: "employee_id",
+        as: "employee",
+      });
+      // EmployeeShift -> Shift
+      EmployeeShift.belongsTo(models.Shift, {
+        foreignKey: "shift_id",
+        as: "shift",
+      });
     }
   }
   EmployeeShift.init({

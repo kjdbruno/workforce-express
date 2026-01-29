@@ -15,9 +15,7 @@ const {
     GetAll,
     GetApplicant,
     GetPosition,
-    GetCompany,
     GetDepartment,
-    GetSchedule,
     GetSchool,
     GetCourse,
     Create,
@@ -31,28 +29,24 @@ const {
     GetLeaveType,
     GetLeaveApplication,
     GetEmployeeRecord,
-    GetAttendance,
     UpdateEmployee,
-    UpdateEducation,
-    UpdateTraining,
-    UpdateExperience,
-    UpdateDependent,
-    CreateDocument,
     UpdateEmployment,
     CreateSalary,
-    CreateBiometric,
-    GetAccount,
-    CreateAccount,
-    GetPhoto,
-    CreatePhoto,
-    CreateLeave, 
+    RemoveSalary,
 } = require('../controllers/EmployeeController');
 const { GetShift } = require('../controllers/RecruitmentController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
 router.post('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), Create);
 
-router.get('/information/:id', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetEmployeeRecord);
+router.get('/:id/information', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetEmployeeRecord);
+router.post('/:id/information', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), UpdateEmployee);
+
+router.post('/:id/employment', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), UpdateEmployment);
+
+router.post('/:id/salary', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), CreateSalary);
+router.post('/:id/salary/disable', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), RemoveSalary);
+
 router.get('/service', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetServiceRecord);
 router.get('/education', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetEducation);
 router.get('/training', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetTraining);
@@ -62,8 +56,8 @@ router.get('/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 
 router.get('/leave/balance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveBalance);
 router.get('/leave/application', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveApplication);
 // router.get('/attendance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAttendance);
-router.get('/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAccount);
-router.get('/photo', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPhoto);
+// router.get('/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAccount);
+// router.get('/photo', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetPhoto);
 /**
  * OPTIONS
  */
