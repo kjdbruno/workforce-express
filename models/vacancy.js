@@ -58,10 +58,6 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    salary_range: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
     department_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -100,18 +96,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     need_background_check: {
       type: DataTypes.BOOLEAN,
-      allowNull: false
-    },
-    sex: {
-      type: DataTypes.ENUM('Male', 'Female'),
-      allowNull: false
-    },
-    age_range: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    year_experience: {
-      type: DataTypes.INTEGER,
       allowNull: false
     },
     employment_status: {

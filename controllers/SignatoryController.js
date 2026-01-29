@@ -237,7 +237,6 @@ exports.Enable = async (req, res) => {
 };
 
 const GetApprovalSetting = async (id) => {
-
     return await db.ApprovalSetting.findAndCountAll({
         include: [
             {

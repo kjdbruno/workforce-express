@@ -14,8 +14,6 @@ exports.GetAll = async (req, res) => {
     const Filter = req.query.Filter ? req.query.Filter.trim() : "";
     const Offset = (Page - 1) * Limit;
 
-    const transaction = await sequelize.transaction();
-
     try {
 
         const { count, rows } = await db.Vacancy.findAndCountAll({
@@ -36,10 +34,8 @@ exports.GetAll = async (req, res) => {
             offset: Offset,
             order: [
                 ['createdAt', 'DESC']
-            ], transaction
+            ]
         });
-
-        await transaction.commit();
 
         res.json({
             data: rows,
@@ -51,8 +47,6 @@ exports.GetAll = async (req, res) => {
         });
 
     } catch (error) {
-
-        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -61,8 +55,6 @@ exports.GetAll = async (req, res) => {
 };
 
 exports.GetPosition = async (req, res) => {
-
-    const transaction = await sequelize.transaction();
 
     try {
         const data = await db.Position.findAll({
@@ -104,15 +96,11 @@ exports.GetPosition = async (req, res) => {
                 ]
             ],
             order: [['id', 'ASC']]
-        }, transaction);
-
-        await transaction.commit();
+        });
 
         return res.status(200).json(data);
 
     } catch (error) {
-
-        await transaction.rollback();
         res.status(500).json({
             error: error.message
         });
@@ -121,8 +109,6 @@ exports.GetPosition = async (req, res) => {
 };
 
 exports.GetDepartment = async (req, res) => {
-
-    const transaction = await sequelize.transaction();
 
     try {
         const data = await db.Department.findAll({
@@ -134,63 +120,87 @@ exports.GetDepartment = async (req, res) => {
                 ['name', "label"]
             ],
             order: [['id', 'ASC']]
-        }, transaction);
-
-        await transaction.commit();
+        });
         return res.status(200).json(data);
 
     } catch (error) {
-
-        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
 
     }
 };
+
 exports.GetShift = async (req, res) => {
-
-    const transaction = await sequelize.transaction();
-
     try {
         const data = await db.Shift.findAll({
             attributes: [
                 ['id', 'value'],
                 [
-                    Sequelize.literal(`
-                        CONCAT(
-                            code, ' - ',
-                            name, ' (',
-                                TIME_FORMAT(start_time, '%h:%i %p'),
-                                ' - ',
-                                TIME_FORMAT(end_time, '%h:%i %p'),
-                            ')'
-                        )
-                    `),
-                    'label'
-                ]
-        ],
-            order: [['id', 'ASC']]
-        }, transaction);
-
-        await transaction.commit();
-        return res.status(200).json(data);
-
-    } catch (error) {
-
-        await transaction.rollback();
-        res.status(500).json({ 
-            error: error.message 
+                Sequelize.literal(`
+                    CONCAT(
+                    code, ' - ',
+                    name, ' (',
+                        TIME_FORMAT(start_time, '%h:%i %p'),
+                        ' - ',
+                        TIME_FORMAT(end_time, '%h:%i %p'),
+                    ')',
+                    ' [',
+                        IFNULL(
+                        GROUP_CONCAT(
+                            CASE days.day_of_week
+                            WHEN 1 THEN 'Mon'
+                            WHEN 2 THEN 'Tue'
+                            WHEN 3 THEN 'Wed'
+                            WHEN 4 THEN 'Thu'
+                            WHEN 5 THEN 'Fri'
+                            WHEN 6 THEN 'Sat'
+                            WHEN 7 THEN 'Sun'
+                            ELSE days.day_of_week
+                            END
+                            ORDER BY
+                            CASE days.day_of_week
+                                WHEN 1 THEN 1
+                                WHEN 2 THEN 2
+                                WHEN 3 THEN 3
+                                WHEN 4 THEN 4
+                                WHEN 5 THEN 5
+                                WHEN 6 THEN 6
+                                WHEN 7 THEN 7
+                                ELSE 99
+                            END
+                            SEPARATOR ', '
+                        ),
+                        ''
+                        ),
+                    ']'
+                    )
+                `),
+                'label'
+                ],
+            ],
+            include: [
+                {
+                    model: db.ShiftDay,
+                    as: 'days',
+                    attributes: [],
+                    required: false,
+                },
+            ],
+            group: ['Shift.id'],
+            order: [['id', 'ASC']],
+            subQuery: false,
         });
 
+        return res.status(200).json(data);
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
     }
 };
 
 exports.GetDetails = async (req, res) => {
 
     const { id } = req.params;
-
-    const transaction = await sequelize.transaction();
 
     try {
 
@@ -219,7 +229,7 @@ exports.GetDetails = async (req, res) => {
                     ]
                 }
             ]
-        }, transaction);
+        });
 
         const approvals = await db.Approval.findAll({
             where: {
@@ -303,7 +313,7 @@ exports.GetDetails = async (req, res) => {
                     }, 
                     'order', 'ASC']
             ]
-        }, transaction);
+        });
 
         // 3️⃣ Combine vacancy + approvals
         const result = {
@@ -311,13 +321,9 @@ exports.GetDetails = async (req, res) => {
             approvals
         };
 
-        await transaction.commit();
-
         res.json({ data: result });
 
     } catch (error) {
-
-        await transaction.rollback();
         res.status(500).json({ error: error.message });
 
     }
@@ -329,16 +335,11 @@ exports.Create = async (req, res) => {
         positionId,
         departmentId,
         shiftId,
-        salaryRange,
         date,
         location,
         movement,
         justification,
         needBackgroundCheck,
-        sex,
-        ageRange,
-        schoolLevel,
-        yearExperience,
         employmentStatus
     } = req.body;
 
@@ -354,7 +355,7 @@ exports.Create = async (req, res) => {
                 } 
             },
             order: [['control_no', 'DESC']]
-        }, transaction);
+        });
         let nextSeq = 1;
 
         if (latest) {
@@ -368,25 +369,18 @@ exports.Create = async (req, res) => {
             position_id: positionId,
             department_id: departmentId,
             shift_id: shiftId,
-            salary_range: salaryRange,
             date_needed: date,
             location,
             movement,
             justification,
             need_background_check: needBackgroundCheck,
-            sex: sex,
-            age_range: ageRange,
-            school_level: schoolLevel,
-            year_experience: yearExperience,
             employment_status: employmentStatus,
             status: 'Requested'
-        }, transaction);
+        }, { transaction });
 
         await db.Position.update(
             { status: 'Requested' },
-            { where: { 
-                id: positionId 
-            }, transaction }
+            { where: { id: positionId }, transaction }
         );
 
 
@@ -398,7 +392,7 @@ exports.Create = async (req, res) => {
                 is_active: true
             },
             order: [['order', 'ASC']]
-        }, transaction);
+        });
 
         for (const sig of signatories) {
 
@@ -411,18 +405,16 @@ exports.Create = async (req, res) => {
                 signed_at: isFirstApprover ? new Date() : null,
                 remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
                 is_active: true
-            }, transaction);
+            }, { transaction });
         }
 
         await transaction.commit();
 
         res.status(201).json({
-            message: "Record Saved!", 
-            vacancy: vacancy
+            message: "Record Saved!"
         });
 
     } catch (error) {
-
         await transaction.rollback();
         res.status(400).json({ 
             error: error.message 

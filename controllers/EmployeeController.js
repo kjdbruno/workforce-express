@@ -11,7 +11,8 @@ const puppeteer = require('puppeteer');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { Employee, Employment, Position, Applicant, Vacancy, Company, Department, Schedule, Course, School, ApplicantEducation, ApplicantExperience, ApplicantTraining, ApplicantDocument, SalarySchedule, EmployeeEducation, EmployeeTraining, EmployeeExperience, EmployeeDocument, EmployeeDependent, EmployeeLeaveBalance, LeaveType, EmployeeLeaveApplication, EmployeePhoto, DailyTimeRecord, EmployeeAttendance, EmployeeFace, EmployeeAccount, User } = require("../models");
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
 
@@ -22,14 +23,14 @@ exports.GetAll = async (req, res) => {
 
     try {
 
-        const { count, rows } = await Employee.findAndCountAll({
+        const { count, rows } = await db.Employee.findAndCountAll({
             include: [
                 {
-                    model: Employment,
+                    model: db.Employment,
                     as: 'employment',
                     include: [
                         {
-                            model: Position,
+                            model: db.Position,
                             as: 'position'
                         }
                     ]
@@ -74,30 +75,30 @@ exports.GetAll = async (req, res) => {
 
 exports.GetApplicant = async (req, res) => {
     try {
-        const data = await Applicant.findAll({
+        const data = await db.Applicant.findAll({
             where: {
                 status: 'Hired',
                 is_active: true
             },
             include: [
                 {
-                    model: Vacancy,
+                    model: db.Vacancy,
                     as: 'vacancy'
                 },
                 {
-                    model: ApplicantEducation,
+                    model: db.ApplicantEducation,
                     as: 'educations'
                 },
                 {
-                    model: ApplicantExperience,
+                    model: db.ApplicantExperience,
                     as: 'experiences'
                 },
                 {
-                    model: ApplicantTraining,
+                    model: db.ApplicantTraining,
                     as: 'trainings'
                 },
                 {
-                    model: ApplicantDocument,
+                    model: db.ApplicantDocument,
                     as: 'documents'
                 }
             ]
@@ -111,7 +112,7 @@ exports.GetApplicant = async (req, res) => {
 };
 exports.GetPosition = async (req, res) => {
     try {
-        const data = await Position.findAll({
+        const data = await db.Position.findAll({
             where: {
                 is_active: true
             },
@@ -146,28 +147,10 @@ exports.GetPosition = async (req, res) => {
         });
     }
 };
-exports.GetCompany = async (req, res) => {
-    try {
-        const data = await Company.findAll({
-            where: {
-                is_active: true
-            },
-            attributes: [
-                ['id', 'value'],
-                ['name', "label"]
-            ],
-            order: [['id', 'ASC']]
-        });
-        return res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
-        });
-    }
-};
+
 exports.GetDepartment = async (req, res) => {
     try {
-        const data = await Department.findAll({
+        const data = await db.Department.findAll({
             where: {
                 is_active: true
             },
@@ -184,30 +167,75 @@ exports.GetDepartment = async (req, res) => {
         });
     }
 };
-exports.GetSchedule = async (req, res) => {
+exports.GetShift = async (req, res) => {
     try {
-        const data = await Schedule.findAll({
-            where: {
-                is_active: true
-            },
+        const data = await db.Shift.findAll({
             attributes: [
                 ['id', 'value'],
-                ['name', "label"],
-                'time_start',
-                'time_end'
+                [
+                Sequelize.literal(`
+                    CONCAT(
+                    code, ' - ',
+                    name, ' (',
+                        TIME_FORMAT(start_time, '%h:%i %p'),
+                        ' - ',
+                        TIME_FORMAT(end_time, '%h:%i %p'),
+                    ')',
+                    ' [',
+                        IFNULL(
+                        GROUP_CONCAT(
+                            CASE days.day_of_week
+                            WHEN 1 THEN 'Mon'
+                            WHEN 2 THEN 'Tue'
+                            WHEN 3 THEN 'Wed'
+                            WHEN 4 THEN 'Thu'
+                            WHEN 5 THEN 'Fri'
+                            WHEN 6 THEN 'Sat'
+                            WHEN 7 THEN 'Sun'
+                            ELSE days.day_of_week
+                            END
+                            ORDER BY
+                            CASE days.day_of_week
+                                WHEN 1 THEN 1
+                                WHEN 2 THEN 2
+                                WHEN 3 THEN 3
+                                WHEN 4 THEN 4
+                                WHEN 5 THEN 5
+                                WHEN 6 THEN 6
+                                WHEN 7 THEN 7
+                                ELSE 99
+                            END
+                            SEPARATOR ', '
+                        ),
+                        ''
+                        ),
+                    ']'
+                    )
+                `),
+                'label'
+                ],
             ],
-            order: [['id', 'ASC']]
+            include: [
+                {
+                    model: db.ShiftDay,
+                    as: 'days',
+                    attributes: [],
+                    required: false,
+                },
+            ],
+            group: ['Shift.id'],
+            order: [['id', 'ASC']],
+            subQuery: false,
         });
+
         return res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ 
-            error: error.message 
-        });
+        return res.status(500).json({ error: error.message });
     }
 };
 exports.GetCourse = async (req, res) => {
     try {
-        const data = await Course.findAll({
+        const data = await db.Course.findAll({
             attributes: [
                 ['id', 'value'],
                 ['name', "label"]
@@ -223,7 +251,7 @@ exports.GetCourse = async (req, res) => {
 };
 exports.GetSchool = async (req, res) => {
     try {
-        const data = await School.findAll({
+        const data = await db.School.findAll({
             attributes: [
                 ['id', 'value'],
                 ['name', "label"]
@@ -239,7 +267,7 @@ exports.GetSchool = async (req, res) => {
 };
 exports.GetLeaveType = async (req, res) => {
     try {
-        const data = await LeaveType.findAll({
+        const data = await db.LeaveType.findAll({
         });
         return res.status(200).json(data);
     } catch (error) {
@@ -249,14 +277,14 @@ exports.GetLeaveType = async (req, res) => {
     }
 };
 const GetEmployee = async (id) => {
-    return await Employee.findOne({
+    return await db.Employee.findOne({
         include: [
             {
-                model: Employment,
+                model: db.Employment,
                 as: 'employment',
                 include: [
                     {
-                        model: Position,
+                        model: db.Position,
                         as: 'position'
                     }
                 ]
@@ -317,7 +345,7 @@ exports.Create = async (req, res) => {
     try {
 
         const year = new Date().getFullYear().toString();
-        const latest = await Employment.findOne({
+        const latest = await db.Employment.findOne({
             where: { employee_no: { [Op.like]: `${year}%` } },
             order: [['employee_no', 'DESC']]
         });
@@ -325,7 +353,7 @@ exports.Create = async (req, res) => {
             latest ? parseInt(latest.employee_no.slice(4)) + 1 : 1
         ).padStart(5, '0')}`;
 
-        const employee = await Employee.create({
+        const employee = await db.Employee.create({
             first_name: firstname,
             middle_name: middlename,
             last_name: lastname,
@@ -340,7 +368,7 @@ exports.Create = async (req, res) => {
             contact_number: contactNo
         });
         
-        const employment = await Employment.create({
+        const employment = await db.Employment.create({
             employee_id: employee.id,
             employee_no: (employeeNo?.trim() ? employeeNo : newEmployeeNo),
             date_hired: dateHired,
@@ -357,12 +385,12 @@ exports.Create = async (req, res) => {
             payroll_group: payrollgroup
         });
 
-        const position = await Position.findByPk(positionId)
+        const position = await db.Position.findByPk(positionId)
         await position.update({
             status: 'Filled'
         })
         const amount = GetSalaryAmount(position);
-        const salary = await SalarySchedule.create({
+        const salary = await db.SalarySchedule.create({
             employee_id: employee.id,
             amount: amount,
             salary_type: position.salary_type,
@@ -373,9 +401,9 @@ exports.Create = async (req, res) => {
         
         if (applicantId) {
             // EDUCATIONS
-            const educations = await ApplicantEducation.findAll({ where: { applicant_id: applicantId } });
+            const educations = await db.ApplicantEducation.findAll({ where: { applicant_id: applicantId } });
             if (educations.length) {
-                await EmployeeEducation.bulkCreate(
+                await db.EmployeeEducation.bulkCreate(
                     educations.map(e => ({
                         employee_id: employee.id,
                         school_level: e.school_level,
@@ -388,9 +416,9 @@ exports.Create = async (req, res) => {
             }
 
             // TRAININGS
-            const trainings = await ApplicantTraining.findAll({ where: { applicant_id: applicantId } });
+            const trainings = await db.ApplicantTraining.findAll({ where: { applicant_id: applicantId } });
             if (trainings.length) {
-                await EmployeeTraining.bulkCreate(
+                await db.EmployeeTraining.bulkCreate(
                     trainings.map(t => ({
                         employee_id: employee.id,
                         title: t.title,
@@ -403,9 +431,9 @@ exports.Create = async (req, res) => {
             }
 
             // EXPERIENCES
-            const experiences = await ApplicantExperience.findAll({ where: { applicant_id: applicantId } });
+            const experiences = await db.ApplicantExperience.findAll({ where: { applicant_id: applicantId } });
             if (experiences.length) {
-                await EmployeeExperience.bulkCreate(
+                await db.EmployeeExperience.bulkCreate(
                     experiences.map(x => ({
                         employee_id: employee.id,
                         position: x.position,
@@ -417,9 +445,9 @@ exports.Create = async (req, res) => {
             }
 
             // DOCUMENTS
-            const documents = await ApplicantDocument.findAll({ where: { applicant_id: applicantId } });
+            const documents = await db.ApplicantDocument.findAll({ where: { applicant_id: applicantId } });
             if (documents.length) {
-                await EmployeeDocument.bulkCreate(
+                await db.EmployeeDocument.bulkCreate(
                     documents.map(f => ({
                         employee_id: employee.id,
                         document: f.document,
@@ -429,7 +457,7 @@ exports.Create = async (req, res) => {
             }
 
             // DEACTIVATE APPLICANT (only if applicantId is valid)
-            await Applicant.update(
+            await db.Applicant.update(
                     { is_active: false },
                     { where: { id: applicantId } }
                 );
@@ -460,23 +488,23 @@ exports.GetEmployeeRecord = async (req, res) => {
 
     try {
 
-        const rows = await Employee.findOne({
+        const rows = await db.Employee.findOne({
             where: {
                 id
             },
             include: [
                 {
-                    model: Employment,
+                    model: db.Employment,
                     as: 'employment',
                     include: [
                         {
-                            model: Position,
+                            model: db.Position,
                             as: 'position'
                         }
                     ]
                 },
                 {
-                    model: EmployeePhoto,
+                    model: db.EmployeePhoto,
                     as: 'photo',
                     attributes: ['filename', 'avatar']
                 }
@@ -518,7 +546,7 @@ exports.UpdateEmployee = async (req, res) => {
 
     try {
 
-        const employee = await Employee.findByPk(id);
+        const employee = await db.Employee.findByPk(id);
         if (!employee) {
             return res.status(500).json({
                 errors: [{
@@ -589,7 +617,7 @@ exports.UpdateEmployment = async (req, res) => {
 
     try {
 
-        const employee = await Employment.findByPk(id);
+        const employee = await db.Employment.findByPk(id);
         if (!employee) {
             return res.status(500).json({
                 errors: [{
@@ -650,7 +678,7 @@ exports.CreateSalary = async (req, res) => {
         ? dateEnd
         : null
 
-    const employment = await Employment.findOne({ where: { id } })
+    const employment = await db.Employment.findOne({ where: { id } })
     if (!employment) {
       return res.status(404).json({ error: 'Employment not found.' })
     }
@@ -659,7 +687,7 @@ exports.CreateSalary = async (req, res) => {
 
     // 🔁 Only close previous salary IF position changed
     if (isNewPosition) {
-      const previousSalary = await SalarySchedule.findOne({
+      const previousSalary = await db.SalarySchedule.findOne({
         where: {
           employee_id: employment.employee_id,
           is_active: true,
@@ -684,17 +712,17 @@ exports.CreateSalary = async (req, res) => {
 
       // Update positions
       if (employment.position_id) {
-        await Position.update({ status: 'Vacant' }, { where: { id: employment.position_id } })
+        await db.Position.update({ status: 'Vacant' }, { where: { id: employment.position_id } })
       }
 
-      await Position.update({ status: 'Filled' }, { where: { id: positionid } })
+      await db.Position.update({ status: 'Filled' }, { where: { id: positionid } })
 
       employment.position_id = positionid
       await employment.save()
     }
 
     // Always create new salary record
-    const salarySchedule = await SalarySchedule.create({
+    const salarySchedule = await db.SalarySchedule.create({
       employee_id: employment.employee_id,
       amount: Number(String(amount).replace(/,/g, '')),
       salary_type: salarytype,
@@ -729,13 +757,13 @@ exports.GetAccount = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeAccount.findAll({
+        const rows = await db.EmployeeAccount.findAll({
             where: {
                 employee_id: id
             },
             include: [
                 {
-                    model: User,
+                    model: db.User,
                     as: 'user',
                     attributes: ['username', 'role', 'status']
                 }
@@ -767,13 +795,13 @@ exports.CreateAccount = async (req, res) => {
     try {
         const accs = Array.isArray(accounts) ? accounts : [];
 
-        const avatars = await EmployeePhoto.findOne({
+        const avatars = await db.EmployeePhoto.findOne({
             where: {
                 employee_id: id
             }
         })
 
-        const existingAccounts = await EmployeeAccount.findAll({
+        const existingAccounts = await db.EmployeeAccount.findAll({
             where: { employee_id: id }
         });
 
@@ -785,8 +813,8 @@ exports.CreateAccount = async (req, res) => {
 
             if (acc.id && existingIds.includes(acc.id)) {
                 // UPDATE existing account
-                const empAcc = await EmployeeAccount.findByPk(acc.id, {
-                    include: [{ model: User, as: 'user' }]
+                const empAcc = await db.EmployeeAccount.findByPk(acc.id, {
+                    include: [{ model: db.User, as: 'user' }]
                 });
 
                 if (!empAcc) continue;
@@ -809,10 +837,10 @@ exports.CreateAccount = async (req, res) => {
             } else {
                 // CREATE new User + Account
                 const hashed = await bcrypt.hash(acc.password, 10);
-                const emp = await Employee.findByPk(id);
+                const emp = await db.Employee.findByPk(id);
                 const middleInitial = emp.middle_name ? `${emp.middle_name.charAt(0)}.` : ''
                 const fullName = `${emp.first_name} ${middleInitial} ${emp.last_name}`.trim() + (emp.suffix ? ` ${emp.suffix}` : '')
-                user = await User.create({
+                user = await db.User.create({
                     name: fullName,
                     username: acc.username,
                     password: hashed,
@@ -821,7 +849,7 @@ exports.CreateAccount = async (req, res) => {
                     avatar: avatars.avatar
                 });
 
-                await EmployeeAccount.create({
+                await db.EmployeeAccount.create({
                     employee_id: id,
                     user_id: user.id,
                     is_active: true
@@ -833,7 +861,7 @@ exports.CreateAccount = async (req, res) => {
         const toDeactivate = existingIds.filter(id => !sentIds.includes(id));
 
         if (toDeactivate.length > 0) {
-        await EmployeeAccount.update(
+        await db.EmployeeAccount.update(
             { is_active: false },
             { where: { id: toDeactivate } }
         );
@@ -864,7 +892,7 @@ exports.GetPhoto = async (req, res) => {
 
     try {
 
-        const rows = await EmployeePhoto.findOne({
+        const rows = await db.EmployeePhoto.findOne({
             where: {
                 employee_id: id
             }
@@ -889,7 +917,7 @@ exports.CreatePhoto = async (req, res) => {
     
     try {
 
-        const exist = await EmployeePhoto.findOne({
+        const exist = await db.EmployeePhoto.findOne({
             where: { employee_id: id }
         });
 
@@ -916,7 +944,7 @@ exports.CreatePhoto = async (req, res) => {
                     avatar: `/avatar/${filename}`
                 })
             } else {
-                await EmployeePhoto.create({
+                await db.EmployeePhoto.create({
                     employee_id: id,
                     filename,
                     avatar: `/avatar/${filename}`
@@ -950,7 +978,7 @@ exports.GetServiceRecord = async (req, res) => {
 
     try {
 
-        const rows = await SalarySchedule.findAll({
+        const rows = await db.SalarySchedule.findAll({
             where: {
                 employee_id: id
             },
@@ -981,7 +1009,7 @@ exports.CreateBiometric = async (req, res) => {
     const { descriptor, imageBase64 } = req.body;
   try {
 
-    const face = await EmployeeFace.findOne({
+    const face = await db.EmployeeFace.findOne({
         where: { employee_id: id }
     });
 
@@ -991,7 +1019,7 @@ exports.CreateBiometric = async (req, res) => {
             image_file: imageBase64
         }) 
     } else {
-        await EmployeeFace.create({
+        await db.EmployeeFace.create({
             employee_id: id,
             descriptor: JSON.stringify(descriptor),
             image_file: imageBase64
@@ -1020,7 +1048,7 @@ exports.GetEducation = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeEducation.findAll({
+        const rows = await db.EmployeeEducation.findAll({
             where: {
                 employee_id: id,
                 is_active: true
@@ -1052,7 +1080,7 @@ exports.UpdateEducation = async (req, res) => {
     try {
         const educ = Array.isArray(educations) ? educations : [];
         
-        const existingRecords = await EmployeeEducation.findAll({
+        const existingRecords = await db.EmployeeEducation.findAll({
             where: {
                 employee_id: id, 
                 is_active: true 
@@ -1065,7 +1093,7 @@ exports.UpdateEducation = async (req, res) => {
         for (const edu of educ) {
             if (edu.id && existingIds.includes(edu.id)) {
                 // UPDATE if exists
-                await EmployeeEducation.update({
+                await db.EmployeeEducation.update({
                     school_level: edu.schoollevel,
                     school_id: edu.schoolId,
                     course_id: edu.courseId,
@@ -1078,7 +1106,7 @@ exports.UpdateEducation = async (req, res) => {
                 });
             } else {
                 // INSERT new record
-                await EmployeeEducation.create({
+                await db.EmployeeEducation.create({
                     employee_id: id,
                     school_level: edu.schoollevel,
                     school_id: edu.schoolId,
@@ -1091,7 +1119,7 @@ exports.UpdateEducation = async (req, res) => {
 
         const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
         if (toDeactivate.length > 0) {
-            await EmployeeEducation.update(
+            await db.EmployeeEducation.update(
                 { 
                     is_active: false 
                 },
@@ -1128,7 +1156,7 @@ exports.GetTraining = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeTraining.findAll({
+        const rows = await db.EmployeeTraining.findAll({
             where: {
                 employee_id: id,
                 is_active: true
@@ -1160,7 +1188,7 @@ exports.UpdateTraining = async (req, res) => {
     try {
         const training = Array.isArray(trainings) ? trainings : [];
 
-        const existingRecords = await EmployeeTraining.findAll({
+        const existingRecords = await db.EmployeeTraining.findAll({
             where: { 
                 employee_id: id, 
                 is_active: true 
@@ -1173,7 +1201,7 @@ exports.UpdateTraining = async (req, res) => {
         for (const tr of training) {
             if (tr.id && existingIds.includes(tr.id)) {
                 // UPDATE if exists
-                await EmployeeTraining.update({
+                await db.EmployeeTraining.update({
                     title: tr.title,
                     type: tr.trainingtype,
                     start_date: tr.startDate,
@@ -1186,7 +1214,7 @@ exports.UpdateTraining = async (req, res) => {
                 });
             } else {
                 // INSERT new record
-                await EmployeeTraining.create({
+                await db.EmployeeTraining.create({
                     employee_id: id,
                     title: tr.title,
                     type: tr.trainingtype,
@@ -1199,7 +1227,7 @@ exports.UpdateTraining = async (req, res) => {
 
         const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
         if (toDeactivate.length > 0) {
-            await EmployeeTraining.update(
+            await db.EmployeeTraining.update(
                 { 
                     is_active: false 
                 },
@@ -1236,7 +1264,7 @@ exports.GetExperience = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeExperience.findAll({
+        const rows = await db.EmployeeExperience.findAll({
             where: {
                 employee_id: id,
                 is_active: true
@@ -1268,7 +1296,7 @@ exports.UpdateExperience = async (req, res) => {
     try {
         const experience = Array.isArray(experiences) ? experiences : [];
 
-        const existingRecords = await EmployeeExperience.findAll({
+        const existingRecords = await db.EmployeeExperience.findAll({
             where: { 
                 employee_id: id, 
                 is_active: true 
@@ -1280,7 +1308,7 @@ exports.UpdateExperience = async (req, res) => {
         for (const exp of experience) {
             if (exp.id && existingIds.includes(exp.id)) {
                 // UPDATE if exists
-                await EmployeeExperience.update({
+                await db.EmployeeExperience.update({
                     position: exp.position,
                     start_date: exp.startDate,
                     end_date: exp.endDate,
@@ -1292,7 +1320,7 @@ exports.UpdateExperience = async (req, res) => {
                 });
             } else {
                 // INSERT new record
-                await EmployeeExperience.create({
+                await db.EmployeeExperience.create({
                     employee_id: id,
                     position: exp.position,
                     start_date: exp.startDate,
@@ -1304,7 +1332,7 @@ exports.UpdateExperience = async (req, res) => {
 
         const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
         if (toDeactivate.length > 0) {
-            await EmployeeExperience.update(
+            await db.EmployeeExperience.update(
                 { 
                     isActive: false 
                 },
@@ -1341,7 +1369,7 @@ exports.GetDependent = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeDependent.findAll({
+        const rows = await db.EmployeeDependent.findAll({
             where: {
                 employee_id: id,
                 is_active: true
@@ -1373,7 +1401,7 @@ exports.UpdateDependent = async (req, res) => {
     try {
         const dependent = Array.isArray(dependents) ? dependents : [];
 
-        const existingRecords = await EmployeeDependent.findAll({
+        const existingRecords = await db.EmployeeDependent.findAll({
             where: { 
                 employee_id: id, 
                 is_active: true 
@@ -1385,7 +1413,7 @@ exports.UpdateDependent = async (req, res) => {
         for (const dep of dependent) {
             if (dep.id && existingIds.includes(dep.id)) {
                 // UPDATE if exists
-                await EmployeeDependent.update({
+                await db.EmployeeDependent.update({
                     relationship: dep.relationship,
                     first_name: dep.firstname,
                     middle_name: dep.middlename,
@@ -1403,7 +1431,7 @@ exports.UpdateDependent = async (req, res) => {
                 });
             } else {
                 // INSERT new record
-                await EmployeeDependent.create({
+                await db.EmployeeDependent.create({
                     employee_id: id,
                     relationship: dep.relationship,
                     first_name: dep.firstname,
@@ -1421,7 +1449,7 @@ exports.UpdateDependent = async (req, res) => {
 
         const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
         if (toDeactivate.length > 0) {
-            await EmployeeDependent.update(
+            await db.EmployeeDependent.update(
                 { 
                     is_active: false 
                 },
@@ -1458,7 +1486,7 @@ exports.GetDocument = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeDocument.findAll({
+        const rows = await db.EmployeeDocument.findAll({
             where: {
                 employee_id: id,
                 is_active: true
@@ -1489,7 +1517,7 @@ exports.CreateDocument = async (req, res) => {
 
         for (const file of files) {
             const filePath = `/documents/${file.filename}`;
-            await EmployeeDocument.create({
+            await db.EmployeeDocument.create({
                 employee_id: id,
                 document: filePath,
                 filename: file.originalname
@@ -1515,44 +1543,44 @@ exports.CreateDocument = async (req, res) => {
 /**
  * Attendance
  */
-exports.GetAttendance = async (req, res) => {
+// exports.GetAttendance = async (req, res) => {
 
-    const { id, year, month } = req.query;
+//     const { id, year, month } = req.query;
 
-    const m = parseInt(month);
-    const y = parseInt(year);
+//     const m = parseInt(month);
+//     const y = parseInt(year);
 
-    const startDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").startOf("month");
-    const endDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").endOf("month");
+//     const startDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").startOf("month");
+//     const endDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").endOf("month");
 
-    const startDate = startDateMoment.format("YYYY-MM-DD");
-    const endDate = endDateMoment.format("YYYY-MM-DD");
+//     const startDate = startDateMoment.format("YYYY-MM-DD");
+//     const endDate = endDateMoment.format("YYYY-MM-DD");
 
-    try {
+//     try {
 
-        const rows = await EmployeeAttendance.findAll({
-            where: {
-                employee_id: id,
-                [Op.and]: [
-                    { date_start: { [Op.lte]: endDate } }, // attendance starts before or on endDate
-                    { date_end: { [Op.gte]: startDate } }  // attendance ends after or on startDate
-                ]
-            }
-        });
+//         const rows = await EmAt.findAll({
+//             where: {
+//                 employee_id: id,
+//                 [Op.and]: [
+//                     { date_start: { [Op.lte]: endDate } }, // attendance starts before or on endDate
+//                     { date_end: { [Op.gte]: startDate } }  // attendance ends after or on startDate
+//                 ]
+//             }
+//         });
 
 
-        res.json({
-            record: rows
-        });
+//         res.json({
+//             record: rows
+//         });
 
-    } catch (error) {
+//     } catch (error) {
 
-        res.status(500).json({ 
-            error: error.message 
-        });
+//         res.status(500).json({ 
+//             error: error.message 
+//         });
 
-    }
-};
+//     }
+// };
 /**
  * Attendance
  */
@@ -1566,10 +1594,10 @@ exports.GetLeaveBalance = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeLeaveBalance.findAll({
+        const rows = await db.EmployeeLeaveBalance.findAll({
             include: [
                 {
-                    model: LeaveType,
+                    model: db.LeaveType,
                     as: 'leaveType'
                 }
             ],
@@ -1603,10 +1631,10 @@ exports.GetLeaveApplication = async (req, res) => {
 
     try {
 
-        const rows = await EmployeeLeaveApplication.findAll({
+        const rows = await db.EmployeeLeaveApplication.findAll({
             include: [
                 {
-                    model: LeaveType,
+                    model: db.LeaveType,
                     as: 'leaveType'
                 }
             ],
@@ -1644,7 +1672,7 @@ exports.CreateLeave = async (req, res) => {
     try {
 
         for (const leave of leaves) {
-            await EmployeeLeaveBalance.create({
+            await db.EmployeeLeaveBalance.create({
                 employee_id: id,
                 leave_type_id: leave.leavetypeid,
                 credit: leave.credit,
