@@ -833,6 +833,8 @@ exports.RemoveSalary = async (req, res) => {
     const { 
         id 
     } = req.params;
+
+    const transaction = await sequelize.transaction();
     
     try {
 
@@ -848,7 +850,9 @@ exports.RemoveSalary = async (req, res) => {
         await salary.update({
             end_date: new Date(),
             is_active: false
-        });
+        }, { transaction });
+
+        await transaction.commit();
 
         res.json({
             message: 'Record Updated!'
@@ -856,6 +860,7 @@ exports.RemoveSalary = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -866,6 +871,92 @@ exports.RemoveSalary = async (req, res) => {
  * Service Record
  */
 
+/**
+ * Photo
+ */
+exports.GetPhoto = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await db.EmployeePhoto.findOne({
+            where: {
+                employee_id: id
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.CreatePhoto = async (req, res) => {
+
+    const { id } = req.params;
+
+    const transaction = await sequelize.transaction();
+    
+    try {
+
+        const file = req.file;
+        const filePath = `/uploads/avatar/${file.filename}`; // public URL path (served from /public)
+
+        const exist = await db.EmployeePhoto.findOne({
+            where: { 
+                employee_id: id 
+            },
+        });
+
+        // If you want to delete the previous physical file
+        if (exist?.avatar) {
+            const oldRel = exist.avatar.replace("/uploads/avatar/", "");
+            const oldAbs = path.join(__dirname, "../public/uploads/avatar", oldRel);
+
+            // delete old file if exists
+            if (fs.existsSync(oldAbs)) {
+                fs.unlinkSync(oldAbs);
+            }
+        }
+
+        if (exist) {
+            await exist.update({
+                filename: file.filename,
+                avatar: filePath,
+            }, { transaction });
+        } else {
+            await db.EmployeePhoto.create({
+                employee_id: id,
+                filename: file.filename,
+                avatar: filePath,
+            }, { transaction });
+        }
+
+        await transaction.commit();
+
+        res.status(201).json({
+            message: "Record Saved!",
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Photo
+ */
 /**
  * Account
  */
@@ -909,6 +1000,8 @@ exports.CreateAccount = async (req, res) => {
     const { 
         accounts
     } = req.body;
+
+    const transaction = await sequelize.transaction();
     
     try {
         const accs = Array.isArray(accounts) ? accounts : [];
@@ -943,14 +1036,14 @@ exports.CreateAccount = async (req, res) => {
                     username: acc.username,
                     role: acc.role,
                     status: acc.status
-                });
+                }, { transaction });
 
                 if (acc.password) {
                     const hashed = await bcrypt.hash(acc.password, 10);
-                    await user.update({ password: hashed });
+                    await user.update({ password: hashed }, { transaction });
                 }
 
-                await empAcc.update({ is_active: true });
+                await empAcc.update({ is_active: true }, { transaction });
 
             } else {
                 // CREATE new User + Account
@@ -965,13 +1058,13 @@ exports.CreateAccount = async (req, res) => {
                     role: acc.role,
                     status: acc.status,
                     avatar: avatars.avatar
-                });
+                }, { transaction });
 
                 await db.EmployeeAccount.create({
                     employee_id: id,
                     user_id: user.id,
                     is_active: true
-                });
+                }, { transaction });
             }
         }
 
@@ -981,9 +1074,11 @@ exports.CreateAccount = async (req, res) => {
         if (toDeactivate.length > 0) {
         await db.EmployeeAccount.update(
             { is_active: false },
-            { where: { id: toDeactivate } }
+            { where: { id: toDeactivate } }, transaction
         );
         }
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!"
@@ -991,6 +1086,7 @@ exports.CreateAccount = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -1001,127 +1097,40 @@ exports.CreateAccount = async (req, res) => {
  * Account
  */
 
-/**
- * Photo
- */
-exports.GetPhoto = async (req, res) => {
-
-    const id = parseInt(req.query.id);
-
-    try {
-
-        const rows = await db.EmployeePhoto.findOne({
-            where: {
-                employee_id: id
-            }
-        });
-
-        res.json({
-            record: rows
-        });
-
-    } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
-    }
-};
-exports.CreatePhoto = async (req, res) => {
-
-    const { id } = req.params;
-    const file = req.file;
-    
-    try {
-
-        const exist = await db.EmployeePhoto.findOne({
-            where: { employee_id: id }
-        });
-
-        if (file) {
-            const filename = file.originalname;
-            const ext = path.extname(file.originalname).toLowerCase();
-            const uploadPath = path.join(__dirname, '../public/avatar', filename);
-
-            let sharpPipeline = sharp(file.buffer).resize({ width: 800 });
-
-            if (ext === '.png') {
-                sharpPipeline = sharpPipeline.png({ quality: 80 });
-            } else {
-                sharpPipeline = sharpPipeline
-                .flatten({ background: { r: 255, g: 255, b: 255 } })
-                .jpeg({ quality: 80 });
-            }
-
-            await sharpPipeline.toFile(uploadPath);
-
-            if (exist) {
-                await exist.update({
-                    filename,
-                    avatar: `/avatar/${filename}`
-                })
-            } else {
-                await db.EmployeePhoto.create({
-                    employee_id: id,
-                    filename,
-                    avatar: `/avatar/${filename}`
-                })
-            }
-
-            res.status(201).json({
-                message: "Record Saved!",
-            });
-
-        }
-
-    } catch (error) {
-
-        res.status(400).json({ 
-            error: error.message 
-        });
-
-    }
-};
-/**
- * Photo
- */
-
-
 
 /**
  * Face Recognition
  */
 exports.CreateBiometric = async (req, res) => {
-  const { id } = req.params;
-    const { descriptor, imageBase64 } = req.body;
-  try {
+    const { id } = req.params;
+        const { descriptor, imageBase64 } = req.body;
+    try {
 
-    const face = await db.EmployeeFace.findOne({
-        where: { employee_id: id }
-    });
+        const face = await db.EmployeeFace.findOne({
+            where: { employee_id: id }
+        });
 
-    if (face) {
-        await face.update({
-            descriptor: JSON.stringify(descriptor),
-            image_file: imageBase64
-        }) 
-    } else {
-        await db.EmployeeFace.create({
-            employee_id: id,
-            descriptor: JSON.stringify(descriptor),
-            image_file: imageBase64
+        if (face) {
+            await face.update({
+                descriptor: JSON.stringify(descriptor),
+                image_file: imageBase64
+            }) 
+        } else {
+            await db.EmployeeFace.create({
+                employee_id: id,
+                descriptor: JSON.stringify(descriptor),
+                image_file: imageBase64
+            })
+        }
+
+        return res.status(201).json({
+        message: 'Record Saved!'
         })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: error.message })
     }
-
-    return res.status(201).json({
-      message: 'Record Saved!'
-    })
-
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: error.message })
-  }
 }
 /**
  * Face Recognition
@@ -1164,6 +1173,8 @@ exports.UpdateEducation = async (req, res) => {
     const { 
         educations
     } = req.body;
+
+    const transaction = await sequelize.transaction();
     
     try {
         const educ = Array.isArray(educations) ? educations : [];
@@ -1191,7 +1202,7 @@ exports.UpdateEducation = async (req, res) => {
                     where: { 
                         id: edu.id 
                     }
-                });
+                }, { transaction });
             } else {
                 // INSERT new record
                 await db.EmployeeEducation.create({
@@ -1201,7 +1212,7 @@ exports.UpdateEducation = async (req, res) => {
                     course_id: edu.courseId,
                     start_date: edu.startDate,
                     end_date: edu.endDate
-                });
+                }, { transaction });
             }
         }
 
@@ -1214,10 +1225,12 @@ exports.UpdateEducation = async (req, res) => {
                 { 
                     where: { 
                         id: toDeactivate 
-                    }
+                    }, transaction
                 }
             );
         }
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!"
@@ -1225,6 +1238,7 @@ exports.UpdateEducation = async (req, res) => {
 
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -1273,6 +1287,8 @@ exports.UpdateTraining = async (req, res) => {
         trainings
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
         const training = Array.isArray(trainings) ? trainings : [];
 
@@ -1299,7 +1315,7 @@ exports.UpdateTraining = async (req, res) => {
                     where: { 
                         id: tr.id 
                     }
-                });
+                }, { transaction });
             } else {
                 // INSERT new record
                 await db.EmployeeTraining.create({
@@ -1309,7 +1325,7 @@ exports.UpdateTraining = async (req, res) => {
                     start_date: tr.startDate,
                     end_date: tr.endDate,
                     hour: tr.hour
-                });
+                }, { transaction });
             }
         }
 
@@ -1322,10 +1338,12 @@ exports.UpdateTraining = async (req, res) => {
                 { 
                     where: { 
                         id: toDeactivate 
-                    } 
+                    }, transaction
                 }
             );
         }
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!"
@@ -1333,6 +1351,7 @@ exports.UpdateTraining = async (req, res) => {
         
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -1381,6 +1400,8 @@ exports.UpdateExperience = async (req, res) => {
         experiences
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
         const experience = Array.isArray(experiences) ? experiences : [];
 
@@ -1405,7 +1426,7 @@ exports.UpdateExperience = async (req, res) => {
                     where: { 
                         id: exp.id 
                     }
-                });
+                }, { transaction });
             } else {
                 // INSERT new record
                 await db.EmployeeExperience.create({
@@ -1414,7 +1435,7 @@ exports.UpdateExperience = async (req, res) => {
                     start_date: exp.startDate,
                     end_date: exp.endDate,
                     description: exp.description
-                });
+                }, { transaction });
             }
         }
 
@@ -1427,10 +1448,12 @@ exports.UpdateExperience = async (req, res) => {
                 { 
                     where: { 
                         id: toDeactivate 
-                    }
+                    }, transaction
                 }
             );
         }
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!"
@@ -1438,6 +1461,7 @@ exports.UpdateExperience = async (req, res) => {
         
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -1486,6 +1510,8 @@ exports.UpdateDependent = async (req, res) => {
         dependents
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
         const dependent = Array.isArray(dependents) ? dependents : [];
 
@@ -1511,12 +1537,12 @@ exports.UpdateDependent = async (req, res) => {
                     contact_number: dep.contactNo,
                     email: dep.email,
                     address: dep.address,
-                    isEmergency: dep.isEmergency
+                    is_emergency: dep.isEmergency
                 }, {
                     where: { 
                         id: dep.id 
                     }
-                });
+                }, { transaction });
             } else {
                 // INSERT new record
                 await db.EmployeeDependent.create({
@@ -1530,8 +1556,8 @@ exports.UpdateDependent = async (req, res) => {
                     contact_number: dep.contactNo,
                     email: dep.email,
                     address: dep.address,
-                    isEmergency: dep.isEmergency
-                });
+                    is_emergency: dep.isEmergency
+                }, { transaction });
             }
         }
 
@@ -1544,10 +1570,12 @@ exports.UpdateDependent = async (req, res) => {
                 { 
                     where: { 
                         id: toDeactivate 
-                    }
+                    }, transaction
                 }
             );
         }
+
+        await transaction.commit();
 
         res.status(201).json({
             message: "Record Saved!"
@@ -1555,6 +1583,7 @@ exports.UpdateDependent = async (req, res) => {
         
     } catch (error) {
 
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -1594,36 +1623,33 @@ exports.GetDocument = async (req, res) => {
     }
 };
 exports.CreateDocument = async (req, res) => {
-
-    const {
-        id
-    } = req.params;
-
-    const files = req.files || [];
+    const { id } = req.params;
 
     try {
+        const files = req.files || [];
+
+        if (!files.length) {
+        return res.status(400).json({ error: "No files uploaded." });
+        }
 
         for (const file of files) {
-            const filePath = `/documents/${file.filename}`;
+            const filePath = `/uploads/documents/${file.filename}`;
+
             await db.EmployeeDocument.create({
                 employee_id: id,
                 document: filePath,
-                filename: file.originalname
+                filename: file.originalname,
             });
         }
 
-        res.status(201).json({
-            message: "Record Saved!"
+        return res.status(201).json({
+        message: "Record Saved!"
         });
-        
     } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
+        return res.status(500).json({ error: error.message });
     }
 };
+
 /**
  * Document
  */

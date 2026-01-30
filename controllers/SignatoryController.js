@@ -92,7 +92,8 @@ exports.Create = async (req, res) => {
         const exist = await db.ApprovalSetting.findOne({
             where: { 
                 type,
-                owner_id: ownerid
+                owner_id: ownerid,
+                is_active: true
             }
         });
 

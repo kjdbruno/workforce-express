@@ -501,7 +501,7 @@ exports.Approve = async (req, res) => {
                 }, { transaction }
             );
             const vacancy = await db.Vacancy.findByPk(vacancyId, { transaction });
-            await Position.update({ 
+            await db.Position.update({ 
                     status: "Approved" 
                 },
                 { 
@@ -604,7 +604,7 @@ exports.GeneratePDF = async (req, res) => {
                 },
                 {
                     model: db.Shift,
-                    as: 'schedule',
+                    as: 'shift',
                     include: [
                         {
                             model: db.ShiftDay,
@@ -728,10 +728,52 @@ exports.GeneratePDF = async (req, res) => {
             .map(d => Number(d.day_of_week))
             .sort((a,b) => a-b)
             .map(DayName);
+
+        const formatCurrency = (value) => {
+            if (value == null || isNaN(value)) return '₱0.00';
+
+            return new Intl.NumberFormat('en-PH', {
+                style: 'currency',
+                currency: 'PHP',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        };
+
+
+        const getSalaryRange = (position) => {
+            if (!position) return 0;
+
+            const { salary_type, monthly_salary, daily_salary, hourly_salary } = position;
+
+            switch (salary_type) {
+                case 'Monthly': {
+                    const min = monthly_salary * 0.9;
+                    const max = monthly_salary * 1.1;
+                    return `${formatCurrency(min)} - ${formatCurrency(max)}`;
+                }
+
+                case 'Daily': {
+                    const min = daily_salary * 0.9;
+                    const max = daily_salary * 1.1;
+                    return `${formatCurrency(min)} - ${formatCurrency(max)}`;
+                }
+
+                case 'Hourly': {
+                    const min = hourly_salary * 0.9;
+                    const max = hourly_salary * 1.1;
+                    return `${formatCurrency(min)} - ${formatCurrency(max)}`;
+                }
+
+                default:
+                return 0;
+            }
+        };
+
         const timeRange = `${FormatTime(vacancy.shift?.start_time)} to ${FormatTime(vacancy.shift?.end_time)}`;
         const shift = `${days.join(', ')} ${timeRange}`;
         const dateNeeded = moment(result?.date_needed).format('MMMM DD, YYYY'); 
-        const salaryRange = result?.salary_range || 0;
+        const salaryRange = getSalaryRange(vacancy.position);
         const employment = result?.employment_status;
         const needBackgroundCheck = result?.need_background_check;
         const movement = result?.movement;

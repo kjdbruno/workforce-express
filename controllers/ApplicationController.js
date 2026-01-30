@@ -6,20 +6,8 @@ const puppeteer = require('puppeteer');
 const moment = require('moment');
 const transporter = require('../utils/mailer');
 
-const {
-    Applicant,
-    Vacancy,
-    Position,
-    Company,
-    Department,
-    Schedule,
-    Course,
-    School,
-    ApplicantEducation,
-    ApplicantTraining,
-    ApplicantExperience,
-    ApplicantDocument
-} = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
     
@@ -29,14 +17,14 @@ exports.GetAll = async (req, res) => {
     const Offset = (Page - 1) * Limit;
 
     try {
-        const { count, rows } = await Applicant.findAndCountAll({
+        const { count, rows } = await db.Applicant.findAndCountAll({
             include: [
                 {
-                    model: Vacancy,
+                    model: db.Vacancy,
                     as: 'vacancy',
                     include: [
                         {
-                            model: Position,
+                            model: db.Position,
                             as: 'position'
                         },
                     ]
@@ -78,26 +66,28 @@ exports.GetAll = async (req, res) => {
 
 exports.GetVacancy = async (req, res) => {
     try {
-        const data = await Vacancy.findAll({
+        const data = await db.Vacancy.findAll({
             where: {
                 status: 'Approved'
             },
             include: [
                 {
-                    model: Position,
+                    model: db.Position,
                     as: 'position'
                 },
                 {
-                    model: Company,
-                    as: 'company'
-                },
-                {
-                    model: Department,
+                    model: db.Department,
                     as: 'department'
                 },
                 {
-                    model: Schedule,
-                    as: 'schedule'
+                    model: db.Shift,
+                    as: 'shift',
+                    include: [
+                        {
+                            model: db.ShiftDay,
+                            as: 'days'
+                        }
+                    ]
                 }
             ]
         });
@@ -110,7 +100,7 @@ exports.GetVacancy = async (req, res) => {
 };
 exports.GetCourse = async (req, res) => {
     try {
-        const data = await Course.findAll({
+        const data = await db.Course.findAll({
             attributes: [
                 ['id', 'value'],
                 ['name', "label"]
@@ -126,7 +116,7 @@ exports.GetCourse = async (req, res) => {
 };
 exports.GetSchool = async (req, res) => {
     try {
-        const data = await School.findAll({
+        const data = await db.School.findAll({
             attributes: [
                 ['id', 'value'],
                 ['name', "label"]
@@ -149,31 +139,31 @@ exports.GetDetails = async (req, res) => {
 
     try {
         
-        const rows  = await Applicant.findOne({
+        const rows  = await db.Applicant.findOne({
             include: [
                 {
-                    model: ApplicantDocument,
+                    model: db.ApplicantDocument,
                     as: 'documents',
                     attributes: [
                         'filename', 'document'
                     ]
                 },
                 {
-                    model: ApplicantEducation,
+                    model: db.ApplicantEducation,
                     as: 'educations',
                     attributes: [
                         'school_level', 'start_date', 'end_date'
                     ],
                     include: [
                         {
-                            model: School,
+                            model: db.School,
                             as: 'school',
                             attributes: [
                                 'name'
                             ]
                         },
                         {
-                            model: Course,
+                            model: db.Course,
                             as: 'course',
                             attributes: [
                                 'name'
@@ -182,49 +172,48 @@ exports.GetDetails = async (req, res) => {
                     ]
                 },
                 {
-                    model: ApplicantTraining,
+                    model: db.ApplicantTraining,
                     as: 'trainings',
                     attributes: [
                         'title', 'type', 'start_date', 'end_date', 'hour'
                     ]
                 },
                 {
-                    model: ApplicantExperience,
+                    model: db.ApplicantExperience,
                     as: 'experiences',
                     attributes: [
                         'position', 'start_date', 'end_date', 'description'
                     ]
                 },
                 {
-                    model: Vacancy,
+                    model: db.Vacancy,
                     as: 'vacancy',
                     include: [
                         {
-                            model: Position,
+                            model: db.Position,
                             as: 'position',
                             attributes: [
                                 'name', 'description', 'qualification'
                             ]
                         },
                         {
-                            model: Company,
-                            as: 'company',
-                            attributes: [
-                                'name'
-                            ]
-                        },
-                        {
-                            model: Department,
+                            model: db.Department,
                             as: 'department',
                             attributes: [
                                 'name'
                             ]
                         },
                         {
-                            model: Schedule,
-                            as: 'schedule',
+                            model: db.Shift,
+                            as: 'shift',
                             attributes: [
                                 "name", "time_start", "time_end"
+                            ],
+                            include: [
+                                {
+                                    model: db.ShiftDay,
+                                    as: 'days'
+                                }
                             ]
                         }
                     ]
@@ -252,28 +241,28 @@ const GetApplicant = async (id) => {
     return await Applicant.findOne({
         include: [
             {
-                model: ApplicantDocument,
+                model: db.ApplicantDocument,
                 as: 'documents',
                 attributes: [
                     'filename', 'document'
                 ]
             },
             {
-                model: ApplicantEducation,
+                model: db.ApplicantEducation,
                 as: 'educations',
                 attributes: [
                     'school_level', 'start_date', 'end_date'
                 ],
                 include: [
                     {
-                        model: School,
+                        model: db.School,
                         as: 'school',
                         attributes: [
                             'name'
                         ]
                     },
                     {
-                        model: Course,
+                        model: db.Course,
                         as: 'course',
                         attributes: [
                             'name'
@@ -282,49 +271,48 @@ const GetApplicant = async (id) => {
                 ]
             },
             {
-                model: ApplicantTraining,
+                model: db.ApplicantTraining,
                 as: 'trainings',
                 attributes: [
                     'title', 'type', 'start_date', 'end_date', 'hour'
                 ]
             },
             {
-                model: ApplicantExperience,
+                model: db.ApplicantExperience,
                 as: 'experiences',
                 attributes: [
                     'position', 'start_date', 'end_date', 'description'
                 ]
             },
             {
-                model: Vacancy,
+                model: db.Vacancy,
                 as: 'vacancy',
                 include: [
                     {
-                        model: Position,
+                        model: db.Position,
                         as: 'position',
                         attributes: [
                             'name'
                         ]
                     },
                     {
-                        model: Company,
-                        as: 'company',
-                        attributes: [
-                            'name'
-                        ]
-                    },
-                    {
-                        model: Department,
+                        model: db.Department,
                         as: 'department',
                         attributes: [
                             'name'
                         ]
                     },
                     {
-                        model: Schedule,
-                        as: 'schedule',
+                        model: Shift,
+                        as: 'shift',
                         attributes: [
                             "name", "time_start", "time_end"
+                        ],
+                        include: [
+                            {
+                                model: db.ShiftDay,
+                                as: 'days'
+                            }
                         ]
                     }
                 ]
@@ -347,7 +335,6 @@ exports.Create = async (req, res) => {
         civilstatus,
         birthdate,
         birthplace,
-        bloodtype,
         email,
         contactNo,
         address,
@@ -363,10 +350,10 @@ exports.Create = async (req, res) => {
     const train = JSON.parse(trainings || "[]");
     const exp = JSON.parse(experiences || "[]");
 
-    const t = await Applicant.sequelize.transaction();
+    const transaction = await sequelize.transaction();
 
     try {
-        const applicant = await Applicant.create({
+        const applicant = await db.Applicant.create({
             vacancy_id: vacancyId,
             first_name: firstname,
             middle_name: middlename,
@@ -377,53 +364,52 @@ exports.Create = async (req, res) => {
             birthdate,
             birthplace,
             address,
-            blood_type: bloodtype,
             contact_number: contactNo,
             email
-        }, { transaction: t });
+        }, { transaction });
         
         for (const edu of educ) {
-            await ApplicantEducation.create({
+            await db.ApplicantEducation.create({
                 applicant_id: applicant.id,
                 school_level: edu.schoollevel,
                 school_id: edu.schoolId,
                 course_id: edu.courseId,
                 start_date: edu.startDate,
                 end_date: edu.endDate
-            }, { transaction: t });
+            }, { transaction });
         }
         
         for (const tr of train) {
-            await ApplicantTraining.create({
+            await db.ApplicantTraining.create({
                 applicant_id: applicant.id,
                 title: tr.title,
                 type: tr.trainingtype,
                 start_date: tr.startDate,
                 end_date: tr.endDate,
                 hour: tr.hour
-            }, { transaction: t });
+            }, { transaction });
         }
         
         for (const ex of exp) {
-        await ApplicantExperience.create({
-            applicant_id: applicant.id,
-            position: ex.position,
-            start_date: ex.startDate,
-            end_date: ex.endDate,
-            description: ex.description
-        }, { transaction: t });
+            await db.ApplicantExperience.create({
+                applicant_id: applicant.id,
+                position: ex.position,
+                start_date: ex.startDate,
+                end_date: ex.endDate,
+                description: ex.description
+            }, { transaction });
         }
         
         for (const file of files) {
-            const filePath = `/documents/${file.filename}`;
-            await ApplicantDocument.create({
+            const filePath = `/uploads/documents/${file.filename}`;
+            await db.ApplicantDocument.create({
                 applicant_id: applicant.id,
                 document: filePath,
                 filename: file.originalname
-            }, { transaction: t });
+            }, { transaction });
         }
-        
-        await t.commit();
+
+        await transaction.commit();
 
         const data = await GetApplicant(applicant.id);
         const position = data.vacancy.position.name;
@@ -454,7 +440,7 @@ exports.Create = async (req, res) => {
         });
 
     } catch (error) {
-        await t.rollback();
+        await transaction.rollback();
         console.error('Error creating application:', error);
         res.status(400).json({
             message: "Failed to create record.",
@@ -473,9 +459,11 @@ exports.Update = async (req, res) => {
         status
     } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const application = await Applicant.findByPk(id);
+        const application = await db.Applicant.findByPk(id);
         if (!application) {
             return res.status(500).json({
                 errors: [{
@@ -489,7 +477,7 @@ exports.Update = async (req, res) => {
         }
         await application.update({ 
             status
-        });
+        }, { transaction });
 
         const vacancy = await Vacancy.findByPk(application.vacancy_id);
         if (!vacancy) {
@@ -506,15 +494,17 @@ exports.Update = async (req, res) => {
         if (status == 'Hired') {
             await vacancy.update({ 
                 status: 'Filled'
-            });
+            }, { transaction });
             await Position.update({ 
                 status: 'Filled' 
             }, {
                 where: {
                     id: vacancy.position_id
-                }
+                }, transaction
             });
         }
+
+        await transaction.commit();
 
         const data = await GetApplicant(application.id);
         const email = data.email;
@@ -564,7 +554,7 @@ exports.Update = async (req, res) => {
         });
 
     } catch (error) {
-
+        await transaction.rollback();
         res.status(400).json({ 
             error: error.message 
         });
@@ -578,31 +568,31 @@ exports.GeneratePDF = async (req, res) => {
     } = req.params;
     let browser;
     try {
-        const rows  = await Applicant.findOne({
+        const rows  = await db.Applicant.findOne({
             include: [
                 {
-                    model: ApplicantDocument,
+                    model: db.ApplicantDocument,
                     as: 'documents',
                     attributes: [
                         'filename', 'document'
                     ]
                 },
                 {
-                    model: ApplicantEducation,
+                    model: db.ApplicantEducation,
                     as: 'educations',
                     attributes: [
                         'school_level', 'start_date', 'end_date'
                     ],
                     include: [
                         {
-                            model: School,
+                            model: db.School,
                             as: 'school',
                             attributes: [
                                 'name'
                             ]
                         },
                         {
-                            model: Course,
+                            model: db.Course,
                             as: 'course',
                             attributes: [
                                 'name'
@@ -611,49 +601,45 @@ exports.GeneratePDF = async (req, res) => {
                     ]
                 },
                 {
-                    model: ApplicantTraining,
+                    model: db.ApplicantTraining,
                     as: 'trainings',
                     attributes: [
                         'title', 'type', 'start_date', 'end_date', 'hour'
                     ]
                 },
                 {
-                    model: ApplicantExperience,
+                    model: db.ApplicantExperience,
                     as: 'experiences',
                     attributes: [
                         'position', 'start_date', 'end_date', 'description'
                     ]
                 },
                 {
-                    model: Vacancy,
+                    model: db.Vacancy,
                     as: 'vacancy',
                     include: [
                         {
-                            model: Position,
+                            model: db.Position,
                             as: 'position',
                             attributes: [
                                 'name', 'description', 'qualification'
                             ]
                         },
                         {
-                            model: Company,
-                            as: 'company',
-                            attributes: [
-                                'name'
-                            ]
-                        },
-                        {
-                            model: Department,
+                            model: db.Department,
                             as: 'department',
                             attributes: [
                                 'name'
                             ]
                         },
                         {
-                            model: Schedule,
+                            model: Shift,
                             as: 'schedule',
-                            attributes: [
-                                "name", "time_start", "time_end"
+                            include: [
+                                {
+                                    model: db.ShiftDay,
+                                    as: 'days'
+                                }
                             ]
                         }
                     ]

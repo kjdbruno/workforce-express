@@ -113,33 +113,32 @@ html
             div.note INSTRUCTIONS: Please accomplish this form to document approved hiring requirements prior to recruitment.
             div CONTROL NO.:
                 span(style="text-decoration: underline;")= controlNo
-        h3 1. Position Profile
+        h3(style='text-transform: uppercase;') 1. Position Profile
         table(style="font-size: 10px;")
             tr
-                td(style="width: 25%;").label Position:
-                td(style="width: 25%;")= position
-                td(style="width: 25%;").label Salary Range:
-                td(style="width: 25%;")= salaryRange
+                td(style="width: 25%; text-transform: uppercase;").label Position:
+                td(style="width: 25%; text-transform: capitalize;")= position
+                td(style="width: 25%; text-transform: uppercase;").label Salary Range:
+                td(style="width: 25%; text-transform: capitalize;")= salaryRange
             tr
-                td(style="width: 25%;").label Department:
-                td(style="width: 25%;")= department
-                td(style="width: 25%;").label Company:
-                td(style="width: 25%;")= company
+                td(style="width: 25%; text-transform: uppercase;").label Department:
+                td(style="width: 25%; text-transform: capitalize;")= department
+                td(style="width: 25%; text-transform: uppercase;").label Employment Status:
+                td(style="width: 25%; text-transform: capitalize;")= employment
             tr
-                td(style="width: 25%;").label Work Location:
+                td(style="width: 25%;text-transform: uppercase;").label Work Location:
                 td(style="width: 25%; text-transform: capitalize;")= location
-                td(style="width: 25%;").label Employment Status:
-                td(style="width: 25%;")= employment
+                td(style="width: 25%;text-transform: uppercase;").label Required No. of Employees:
+                td(style="width: 25%;text-transform: capitalize;") 1
             tr
-                td(style="width: 25%;").label Work Schedule / Hours:
-                td(style="width: 25%;")= scheduleTime
-                td(style="width: 25%;").label Required No. of Employees:
-                td(style="width: 25%;") 1
+                td(style="width: 25%; text-transform: uppercase;").label Work Schedule / Hours:
+                td(style="width: 75%; text-transform: capitalize;" colspan='3')= shift
+                
             tr
-                td(style="width: 25%;").label Date Needed:
-                td(style="width: 25%;")= dateNeeded
-                td(style="width: 25%;").label Require Background Check:
-                td(style="width: 25%;") #{needBackgroundCheck ? 'Yes' : 'No'}
+                td(style="width: 25%;text-transform: uppercase;").label Date Needed:
+                td(style="width: 25%;text-transform: capitalize;")= dateNeeded
+                td(style="width: 25%;text-transform: uppercase;").label Require Background Check:
+                td(style="width: 25%;text-transform: capitalize;") #{needBackgroundCheck ? 'Yes' : 'No'}
             tr
                 td(style="width: 25%;")
                     div 
@@ -151,33 +150,22 @@ html
                 td(colspan="3" style="width: 75%;")
                     div Justification:
                     div= justification
-        h3 2. Qualification and Job Specification
+        h3(style='text-transform: uppercase;') 2. Qualification and Job Specification
         table(style="font-size: 10px;")
             tr
-                td(style="width: 25%;").label Gender:
-                td(style="width: 25%;")= gender
-                td(style="width: 25%;").label Age Range:
-                td(style="width: 25%;")= age
-            tr
-                td.label Education:
-                td(colspan="3")= education
-            tr
-                td.label Years of Experience:
-                td(colspan="3")= experience
-            tr
-                td.label Skill Sets / Competencies:
+                td(style='text-transform: uppercase;').label Skill Sets / Competencies:
                 td(colspan="3")
                     each q, index in qualifications
                         div 
                             span #{index + 1}
                             span &nbsp;
                             span #{q}
-        h3 3. Brief Job Description
+        h3(style='text-transform: uppercase;') 3. Brief Job Description
         table(style="font-size: 10px;")
             tr
                 td(style="height: 150px")= description
 
-        h3 4. Routing and Approval
+        h3(style='text-transform: uppercase;') 4. Routing and Approval
         table.noborder(style="font-size: 10px;")
             tr
                 each s, index in signatories
