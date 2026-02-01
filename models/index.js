@@ -50,6 +50,7 @@ db.Overtime = require('./overtime')(sequelize, Sequelize.DataTypes);
 db.EmployeeOvertimeApplication = require('./employeeovertimeapplication')(sequelize, Sequelize.DataTypes);
 db.EmployeeFace = require('./employeeface')(sequelize, Sequelize.DataTypes);
 db.EmployeeShift = require('./employeeshift')(sequelize, Sequelize.DataTypes);
+db.EmployeeLog = require('./employeelog')(sequelize, Sequelize.DataTypes);
 
 db.ApprovalSetting = require('./approvalsetting')(sequelize, Sequelize.DataTypes);
 db.Approval = require('./approval')(sequelize, Sequelize.DataTypes);

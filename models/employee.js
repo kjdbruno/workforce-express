@@ -87,6 +87,12 @@
           as: "employeeShifts",
         });
 
+        // Employee → EmployeeLogs
+        Employee.hasMany(models.EmployeeLog, {
+          foreignKey: 'employee_id',
+          as: 'logs'
+        });
+
       }
     }
     Employee.init({

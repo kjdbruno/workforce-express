@@ -22,7 +22,18 @@ exports.GetAll = async (req, res) => {
                     model: db.Position,
                     as: 'position',
                     attributes: [
-                        'name', 'salary_type'
+                        'name', 'salary_type',
+                        [
+                            sequelize.literal(`
+                            CASE position.salary_type
+                                WHEN 'Monthly' THEN position.monthly_salary
+                                WHEN 'Daily' THEN position.daily_salary
+                                WHEN 'Hourly' THEN position.hourly_salary
+                                ELSE NULL
+                            END
+                            `),
+                            'salary_amount'
+                        ]
                     ]
                 }
             ],
@@ -211,7 +222,21 @@ exports.GetDetails = async (req, res) => {
             include: [
                 {
                     model: db.Position,
-                    as: 'position'
+                    as: 'position',
+                    attributes: [
+                        'name', 'salary_type', 'description', 'qualification',
+                        [
+                            sequelize.literal(`
+                            CASE position.salary_type
+                                WHEN 'Monthly' THEN position.monthly_salary
+                                WHEN 'Daily' THEN position.daily_salary
+                                WHEN 'Hourly' THEN position.hourly_salary
+                                ELSE NULL
+                            END
+                            `),
+                            'salary_amount'
+                        ]
+                    ]
                 },
                 {
                     model: db.Department,

@@ -90,10 +90,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
-    blood_type: {
-      type: DataTypes.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),
-      allowNull: false
-    },
     email: {
       type: DataTypes.STRING,
       allowNull: false

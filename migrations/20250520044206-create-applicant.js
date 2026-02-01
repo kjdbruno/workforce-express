@@ -43,10 +43,6 @@ module.exports = {
         type: Sequelize.ENUM('Single', 'Married', 'Widowed', 'Divorced', 'Separated'),
         allowNull: false
       },
-      blood_type: {
-        type: Sequelize.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),
-        allowNull: false
-      },
       birthdate: {
         type: Sequelize.DATEONLY,
         allowNull: false

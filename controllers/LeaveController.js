@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
-const { EmployeeLeaveApplication, Employee, LeaveType, EmployeeAccount, Approval, ApprovalSetting, User, Employment, Position, Company, Department, EmployeeLeaveBalance, Holiday } = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 const fs = require('fs');
 const path = require('path');
@@ -11,79 +12,61 @@ const pug = require('pug');
 const puppeteer = require('puppeteer');
 
 exports.GetAll = async (req, res) => {
-
-    const Page = parseInt(req.query.Page) || 1;
-    const Limit = parseInt(req.query.Limit) || 10;
-    const Filter = req.query.Filter ? req.query.Filter.trim() : "";
+    const Page = parseInt(req.query.Page, 10) || 1;
+    const Limit = parseInt(req.query.Limit, 10) || 10;
+    const Filter = (req.query.Filter || '').trim();
     const Offset = (Page - 1) * Limit;
-    const { month, year } = req.query;
+
+    const month = Number(req.query.month);
+    const year = Number(req.query.year);
 
     try {
+        const startDate = moment(`${year}-${month}-01`, "YYYY-MM-DD").startOf("month").format("YYYY-MM-DD");
+        const endDate   = moment(`${year}-${month}-01`, "YYYY-MM-DD").endOf("month").format("YYYY-MM-DD");
 
-        const months = parseInt(month); // e.g., 11 for November
-        const years = parseInt(year);   // e.g., 2025
-
-        // Build month start and end
-        const startDateMoment = moment(`${years}-${months}-01`, "YYYY-MM-DD").startOf("month");
-        const endDateMoment = moment(`${years}-${months}-01`, "YYYY-MM-DD").endOf("month");
-
-        // Format for DB query
-        const startDate = startDateMoment.format("YYYY-MM-DD");
-        const endDate = endDateMoment.format("YYYY-MM-DD");
-
-        const { count, rows } = await EmployeeLeaveApplication.findAndCountAll({
-            include: [
-                {
-                    model: Employee,
-                    as: 'employee',
-                    where: Filter
-                        ? {
-                            [Op.or]: [
-                                { first_name: { [Op.like]: `%${Filter}%` } },
-                                { middle_name: { [Op.like]: `%${Filter}%` } },
-                                { last_name: { [Op.like]: `%${Filter}%` } },
-                            ]
-                        }
-                    : undefined
-                },
-                {
-                    model: LeaveType,
-                    as: 'leaveType',
-                    where: Filter
-                        ? {
-                            name: { [Op.like]: `%${Filter}%` }
-                        }
-                    : undefined
-                }
+        const where = {
+            [Op.and]: [
+                { date_from: { [Op.lte]: endDate } },
+                { date_to: { [Op.gte]: startDate } },
             ],
-            where: {
-                [Op.and]: [
-                    { date_from: { [Op.lte]: endDate } }, // leave starts before or on endOfMonth
-                    { date_to: { [Op.gte]: startDate } }  // leave ends after or on startOfMonth
-                ]
-            },
+            ...(Filter
+                ? {
+                    [Op.or]: [
+                    { '$employee.first_name$':  { [Op.like]: `%${Filter}%` } },
+                    { '$employee.middle_name$': { [Op.like]: `%${Filter}%` } },
+                    { '$employee.last_name$':   { [Op.like]: `%${Filter}%` } },
+                    { '$leaveType.name$':       { [Op.like]: `%${Filter}%` } },
+                    ],
+                }
+                : {}),
+        };
+
+        const { count, rows } = await db.EmployeeLeaveApplication.findAndCountAll({
+            include: [
+                { model: db.Employee, as: 'employee', required: false },
+                { model: db.LeaveType, as: 'leaveType', required: false },
+            ],
+            where,
+            subQuery: false,
+            distinct: true,
             limit: Limit,
             offset: Offset,
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
         });
 
-        res.json({
+        return res.json({
             data: rows,
             meta: {
                 TotalItems: count,
                 TotalPages: Math.ceil(count / Limit),
-                CurrentPage: Page
-            }
+                CurrentPage: Page,
+            },
         });
-
     } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
+        return res.status(500).json({ error: error.message });
     }
 };
+
 
 exports.GetDetails = async (req, res) => {
 
@@ -91,49 +74,52 @@ exports.GetDetails = async (req, res) => {
 
     try {
         
-        const leave = await EmployeeLeaveApplication.findOne({
+        const leave = await db.EmployeeLeaveApplication.findOne({
             where: { 
                 id 
             },
             include: [
                 {
-                    model: Employee,
+                    model: db.Employee,
                     as: 'employee',
                 },
                 {
-                    model: LeaveType,
+                    model: db.LeaveType,
                     as: 'leaveType'
                 }
             ]
         });
 
-        const approvals = await Approval.findAll({
+        const approvals = await db.Approval.findAll({
             where: { document_id: leave.id, is_active: true },
             include: [
                 {
-                    model: ApprovalSetting,
+                    model: db.ApprovalSetting,
                     as: 'setting',
                     where: {
                         type: 'Leave'
                     },
                     include: [
                         {
-                            model: User,
+                            model: db.User,
                             as: 'approver',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: Position, as: 'position' }]
+                                                    include: [{ 
+                                                        model: db.Position, 
+                                                        as: 'position' 
+                                                    }]
                                                 }
                                             ]
                                         }
@@ -142,22 +128,25 @@ exports.GetDetails = async (req, res) => {
                             ]
                         },
                         {
-                            model: User,
+                            model: db.User,
                             as: 'owner',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: Position, as: 'position' }]
+                                                    include: [{ 
+                                                        model: db.Position, 
+                                                        as: 'position' 
+                                                    }]
                                                 }
                                             ]
                                         }
@@ -168,7 +157,7 @@ exports.GetDetails = async (req, res) => {
                     ]
                 }
             ],
-            order: [[{ model: ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
+            order: [[{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
         });
 
         // 3️⃣ Combine vacancy + approvals
@@ -188,103 +177,9 @@ exports.GetDetails = async (req, res) => {
     }
 };
 
-const Get = async (id) => {
-    return await Leave.findOne({
-        where: { 
-            id 
-        },
-        include: [
-            {
-                model: ProfileLeave,
-                as: 'profileLeave',
-                attributes: [
-                    'credit', 'profileId'
-                ],
-                include: [
-                    {
-                        model: Profile,
-                        as: 'profile',
-                        attributes: [
-                            'firstname', 'middlename', 'lastname', 'suffix'
-                        ]
-                    },
-                    {
-                        model: LeaveType,
-                        as: 'leaveType',
-                        attributes: [
-                            'name'
-                        ]
-                    }
-                ]
-            },
-            {
-                model: LeaveRequest,
-                as: 'requests',
-                include: [
-                    {
-                        model: Signatory,
-                        as: 'signatory',
-                        include: [
-                            {
-                                model: User,
-                                as: 'user',
-                                include: [
-                                    {
-                                        model: Profile,
-                                        as: 'profile'
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            }
-        ],
-        order: [
-            [
-                { model: LeaveRequest, as: 'requests' },
-                { model: Signatory, as: 'signatory' },
-                    'order',
-                    'ASC'
-            ],
-        ]
-    });
-};
-
-exports.GetAllUsers = async (req, res) => {
-
-    try {
-        
-        const rows = await Profile.findAll({
-            where: {
-                isEmployee: true
-            },
-            attributes: [
-                'id', 'firstname', 'middlename', 'lastname', 'suffix'
-            ],
-            include: [
-                {
-                    model: EmploymentInformation,
-                    as: 'employment',
-                    attributes: [
-                        'employeeNo'
-                    ]
-                }
-            ],
-        });
-        return res.status(200).json(rows);
-    } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
-    }
-};
-
 exports.GetEmployee = async (req, res) => {
     try {
-        const data = await Employee.findAll();
+        const data = await db.Employee.findAll();
         return res.status(200).json(data);
     } catch (error) {
         res.status(500).json({ 
@@ -295,7 +190,7 @@ exports.GetEmployee = async (req, res) => {
 
 exports.GetLeaveType = async (req, res) => {
     try {
-        const data = await LeaveType.findAll({
+        const data = await db.LeaveType.findAll({
             where: {
                 is_active: true
             }
@@ -320,12 +215,12 @@ exports.Create = async (req, res) => {
 
     try {
         // get employee userid
-        const account = await EmployeeAccount.findOne({
+        const account = await db.EmployeeAccount.findOne({
             employee_id: employeeid
         });
 
         // save leave
-        const leave = await EmployeeLeaveApplication.create({
+        const leave = await db.EmployeeLeaveApplication.create({
             employee_id: employeeid,
             leave_type_id: typeid,
             date_from: datestart,
@@ -335,7 +230,7 @@ exports.Create = async (req, res) => {
         });
 
         // Fetch approval settings by document type
-        const signatories = await ApprovalSetting.findAll({
+        const signatories = await db.ApprovalSetting.findAll({
             where: {
                 owner_id: account.user_id,
                 type: 'Leave',
@@ -348,7 +243,7 @@ exports.Create = async (req, res) => {
 
             const isFirstApprover = sig.order === 1;
 
-            await Approval.create({
+            await db.Approval.create({
                 setting_id: sig.id,
                 document_id: leave.id,
                 status: isFirstApprover ? 'Approved' : 'Pending',
@@ -381,8 +276,8 @@ exports.Approve = async (req, res) => {
     try {
 
         // 1️⃣ Fetch the leave application
-        const leave = await EmployeeLeaveApplication.findByPk(id, {
-            include: [{ model: LeaveType, as: 'leaveType' }]
+        const leave = await db.EmployeeLeaveApplication.findByPk(id, {
+            include: [{ model: db.LeaveType, as: 'leaveType' }]
         });
 
         if (!leave) {
@@ -398,7 +293,7 @@ exports.Approve = async (req, res) => {
         }
 
         // 2️⃣ Update the specific approval record
-        const approval = await Approval.findByPk(approvalid);
+        const approval = await db.Approval.findByPk(approvalid);
         if (!approval) {
             return res.status(404).json({ error: "Approval record not found!" });
         }
@@ -406,7 +301,7 @@ exports.Approve = async (req, res) => {
         await approval.update({ status: 'Approved' });
 
         // 3️⃣ Refresh leave status based on approvals
-        const pendingApprovals = await Approval.count({
+        const pendingApprovals = await db.Approval.count({
             where: {
                 document_id: id,
                 status: { [Op.ne]: "Approved" }
@@ -420,7 +315,7 @@ exports.Approve = async (req, res) => {
             }
 
             // 4️⃣ Fetch holidays within leave period
-            const holidays = await Holiday.findAll({
+            const holidays = await db.Holiday.findAll({
                 where: {
                     date: { [Op.between]: [leave.date_from, leave.date_to] },
                     isActive: true
@@ -446,7 +341,7 @@ exports.Approve = async (req, res) => {
             }
 
             // 6️⃣ Update EmployeeLeaveBalance
-            const leaveBalance = await EmployeeLeaveBalance.findOne({
+            const leaveBalance = await db.EmployeeLeaveBalance.findOne({
                 where: {
                     employee_id: leave.employee_id,
                     leave_type_id: leave.leave_type_id,
@@ -488,7 +383,7 @@ exports.Cancel = async (req, res) => {
   
     try {
 
-        const leave = await EmployeeLeaveApplication.findByPk(id);
+        const leave = await db.EmployeeLeaveApplication.findByPk(id);
 
         if (!leave) {
             return res.status(500).json({
@@ -526,31 +421,26 @@ exports.GenerateLeavePDF = async (req, res) => {
 
     try {
         // 1️⃣ Get leave application
-        const leaveApp = await EmployeeLeaveApplication.findOne({
+        const leaveApp = await db.EmployeeLeaveApplication.findOne({
             where: { 
                 id 
             },
             include: [
                 {
-                    model: Employee,
+                    model: db.Employee,
                     as: 'employee',
                     include: [
                         {
-                            model: Employment,
+                            model: db.Employment,
                             as: 'employment',
                             include: [
                                 { 
-                                    model: Company, 
-                                    as: 'company', 
-                                    attributes: ['name'] 
-                                },
-                                { 
-                                    model: Department, 
+                                    model: db.Department, 
                                     as: 'department', 
                                     attributes: ['name'] 
                                 },
                                 { 
-                                    model: Position, 
+                                    model: db.Position, 
                                     as: 'position' 
                                 }
                             ]
@@ -558,7 +448,7 @@ exports.GenerateLeavePDF = async (req, res) => {
                     ]
                 },
                 {
-                    model: LeaveType,
+                    model: db.LeaveType,
                     as: 'leaveType',
                     attributes: ['id', 'name', 'credit']
                 }
@@ -594,7 +484,7 @@ exports.GenerateLeavePDF = async (req, res) => {
         const totalDays = moment(leaveApp.date_to).diff(moment(leaveApp.date_from), 'days') + 1;
 
         // 4️⃣ All leave types (checkbox-style display)
-        const leaveTypes = await LeaveType.findAll({
+        const leaveTypes = await db.LeaveType.findAll({
             attributes: ['id', 'name']
         });
 
@@ -604,14 +494,14 @@ exports.GenerateLeavePDF = async (req, res) => {
         }));
 
         // 5️⃣ Leave balances of employee
-        const leaveBalances = await EmployeeLeaveBalance.findAll({
+        const leaveBalances = await db.EmployeeLeaveBalance.findAll({
             where: {
                 employee_id: employee.id,
                 is_active: true
             },
             include: [
                 {
-                    model: LeaveType,
+                    model: db.LeaveType,
                     as: 'leaveType',
                     attributes: ['name']
                 }
@@ -626,33 +516,33 @@ exports.GenerateLeavePDF = async (req, res) => {
         }));
 
         // approvals
-        const approvals = await Approval.findAll({
+        const approvals = await db.Approval.findAll({
             where: { document_id: leaveApp.id, is_active: true },
             include: [
                 {
-                    model: ApprovalSetting,
+                    model: db.ApprovalSetting,
                     as: 'setting',
                     where: {
                         type: 'Leave'
                     },
                     include: [
                         {
-                            model: User,
+                            model: db.User,
                             as: 'approver',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: Position, as: 'position' }]
+                                                    include: [{ model: db.Position, as: 'position' }]
                                                 }
                                             ]
                                         }
@@ -661,22 +551,22 @@ exports.GenerateLeavePDF = async (req, res) => {
                             ]
                         },
                         {
-                            model: User,
+                            model: db.User,
                             as: 'owner',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: Position, as: 'position' }]
+                                                    include: [{ model: db.Position, as: 'position' }]
                                                 }
                                             ]
                                         }
@@ -687,7 +577,7 @@ exports.GenerateLeavePDF = async (req, res) => {
                     ]
                 }
             ],
-            order: [[{ model: ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
+            order: [[{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
         });
 
         const result = {
@@ -732,7 +622,6 @@ exports.GenerateLeavePDF = async (req, res) => {
         const html = pug.renderFile(templatePath, {
             seal,
             name,
-            company,
             departmentPosition,
             contactNo,
             dateFiled,

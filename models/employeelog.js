@@ -11,6 +11,12 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      EmployeeLog.belongsTo(models.Employee, {
+        foreignKey: 'employee_id',
+        as: 'employee'
+      });
+
     }
   }
   EmployeeLog.init({
@@ -31,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE'
     },
     captured_at: {
-      type: DataTypes.DATETIME,
+      type: DataTypes.DATE,
       allowNull: false
     },
     recognition_score: {

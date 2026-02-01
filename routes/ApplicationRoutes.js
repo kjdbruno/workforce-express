@@ -4,7 +4,7 @@ const router = express.Router();
 // const multer = require('multer');
 // const storage = multer.memoryStorage();
 // const upload = multer({ storage });
-const upload = require("../middlewares/Upload");
+const UploadDocument = require("../middlewares/UploadDocument");
 
 const { ValidateForm } = require('../middlewares/ApplicationValidator');
 
@@ -14,7 +14,7 @@ const { GetAll, Create, Update, GetDetails, GeneratePDF, GetVacancy, GetCourse, 
 
 router.get('/', VerifyToken, GetAll);
 router.get('/:id/details', VerifyToken, GetDetails);
-router.post('/', upload.any(), VerifyToken, ValidateForm(), Create);
+router.post('/', VerifyToken, UploadDocument.any(), Create);
 router.post('/:id/update', VerifyToken, Update);
 
 router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GeneratePDF);

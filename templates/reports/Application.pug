@@ -108,39 +108,37 @@ html
                 img(style='width: 300px; height: auto;' src= seal)
             td(style="width: 50%;")
                 div(style="background: #FAFAFA; text-align: center; font-size: 1.2em; text-transform: uppercase; padding: 20px; color: #7A1D1F;") application form
-        h3 1. Applicant Profile
+        h3(style='text-transform: uppercase;') 1. Applicant Profile
         table(style="font-size: 10px;")
             tr
-                td(style="width: 25%;").label Full Name:
+                td(style="width: 25%; text-transform: uppercase;").label Full Name:
                 td(style="width: 25%; text-transform: capitalize;")= name
-                td(style="width: 25%;").label Sex:
+                td(style="width: 25%; text-transform: uppercase;").label Sex:
                 td(style="width: 25%; text-transform: capitalize;")= sex
             tr
-                td(style="width: 25%;").label Civil Status:
+                td(style="width: 25%; text-transform: uppercase;").label Civil Status:
                 td(style="width: 25%;")= maritalStatus
-                td(style="width: 25%;").label Birthdate:
+                td(style="width: 25%; text-transform: uppercase;").label Birthdate:
                 td(style="width: 25%;")= birthdate
             tr
-                td(style="width: 25%;").label Address:
+                td(style="width: 25%; text-transform: uppercase;").label Address:
                 td(colspan='3' style="width: 75%; text-transform: capitalize;")= address
             tr
-                td(style="width: 25%;").label Birthplace:
-                td(style="width: 25%; text-transform: capitalize;")= birthplace
-                td(style="width: 25%;").label Blood Type:
-                td(style="width: 25%;")= bloodType
+                td(style="width: 25%; text-transform: uppercase;").label Birthplace:
+                td(colspan='3' style="width: 25%; text-transform: capitalize;")= birthplace
             tr
-                td(style="width: 25%;").label Email Address:
+                td(style="width: 25%; text-transform: uppercase;").label Email Address:
                 td(style="width: 25%;")= email
-                td(style="width: 25%;").label Contact No.:
+                td(style="width: 25%; text-transform: uppercase;").label Contact No.:
                 td(style="width: 25%;")= contactNo
-        h3 2. Education Information
+        h3(style='text-transform: uppercase;') 2. Education Information
         table(style="font-size: 10px;")
             tr
-                td(style="").label Level
-                td(style="").label School
-                td(style="").label Degree
-                td(style="").label Start Date
-                td(style="").label End Date
+                td(style="text-transform: uppercase").label Level
+                td(style="text-transform: uppercase").label School
+                td(style="text-transform: uppercase").label Degree
+                td(style="text-transform: uppercase").label Start Date
+                td(style="text-transform: uppercase").label End Date
             each e, index in educations
                 tr
                     td(style="text-transform: capitalize;") #{e.level}
@@ -148,14 +146,14 @@ html
                     td(style="text-transform: capitalize;") #{e.course}
                     td(style="text-transform: capitalize;") #{e.startDate}
                     td(style="text-transform: capitalize;") #{e.endDate}
-        h3 3. Training Information
+        h3(style='text-transform: uppercase;') 3. Training Information
         table(style="font-size: 10px;")
             tr
-                td(style="").label Title
-                td(style="").label Training Type
-                td(style="").label Start Date
-                td(style="").label End Date
-                td(style="").label Hour/s
+                td(style="text-transform: uppercase;").label Title
+                td(style="text-transform: uppercase;").label Training Type
+                td(style="text-transform: uppercase;").label Start Date
+                td(style="text-transform: uppercase;").label End Date
+                td(style="text-transform: uppercase;").label Hour/s
             each t, index in trainings
                 tr
                     td(style="text-transform: capitalize;") #{t.title}
@@ -163,20 +161,20 @@ html
                     td(style="text-transform: capitalize;") #{t.startDate}
                     td(style="text-transform: capitalize;") #{t.endDate}
                     td(style="text-transform: capitalize;") #{t.hours}
-        h3 4. Experience Information
+        h3(style='text-transform: uppercase;') 4. Experience Information
         table(style="font-size: 10px;")
             tr
-                td(style="").label Position
-                td(style="").label Job Description
-                td(style="").label Start Date
-                td(style="").label End Date
+                td(style="text-transform: uppercase;").label Position
+                td(style="text-transform: uppercase;").label Job Description
+                td(style="text-transform: uppercase;").label Start Date
+                td(style="text-transform: uppercase;").label End Date
             each e, index in experiences
                 tr
                     td(style="text-transform: capitalize;") #{e.position}
                     td(style="text-transform: capitalize;") #{e.jobDescription}
                     td(style="text-transform: capitalize;") #{e.startDate}
                     td(style="text-transform: capitalize;") #{e.endDate}
-        h3 5. Submitted Documents
+        h3(style='text-transform: uppercase;') 5. Submitted Documents
         table(style="font-size: 10px;")
             each e, index in documents
                 tr

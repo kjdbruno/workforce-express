@@ -1758,7 +1758,8 @@ exports.GetLeaveApplication = async (req, res) => {
                     { date_from: { [Op.lte]: endDate } }, // leave starts before or on endOfMonth
                     { date_to: { [Op.gte]: startDate } }  // leave ends after or on startOfMonth
                 ]
-            }
+            },
+            order: [['date_from', 'DESC']]
         });
 
         res.json({

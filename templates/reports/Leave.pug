@@ -75,8 +75,23 @@ html
             .leave {
                 background-color: #e6f3ff;
             }
+            .watermark {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-50deg);
+                font-size: 120px;
+                font-weight: bold;
+                color: rgba(0, 0, 0, 0.08); /* faded */
+                text-transform: uppercase;
+                white-space: nowrap;
+                z-index: 0;
+                pointer-events: none;
+            }
+
 
     body
+        div.watermark #{status}
         table.noborder(style="width: 100%; margin-bottom: 10px;")
             td(style="width: 50%;")
                 img(style='width: 300px; height: auto;' src= seal)
@@ -93,10 +108,7 @@ html
                         span(style="font-weight: bold; margin-bottom: 8px;") Date Filed:&nbsp;
                         span #{dateFiled}
                 tr
-                    td(style="width: 50%; text-transform: capitalize;") 
-                        span(style="font-weight: bold; margin-bottom: 8px;") Company:&nbsp;
-                        span #{company}
-                    td(style="width: 50%; text-transform: capitalize;")
+                    td(colspan='2' style="width: 50%; text-transform: capitalize;")
                         span(style="font-weight: bold; margin-bottom: 8px;") Department/Position:&nbsp;
                         span #{departmentPosition}
 

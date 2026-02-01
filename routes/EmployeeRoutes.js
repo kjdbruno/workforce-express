@@ -43,6 +43,8 @@ const {
     UpdateExperience,
     UpdateDependent,
     CreateDocument,
+    CreateLeave,
+    CreateBiometric,
 } = require('../controllers/EmployeeController');
 const { GetShift } = require('../controllers/RecruitmentController');
 
@@ -82,6 +84,10 @@ router.post('/:id/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervis
 
 router.get('/leave/balance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveBalance);
 router.get('/leave/application', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveApplication);
+router.post('/:id/leave', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), CreateLeave);
+
+router.post('/:id/biometric', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), CreateBiometric);
+
 // router.get('/attendance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAttendance);
 
 
