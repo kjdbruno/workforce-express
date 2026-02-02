@@ -2,54 +2,34 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeAttendances', {
+    await queryInterface.createTable('Attendances', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      attendance_id: {
+      employee_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Attendances',
+          model: 'Employees',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      work_day: {
+      date_from: {
         type: Sequelize.DATEONLY,
         allowNull: false
       },
-      time_in: {
-        type: Sequelize.TIME,
+      date_to: {
+        type: Sequelize.DATEONLY,
         allowNull: false
       },
-      time_out: {
-        type: Sequelize.TIME,
-        allowNull: false
-      },
-      late_minutes: {
-        type: Sequelize.FLOAT,
-        allowNull: false
-      },
-      undertime_minutes: {
-        type: Sequelize.FLOAT,
-        allowNull: false
-      },
-      overtime_minutes: {
-        type: Sequelize.FLOAT,
-        allowNull: false
-      },
-      is_locked: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false
-      },
-      locked_at: {
-        type: Sequelize.DATE,
-        allowNull: true
+      status: {
+        type: Sequelize.ENUM('Pending', 'Approved'),
+        defaultValue: 'Pending'
       },
       createdAt: {
         allowNull: false,
@@ -62,6 +42,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeAttendances');
+    await queryInterface.dropTable('Attendances');
   }
 };

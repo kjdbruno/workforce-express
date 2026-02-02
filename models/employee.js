@@ -93,6 +93,12 @@
           as: 'logs'
         });
 
+        // Employee → Attendance (header)
+        Employee.hasMany(models.Attendance, {
+          foreignKey: 'employee_id',
+          as: 'attendances'
+        })
+
       }
     }
     Employee.init({

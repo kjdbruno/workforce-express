@@ -43,7 +43,6 @@ db.EmployeeExperience = require('./employeeexperience')(sequelize, Sequelize.Dat
 db.EmployeeTraining = require('./employeetraining')(sequelize, Sequelize.DataTypes);
 db.EmployeeDocument = require('./employeedocument')(sequelize, Sequelize.DataTypes);
 db.EmployeeDependent = require('./employeedependent')(sequelize, Sequelize.DataTypes);
-// db.EmployeeAttendance = require('./employeeattendance')(sequelize, Sequelize.DataTypes);
 db.EmployeeLeaveApplication = require('./employeeleaveapplication')(sequelize, Sequelize.DataTypes);
 db.EmployeeLeaveBalance = require('./employeeleavebalance')(sequelize, Sequelize.DataTypes);
 db.Overtime = require('./overtime')(sequelize, Sequelize.DataTypes);
@@ -51,6 +50,8 @@ db.EmployeeOvertimeApplication = require('./employeeovertimeapplication')(sequel
 db.EmployeeFace = require('./employeeface')(sequelize, Sequelize.DataTypes);
 db.EmployeeShift = require('./employeeshift')(sequelize, Sequelize.DataTypes);
 db.EmployeeLog = require('./employeelog')(sequelize, Sequelize.DataTypes);
+db.Attendance = require('./attendance')(sequelize, Sequelize.DataTypes);
+db.EmployeeAttendance = require('./employeeattendance')(sequelize, Sequelize.DataTypes);
 
 db.ApprovalSetting = require('./approvalsetting')(sequelize, Sequelize.DataTypes);
 db.Approval = require('./approval')(sequelize, Sequelize.DataTypes);

@@ -11,11 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // EmployeeAttendance → Employee
-      EmployeeAttendance.belongsTo(models.Employee, {
-        foreignKey: 'employee_id',
-        as: 'employee'
-      });
+      
+      // EmployeeAttendance → Attendance
+      EmployeeAttendance.belongsTo(models.Attendance, {
+        foreignKey: 'attendance_id',
+        as: 'attendance'
+      })
+      
     }
   }
   EmployeeAttendance.init({
@@ -25,11 +27,11 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    employee_id: {
+    attendance_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Employees',
+        model: 'Attendances',
         key: 'id'
       },
       onUpdate: 'CASCADE',
@@ -39,46 +41,32 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: false
     },
-    shift_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Shifts',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    },
     time_in: {
-      type: DataTypes.DATETIME,
+      type: DataTypes.TIME,
       allowNull: false
     },
     time_out: {
-      type: DataTypes.DATETIME,
+      type: DataTypes.TIME,
       allowNull: false
     },
     late_minutes: {
-      type: DataTypes.INT,
+      type: DataTypes.FLOAT,
       allowNull: false
     },
     undertime_minutes: {
-      type: DataTypes.INT,
+      type: DataTypes.FLOAT,
       allowNull: false
     },
     overtime_minutes: {
-      type: DataTypes.INT,
+      type: DataTypes.FLOAT,
       allowNull: false
-    },
-    status: {
-      type: DataTypes.ENUM('Pending', 'Approved'),
-      defaultValue: 'Pending'
     },
     is_locked: {
       type: DataTypes.BOOLEAN,
       allowNull: false
     },
     locked_at: {
-      type: DataTypes.DATETIME,
+      type: DataTypes.DATE,
       allowNull: true
     },
   }, {

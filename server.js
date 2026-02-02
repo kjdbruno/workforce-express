@@ -100,6 +100,8 @@ app.use('/api/overtime', require('./routes/OvertimeRoutes'));
 
 app.use('/api/salary', require('./routes/SalaryRoutes'));
 
+app.use('/api/log', require('./routes/LogRoutes'));
+
 /**
  * PORTAL
  */
