@@ -43,6 +43,10 @@ module.exports = (sequelize, DataTypes) => {
         as: 'employeeAccount'
       });
 
+      User.hasMany(models.EmployeeAttendanceAdjustment, {
+        foreignKey: 'created_by_user_id',
+        as: 'attendance_adjustments'
+      });
 
     }
   }

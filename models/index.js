@@ -52,6 +52,7 @@ db.EmployeeShift = require('./employeeshift')(sequelize, Sequelize.DataTypes);
 db.EmployeeLog = require('./employeelog')(sequelize, Sequelize.DataTypes);
 db.Attendance = require('./attendance')(sequelize, Sequelize.DataTypes);
 db.EmployeeAttendance = require('./employeeattendance')(sequelize, Sequelize.DataTypes);
+db.EmployeeAttendanceAdjustment = require('./employeeattendanceadjustment')(sequelize, Sequelize.DataTypes);
 
 db.ApprovalSetting = require('./approvalsetting')(sequelize, Sequelize.DataTypes);
 db.Approval = require('./approval')(sequelize, Sequelize.DataTypes);

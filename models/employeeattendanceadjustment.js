@@ -11,6 +11,18 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      // Adjustment → EmployeeAttendance
+      EmployeeAttendanceAdjustment.belongsTo(models.EmployeeAttendance, {
+        foreignKey: 'employee_attendance_id',
+        as: 'attendance'
+      });
+
+      // Adjustment → User (who made the adjustment)
+      EmployeeAttendanceAdjustment.belongsTo(models.User, {
+        foreignKey: 'created_by_user_id',
+        as: 'created_by'
+      });
     }
   }
   EmployeeAttendanceAdjustment.init({
@@ -19,16 +31,6 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
-    },
-    employee_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Employees',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
     },
     employee_attendance_id: {
       type: DataTypes.INTEGER,
@@ -41,11 +43,11 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE'
     },
     adjusted_time_in: {
-      type: DataTypes.DATETIME,
+      type: DataTypes.TIME,
       allowNull: false
     },
     adjusted_time_out: {
-      type: DataTypes.DATETIME,
+      type: DataTypes.TIME,
       allowNull: false
     },
     reason: {

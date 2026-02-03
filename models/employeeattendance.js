@@ -17,6 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'attendance_id',
         as: 'attendance'
       })
+
+      // EmployeeAttendance → EmployeeAttendanceAdjustment
+      EmployeeAttendance.hasMany(models.EmployeeAttendanceAdjustment, {
+        foreignKey: 'employee_attendance_id',
+        as: 'adjustments'
+      });
       
     }
   }
