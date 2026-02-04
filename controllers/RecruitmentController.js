@@ -814,12 +814,7 @@ exports.GeneratePDF = async (req, res) => {
             const employee = app?.setting?.approver?.employeeAccount?.employee;
             const profile = employee || {};
 
-            const position = app?.setting?.approver
-                ?.employeeAccount
-                ?.employee
-                ?.employment
-                ?.position
-                ?.name || '';
+            const position = employee?.employment?.position?.name;
             // Format full name (First M. Last Suffix)
             const first = profile?.first_name || '';
             const middle = profile?.middle_name ? `${profile.middle_name.charAt(0)}.` : '';

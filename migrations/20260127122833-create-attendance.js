@@ -28,8 +28,12 @@ module.exports = {
         allowNull: false
       },
       status: {
-        type: Sequelize.ENUM('Pending', 'Approved'),
+        type: Sequelize.ENUM('Pending', 'Approved', 'Locked', 'Cancelled'),
         defaultValue: 'Pending'
+      },
+      locked_at: {
+        type: Sequelize.DATE,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,

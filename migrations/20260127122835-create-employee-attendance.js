@@ -43,14 +43,6 @@ module.exports = {
         type: Sequelize.FLOAT,
         allowNull: false
       },
-      is_locked: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false
-      },
-      locked_at: {
-        type: Sequelize.DATE,
-        allowNull: true
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

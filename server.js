@@ -7,7 +7,7 @@ const { Sequelize } = require('sequelize');
 const path = require('path');
 const app = express();
 const server = http.createServer(app);
-const { loginResetJob, yearlyLeaveBalance } = require('./utils/cron');
+const { loginResetJob, yearlyLeaveBalance, dailyAutoCancel } = require('./utils/cron');
 
 const io = socketIo(server, {
   pingInterval: 25000,
@@ -31,6 +31,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 loginResetJob(io);
 yearlyLeaveBalance(io);
+dailyAutoCancel(io);
 
 // Initialize Sequelize
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {

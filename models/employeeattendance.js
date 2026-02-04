@@ -67,14 +67,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: false
     },
-    is_locked: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false
-    },
-    locked_at: {
-      type: DataTypes.DATE,
-      allowNull: true
-    },
   }, {
     sequelize,
     modelName: 'EmployeeAttendance',

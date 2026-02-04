@@ -1657,44 +1657,442 @@ exports.CreateDocument = async (req, res) => {
 /**
  * Attendance
  */
-// exports.GetAttendance = async (req, res) => {
+// controllers/AttendanceController.js
+// Assumes you already have somewhere at top-level:
+// const db = require("../models");
+// const { Op } = require("sequelize");
+// const moment = require("moment");
 
-//     const { id, year, month } = req.query;
+const pos = (n) => (n > 0 ? n : 0);
 
-//     const m = parseInt(month);
-//     const y = parseInt(year);
+const combineDayTime = (workDay, timeStr) => {
+  const t = (timeStr || "").trim();
+  if (!t) return moment.invalid();
 
-//     const startDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").startOf("month");
-//     const endDateMoment = moment(`${year}-${month}-01`, "YYYY-MM-DD").endOf("month");
+  // Accept HH:mm or HH:mm:ss
+  const m = moment(
+    `${workDay} ${t}`,
+    ["YYYY-MM-DD HH:mm:ss", "YYYY-MM-DD HH:mm"],
+    true
+  );
 
-//     const startDate = startDateMoment.format("YYYY-MM-DD");
-//     const endDate = endDateMoment.format("YYYY-MM-DD");
+  // If still invalid, try padding seconds
+  if (!m.isValid() && t.length === 5) {
+    return moment(`${workDay} ${t}:00`, "YYYY-MM-DD HH:mm:ss", true);
+  }
 
-//     try {
+  return m;
+};
 
-//         const rows = await EmAt.findAll({
-//             where: {
-//                 employee_id: id,
-//                 [Op.and]: [
-//                     { date_start: { [Op.lte]: endDate } }, // attendance starts before or on endDate
-//                     { date_end: { [Op.gte]: startDate } }  // attendance ends after or on startDate
-//                 ]
-//             }
-//         });
+const pickEffectiveEmployeeShift = (employeeShifts, workDayYMD) => {
+  const day = moment(workDayYMD, "YYYY-MM-DD", true);
+
+  const valid = (employeeShifts || [])
+    .filter((es) => es.is_active)
+    .filter((es) => {
+      const from = moment(es.effective_from, "YYYY-MM-DD", true);
+      const to = es.effective_to ? moment(es.effective_to, "YYYY-MM-DD", true) : null;
+      return from.isSameOrBefore(day, "day") && (!to || to.isSameOrAfter(day, "day"));
+    })
+    .sort((a, b) => moment(b.effective_from).diff(moment(a.effective_from)));
+
+  return valid[0] || null;
+};
+
+const overlapMinutes = (aStart, aEnd, bStart, bEnd) => {
+  const start = moment.max(aStart, bStart);
+  const end = moment.min(aEnd, bEnd);
+  const diff = end.diff(start, "minutes");
+  return diff > 0 ? diff : 0;
+};
+
+// Approved overtime schedules for employee on workDay
+const getApprovedOvertimesForDay = async ({ employeeId, workDay, transaction }) => {
+  return db.EmployeeOvertimeApplication.findAll({
+    where: {
+      employee_id: employeeId,
+      status: "Approved",
+    },
+    include: [
+      {
+        model: db.Overtime,
+        as: "overtime",
+        required: true,
+        where: {
+          date: workDay,
+          status: "Approved",
+          is_active: true,
+        },
+      },
+    ],
+    transaction,
+  });
+};
+
+exports.GetAttendance = async (req, res) => {
+  // ✅ req.params.id = employee_id
+  const employeeId = parseInt(req.query.id, 10);
+
+  const year = req.query.year ? String(req.query.year) : null;   // e.g. "2026"
+  const month = req.query.month ? String(req.query.month).padStart(2, "0") : null; // e.g. "02"
+
+  // ✅ Helpers
+  const formatTime = (t) => (t ? moment(t, ["HH:mm:ss", "HH:mm"]).format("HH:mm") : "");
+  const formatTimeHHmmA = (t) => (t ? moment(t, ["HH:mm:ss", "HH:mm"]).format("hh:mm A") : "");
+
+  try {
+    if (!employeeId || !year || !month) {
+      return res.status(400).json({
+        error: "Missing required params. Use req.params.id (employeeId) and req.query.year/month.",
+      });
+    }
+
+    const monthStart = moment(`${year}-${month}-01`, "YYYY-MM-DD", true).startOf("day");
+    if (!monthStart.isValid()) {
+      return res.status(400).json({ error: "Invalid year/month." });
+    }
+    const monthEnd = monthStart.clone().endOf("month").endOf("day");
+
+    // 1️⃣ Attendance period that overlaps the month
+    const attendance = await db.Attendance.findOne({
+      where: {
+        employee_id: employeeId,
+        date_from: { [Op.lte]: monthEnd.format("YYYY-MM-DD") },
+        date_to: { [Op.gte]: monthStart.format("YYYY-MM-DD") },
+      },
+      order: [["date_from", "DESC"]],
+      include: [
+        {
+          model: db.EmployeeAttendance,
+          as: "days",
+          separate: true,
+          order: [["work_day", "ASC"]],
+        },
+      ],
+    });
+
+    if (!attendance) {
+      const emptyResults = [];
+      let d = monthStart.clone().startOf("day");
+      const e = monthEnd.clone().startOf("day");
+
+      while (d.isSameOrBefore(e, "day")) {
+        emptyResults.push({
+          date: d.format("YYYY-MM-DD"),
+          attendance_id: null,
+          adjustment_id: null,
+          time_in: "",
+          time_out: "",
+          original_time_in: "",
+          original_time_out: "",
+          adjusted_time_in: null,
+          adjusted_time_out: null,
+          late: 0,
+          undertime: 0,
+          overtime: 0,
+          logs: ["", "", "", ""],
+          notes: [],
+        });
+        d.add(1, "day");
+      }
+
+      return res.json({
+        attendance_id: null,
+        employee_id: employeeId,
+        date_from: monthStart,
+        date_to: monthEnd,
+        logs: emptyResults,
+      });
+    }
+
+    // ✅ Iterate over ACTUAL attendance period
+    const startDate = moment(attendance.date_from).format("YYYY-MM-DD");
+    const endDate = moment(attendance.date_to).format("YYYY-MM-DD");
+
+    // ✅ 1.5 EmployeeShift (effective dating) + Shift + ShiftDays
+    const employeeShifts = await db.EmployeeShift.findAll({
+      where: { employee_id: employeeId },
+      include: [
+        {
+          model: db.Shift,
+          as: "shift",
+          include: [{ model: db.ShiftDay, as: "days" }],
+        },
+      ],
+      order: [["effective_from", "DESC"]],
+    });
+
+    // 2️⃣ Leaves within attendance range
+    const leaves = await db.EmployeeLeaveApplication.findAll({
+      where: {
+        employee_id: employeeId,
+        status: "Approved",
+        date_from: { [Op.lte]: endDate },
+        date_to: { [Op.gte]: startDate },
+      },
+      include: [{ model: db.LeaveType, as: "leaveType" }],
+    });
+
+    // 3️⃣ Holidays within attendance range
+    const holidays = await db.Holiday.findAll({
+      where: {
+        date: { [Op.between]: [startDate, endDate] },
+        isActive: true,
+      },
+    });
+
+    // 4️⃣ Overtime applications within attendance range (for NOTES map)
+    const overtimes = await db.EmployeeOvertimeApplication.findAll({
+      where: {
+        employee_id: employeeId,
+        status: "Approved",
+      },
+      include: [
+        {
+          model: db.Overtime,
+          as: "overtime",
+          required: true,
+          where: {
+            date: { [Op.between]: [startDate, endDate] },
+            status: "Approved",
+          },
+        },
+      ],
+    });
+
+    // ✅ 4.5 Adjustments (latest first) under this attendance record
+    const adjustments = await db.EmployeeAttendanceAdjustment.findAll({
+      include: [
+        {
+          model: db.EmployeeAttendance,
+          as: "attendance",
+          required: true,
+          where: { attendance_id: attendance.id },
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    // ✅ 4.6 EmployeeLogs filtered by MONTH (captured_at within month)
+    const logRows = await db.EmployeeLog.findAll({
+      where: {
+        employee_id: employeeId,
+        captured_at: {
+          [Op.between]: [monthStart.toDate(), monthEnd.toDate()],
+        },
+      },
+      attributes: ["captured_at"],
+      order: [["captured_at", "ASC"]],
+    });
+
+    // 5️⃣ Build lookup maps
+    const leaveMap = {};
+    for (const leave of leaves) {
+      let d = moment(leave.date_from);
+      const end = moment(leave.date_to);
+      while (d.isSameOrBefore(end)) {
+        leaveMap[d.format("YYYY-MM-DD")] = leave.leaveType?.name || "";
+        d.add(1, "day");
+      }
+    }
+
+    const holidayMap = {};
+    for (const h of holidays) {
+      holidayMap[moment(h.date).format("YYYY-MM-DD")] = h.name;
+    }
+
+    const overtimeMap = {};
+    for (const otApp of overtimes) {
+      const ot = otApp.overtime;
+      const key = moment(ot.date).format("YYYY-MM-DD");
+      if (!overtimeMap[key]) overtimeMap[key] = [];
+      overtimeMap[key].push({
+        start: ot.time_start ? formatTime(ot.time_start) : "",
+        end: ot.time_end ? formatTime(ot.time_end) : "",
+        description: ot.description || "",
+        status: ot.status,
+      });
+    }
+
+    // ✅ logsMap => time strings only per day + ALWAYS padded to 4 for EVERY date
+    const logsMap = {};
+
+    // 1) group logs by PH date
+    for (const log of logRows) {
+      // ✅ DB time assumed UTC -> convert to PH (+08:00) BEFORE grouping
+      const m = moment.utc(log.captured_at);
+
+      const key = m.format("YYYY-MM-DD");
+      const t = m.format("HH:mm");
+
+      if (!logsMap[key]) logsMap[key] = [];
+      logsMap[key].push(t);
+    }
+
+    // 2) for every date in ATTENDANCE RANGE, ensure padded array of 4
+    let padDay = moment(startDate, "YYYY-MM-DD");
+    const padEnd = moment(endDate, "YYYY-MM-DD");
+
+    while (padDay.isSameOrBefore(padEnd)) {
+      const key = padDay.format("YYYY-MM-DD");
+
+      const times = logsMap[key] ? [...new Set(logsMap[key])].sort() : [];
+
+      const paddedTimes =
+        times.length < 4
+          ? [...times, ...Array(4 - times.length).fill("")]
+          : times.slice(0, 4);
+
+      logsMap[key] = paddedTimes;
+
+      padDay.add(1, "day");
+    }
+
+    // EmployeeAttendance days by date
+    const dayMap = {};
+    for (const d of attendance.days || []) {
+      dayMap[moment(d.work_day).format("YYYY-MM-DD")] = d;
+    }
+
+    // latest adjustment by employee_attendance_id (newest wins)
+    const adjustmentMap = {};
+    for (const adj of adjustments) {
+      if (!adjustmentMap[adj.employee_attendance_id]) {
+        adjustmentMap[adj.employee_attendance_id] = adj;
+      }
+    }
+
+    // 6️⃣ Generate results rows for each day in ATTENDANCE range
+    const results = [];
+    let day = moment(startDate);
+    const endDay = moment(endDate);
+
+    while (day.isSameOrBefore(endDay)) {
+      const formatted = day.format("YYYY-MM-DD");
+      const dtr = dayMap[formatted];
+
+      const notes = [];
+
+      if (holidayMap[formatted]) notes.push({ type: "holiday", name: holidayMap[formatted] });
+      if (leaveMap[formatted]) notes.push({ type: "leave", name: leaveMap[formatted] });
+
+      if (overtimeMap[formatted]?.length) {
+        overtimeMap[formatted].forEach((ot) => {
+          notes.push({
+            type: "overtime",
+            name: `ot (${formatTimeHHmmA(ot.start)} to ${formatTimeHHmmA(ot.end)})`,
+          });
+        });
+      }
+
+      const adjustment = dtr ? adjustmentMap[dtr.id] : null;
+      if (adjustment) notes.push({ type: "adjustment", name: adjustment.reason });
+
+      // ✅ time source: latest adjustment OR attendance
+      const originalTimeIn = formatTime(dtr?.time_in);
+      const originalTimeOut = formatTime(dtr?.time_out);
+
+      const adjustedTimeIn = adjustment ? formatTime(adjustment.adjusted_time_in) : null;
+      const adjustedTimeOut = adjustment ? formatTime(adjustment.adjusted_time_out) : null;
+
+      const finalTimeIn = adjustedTimeIn || originalTimeIn;
+      const finalTimeOut = adjustedTimeOut || originalTimeOut;
+
+      // ✅ Shift for this date
+      const effective = pickEffectiveEmployeeShift(employeeShifts, formatted);
+      const shift = effective?.shift || null;
+
+      let late = 0;
+      let undertime = 0;
+      let overtime = 0;
+
+      if (shift && finalTimeIn && finalTimeOut) {
+        const shiftDaySet = new Set((shift.days || []).map((sd) => Number(sd.day_of_week)));
+        const isoDow = moment(formatted, "YYYY-MM-DD").isoWeekday();
+        const isShiftDay = shiftDaySet.size ? shiftDaySet.has(isoDow) : true;
+
+        const schedInStr =
+          shift.time_in || shift.time_start || shift.timeStart || shift.start_time;
+        const schedOutStr =
+          shift.time_out || shift.time_end || shift.timeEnd || shift.end_time;
+
+        const schedStart = combineDayTime(formatted, schedInStr);
+        const schedEnd = combineDayTime(formatted, schedOutStr);
+
+        const actualStart = combineDayTime(formatted, finalTimeIn);
+        const actualEnd = combineDayTime(formatted, finalTimeOut);
+
+        const schedOk = schedStart.isValid() && schedEnd.isValid() && schedEnd.isAfter(schedStart);
+        const actualOk = actualStart.isValid() && actualEnd.isValid() && actualEnd.isAfter(actualStart);
+
+        const isHoliday = !!holidayMap[formatted];
+        const isLeave = !!leaveMap[formatted];
+
+        if (schedOk && actualOk && isShiftDay && !isHoliday && !isLeave) {
+          late = pos(actualStart.diff(schedStart, "minutes"));
+          undertime = pos(schedEnd.diff(actualEnd, "minutes"));
+
+          const approvedOTs = await getApprovedOvertimesForDay({
+            employeeId,
+            workDay: formatted,
+            transaction: null,
+          });
+
+          overtime = 0;
+          for (const otApp of approvedOTs || []) {
+            const ot = otApp.overtime;
+            if (!ot) continue;
+
+            const otStart = combineDayTime(formatted, ot.time_start || ot.timeStart);
+            const otEnd = combineDayTime(formatted, ot.time_end || ot.timeEnd);
+
+            if (otStart.isValid() && otEnd.isValid() && otEnd.isAfter(otStart)) {
+              overtime += overlapMinutes(actualStart, actualEnd, otStart, otEnd);
+            }
+          }
+        }
+      }
+
+      results.push({
+        date: formatted,
+
+        attendance_id: dtr?.id || null,
+        adjustment_id: adjustment?.id || null,
+
+        time_in: finalTimeIn,
+        time_out: finalTimeOut,
+
+        original_time_in: originalTimeIn,
+        original_time_out: originalTimeOut,
+        adjusted_time_in: adjustedTimeIn,
+        adjusted_time_out: adjustedTimeOut,
+
+        late,
+        undertime,
+        overtime,
+
+        // ✅ ALWAYS padded now
+        logs: logsMap[formatted],
+
+        notes,
+      });
+
+      day.add(1, "day");
+    }
+
+    return res.json({
+      attendance_id: attendance.id,
+      employee_id: attendance.employee_id,
+      date_from: startDate,
+      date_to: endDate,
+      logs: results,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 
-//         res.json({
-//             record: rows
-//         });
-
-//     } catch (error) {
-
-//         res.status(500).json({ 
-//             error: error.message 
-//         });
-
-//     }
-// };
 /**
  * Attendance
  */

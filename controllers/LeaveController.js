@@ -376,43 +376,111 @@ exports.Approve = async (req, res) => {
 };
 
 exports.Cancel = async (req, res) => {
-
     const { 
         id 
     } = req.params;
-  
-    try {
 
-        const leave = await db.EmployeeLeaveApplication.findByPk(id);
+    const transaction = await db.sequelize.transaction();
+
+    try {
+        const leave = await db.EmployeeLeaveApplication.findByPk(id, {
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+        });
 
         if (!leave) {
+            await transaction.rollback();
             return res.status(500).json({
-                errors: [{
+                errors: [
+                {
                     type: "field",
                     value: id,
                     msg: "Record not found!",
                     path: "name",
                     location: "body",
-                }],
+                },
+                ],
             });
         }
 
-        await leave.update({ 
-            status: 'Cancelled'
-        });
+        // If already cancelled, just return OK (idempotent)
+        if (leave.status === "Cancelled") {
+            await transaction.commit();
+            return res.status(200).json({ message: "Record already cancelled." });
+        }
 
-        res.status(200).json({
-            message: "Record Cancelled!"
-        });
+        // Only restore leave balance if it was previously Approved
+        if (leave.status === "Approved") {
+            // Compute applied leave days (inclusive)
+            // NOTE: This counts ALL calendar days. If you want to exclude weekends/holidays,
+            // tell me your rules and we’ll adjust.
+            const from = moment(leave.date_from, "YYYY-MM-DD", true);
+            const to = moment(leave.date_to, "YYYY-MM-DD", true);
 
+            if (!from.isValid() || !to.isValid() || to.isBefore(from, "day")) {
+                await transaction.rollback();
+                return res.status(400).json({ error: "Invalid leave date range." });
+            }
+
+            const appliedDays = to.diff(from, "days") + 1; // inclusive
+
+            // Get leave balance row (lock it to avoid race conditions)
+            const bal = await db.EmployeeLeaveBalance.findOne({
+                where: {
+                    employee_id: leave.employee_id,
+                    leave_type_id: leave.leave_type_id,
+                    is_active: true,
+                },
+                transaction,
+                lock: transaction.LOCK.UPDATE,
+            });
+
+            if (!bal) {
+                await transaction.rollback();
+                    return res.status(400).json({
+                    error: "Leave balance record not found for this employee and leave type.",
+                });
+            }
+
+            const used = parseFloat(bal.used || 0);
+            const balance = parseFloat(bal.balance || 0);
+
+            // Restore: used goes down, balance goes up
+            // Guard: used should not go negative even if data is inconsistent
+            const newUsed = Math.max(0, used - appliedDays);
+            const newBalance = balance + appliedDays;
+
+            await bal.update(
+                {
+                    used: newUsed,
+                    balance: newBalance,
+                },
+                { transaction }
+            );
+        }
+
+        // Finally cancel the leave application
+        await leave.update(
+            {
+                status: "Cancelled",
+            },
+            { transaction }
+        );
+
+        await transaction.commit();
+
+        return res.status(200).json({
+            message:
+                leave.status === "Approved"
+                ? "Record Cancelled! Leave balance restored."
+                : "Record Cancelled!",
+        });
     } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
+        await transaction.rollback();
+        return res.status(500).json({ error: error.message });
     }
 };
+
 
 exports.GenerateLeavePDF = async (req, res) => {
 
@@ -469,8 +537,7 @@ exports.GenerateLeavePDF = async (req, res) => {
             employee.last_name,
             employee.suffix || ''
         ].join(' ').replace(/\s+/g, ' ').trim();
-
-        const company = employment?.company?.name || '';
+        
         const departmentPosition = `${employment?.department?.name || ''} - ${employment?.position?.name || ''}`;
         const contactNo = employee.contact_number || '';
 
@@ -580,17 +647,12 @@ exports.GenerateLeavePDF = async (req, res) => {
             order: [[{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
         });
 
-        const result = {
-            ...leaveApp.toJSON(),
-            approvals
-        };
-
         // Map approvals to the desired format
         const signatories = approvals.map((app) => {
             const employee = app?.setting?.approver?.employeeAccount?.employee;
             const profile = employee || {};
 
-            const position = app?.setting?.approver?.employeeAccount?.employment?.position?.name || '';
+            const position = employee?.employment?.position?.name;
             // Format full name (First M. Last Suffix)
             const first = profile?.first_name || '';
             const middle = profile?.middle_name ? `${profile.middle_name.charAt(0)}.` : '';

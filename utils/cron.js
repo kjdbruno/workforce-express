@@ -1,7 +1,8 @@
 // cron/loginResetJob.js
 const cron = require('node-cron');
 const { Op } = require('sequelize');
-const { User, EmployeeLeaveBalance, LeaveType } = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 /**
  * Automatically resets failed login attempts (and optionally reactivates users)
@@ -12,7 +13,7 @@ function loginResetJob(io) {
         console.log('🕒 [CRON] Running automatic login attempt reset check...');
 
         try {
-            const users = await User.findAll({
+            const users = await db.User.findAll({
                 where: {
                 [Op.or]: [
                     { failedLoginAttempts: { [Op.gt]: 0 } },
@@ -39,17 +40,17 @@ function loginResetJob(io) {
 
                     await user.save();
 
-                    console.log(`🔁 [CRON] Auto-reset login attempts for: ${user.username}`);
+                    console.log(`[CRON] Auto-reset login attempts for: ${user.username}`);
 
                     // Optional: real-time notify connected clients
-                    if (io) {
-                        io.emit('loginAttemptsAutoReset', {
-                        userId: user.id,
-                        username: user.username,
-                        status: user.status,
-                        message: 'Login attempts automatically reset by system.',
-                        });
-                    }
+                    // if (io) {
+                    //     io.emit('loginAttemptsAutoReset', {
+                    //     userId: user.id,
+                    //     username: user.username,
+                    //     status: user.status,
+                    //     message: 'Login attempts automatically reset by system.',
+                    //     });
+                    // }
                 }
             }
         } catch (err) {
@@ -60,13 +61,13 @@ function loginResetJob(io) {
 
 function yearlyLeaveBalance(io) {
     cron.schedule('0 0 1 1 *', async () => {
-        console.log('🕒 [CRON] Running automatic yearly leave balance check...');
+        console.log('[CRON] Running automatic yearly leave balance check...');
 
         try {
-            const balances = await EmployeeLeaveBalance.findAll({
+            const balances = await db.EmployeeLeaveBalance.findAll({
             include: [
                 {
-                model: LeaveType,
+                model: db.LeaveType,
                     as: 'leaveType',
                     where: { 
                         is_active: true 
@@ -109,7 +110,67 @@ function yearlyLeaveBalance(io) {
     });
 }
 
+function dailyAutoCancel(io) {
+    // Every day at 6PM
+    cron.schedule('0 18 * * *', async () => {
+        const today = moment().format('YYYY-MM-DD');
+        console.log(`[CRON] Daily auto-cancel check for ${today}`);
+        try {
+            // 1️ Cancel expired Attendances
+            const cancelledAttendances = await db.Attendance.update(
+                { status: 'Cancelled' },
+                {
+                    where: {
+                        status: { [Op.in]: ['Pending'] },
+                        date_to: { [Op.lt]: today }
+                    }
+                }
+            );
+
+        // 2️⃣ Cancel expired Leave Applications
+        const cancelledLeaves = await db.EmployeeLeaveApplication.update(
+            { status: 'Cancelled' },
+            {
+                where: {
+                    status: { [Op.in]: ['Pending', 'Filed'] },
+                    date_to: { [Op.lt]: today }
+                }
+            }
+        );
+
+        // 3️⃣ Cancel expired Overtimes
+        const cancelledOvertimes = await db.Overtime.update(
+            { status: 'Cancelled' },
+            {
+                where: {
+                    status: { [Op.in]: ['Pending'] },
+                    date: { [Op.lt]: today }
+                }
+            }
+        );
+
+        console.log('Daily auto-cancel completed');
+        console.log(`Attendances cancelled: ${cancelledAttendances[0]}`);
+        console.log(`Leave applications cancelled: ${cancelledLeaves[0]}`);
+        console.log(`Overtimes cancelled: ${cancelledOvertimes[0]}`);
+
+        // Optional: notify admins via socket
+        //   if (io) {
+        //     io.emit('cron:auto-cancel', {
+        //       date: today,
+        //       attendance: cancelledAttendances[0],
+        //       leaves: cancelledLeaves[0],
+        //       overtimes: cancelledOvertimes[0]
+        //     });
+        //   }
+
+        } catch (error) {
+            console.error('❌ Error during daily auto-cancel cron:', error);
+        }
+    });
+}
 module.exports = {
     loginResetJob,
-    yearlyLeaveBalance
+    yearlyLeaveBalance,
+    dailyAutoCancel
 };
