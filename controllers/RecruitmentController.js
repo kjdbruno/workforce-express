@@ -466,95 +466,92 @@ const GetRecruitment = async (id) => {
 };
 
 exports.Approve = async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const approvalid = parseInt(req.body.approvalid, 10);
 
-    const { 
-        vacancyId
-    } = req.body;
+  const transaction = await sequelize.transaction();
 
-    const transaction = await sequelize.transaction();
-
-    try {
-        // 1️⃣ Find the Approval record for this approver
-        const approval = await db.Approval.findOne({
-            where: {
-                document_id: vacancyId,
-                is_active: true
-            },
-            include: [
-                {
-                    model: db.ApprovalSetting,
-                    as: 'setting',
-                    where: {
-                        type: 'Vacancy',
-                        approver_id: req.user.id, // ✅ filter by current approver
-                        is_active: true
-                    }
-                }
-            ]
-        }, transaction);
-
-        if (!approval) {
-            return res.status(404).json({
-                message: 'Approval record not found for this document and approver.'
-            });
-        }
-
-        // 2️⃣ Update approval to Approved
-        await approval.update({
-            status: 'Approved',
-            signed_at: moment().toDate()
-        }, transaction);
-
-        // 3️⃣ Check if all approvals for this document are now approved
-        const pendingApprovals = await db.Approval.count({
-            where: {
-                document_id: vacancyId,
-                status: {
-                    [Op.ne]: 'Approved' 
-                },
-                is_active: true
-            }
-        }, transaction);
-        if (pendingApprovals === 0) {
-            await db.Vacancy.update({ 
-                    status: "Approved" 
-                },
-                { 
-                    where: { 
-                        id: vacancyId 
-                    } 
-                }, { transaction }
-            );
-            const vacancy = await db.Vacancy.findByPk(vacancyId, { transaction });
-            await db.Position.update({ 
-                    status: "Approved" 
-                },
-                { 
-                    where: { 
-                        id: vacancy.position_id 
-                    } 
-                }, { transaction }
-            );
-        }
-
-        const data = await GetRecruitment(vacancyId);
-
-        await transaction.commit();
-
-        res.status(201).json({
-            message: "Record Saved!", 
-            vacancy: data
-        });
-
-    } catch (error) {
-
-        await transaction.rollback();
-        res.status(400).json({ 
-            error: error.message 
-        });
-
+  try {
+    if (!id || !approvalid) {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Missing required id / approvalid." });
     }
+
+    // 1️⃣ Fetch vacancy (inside transaction)
+    const vacancy = await db.Vacancy.findByPk(id, { transaction });
+
+    if (!vacancy) {
+      await transaction.rollback();
+      return res.status(404).json({
+        errors: [
+          {
+            type: "field",
+            value: id,
+            msg: "Record not found!",
+            path: "id",
+            location: "body",
+          },
+        ],
+      });
+    }
+
+    // 2️⃣ Fetch approval (must belong to this document)
+    const approval = await db.Approval.findOne({
+      where: {
+        id: approvalid,
+        document_id: id,
+        is_active: true,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!approval) {
+      await transaction.rollback();
+      return res.status(404).json({ error: "Approval record not found for this document!" });
+    }
+
+    // if already approved, just return OK (idempotent)
+    if (approval.status !== "Approved") {
+      await approval.update(
+        { status: "Approved", signed_at: new Date() }, // remove signed_at if you don't have it
+        { transaction }
+      );
+    }
+
+    // 3️⃣ Check if any approvals still not Approved
+    const pendingApprovals = await db.Approval.count({
+      where: {
+        document_id: id,
+        is_active: true,
+        status: { [Op.ne]: "Approved" },
+      },
+      transaction,
+    });
+
+    // 4️⃣ If all approvals done, approve vacancy + approve position
+    if (pendingApprovals === 0 && vacancy.status !== "Approved") {
+      await vacancy.update({ status: "Approved" }, { transaction });
+
+      await db.Position.update(
+        { status: "Approved" },
+        { where: { id: vacancy.position_id }, transaction }
+      );
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      message: "Record Saved!",
+      vacancy_status: pendingApprovals === 0 ? "Approved" : vacancy.status,
+      pending_approvals: pendingApprovals,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(400).json({ error: error.message });
+  }
 };
+
 
 exports.Disable = async (req, res) => {
 
