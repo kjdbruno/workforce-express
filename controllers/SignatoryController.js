@@ -80,10 +80,13 @@ exports.Create = async (req, res) => {
 
     const { 
         type,
-        ownerid
+        ownerid,
+        signatories
     } = req.body;
 
-    const files = req.files || [];
+    const sign = Array.isArray(signatories)
+        ? signatories
+        : JSON.parse(signatories || "[]");
 
     const transaction = await sequelize.transaction();
 
@@ -109,25 +112,16 @@ exports.Create = async (req, res) => {
             });
         }
         
-        const rows = JSON.parse(req.body.signatories || "[]");
-
-        if (!rows.length) {
-            return res.status(400).json({ error: "signatories JSON is empty or missing" });
-        }
-
-        for (let i = 0; i < rows.length; i++) {
-            const r = rows[i];
-            const file = files[i];
-            const filePath = file?.filename ? `/uploads/${file.filename}` : null;
-            await db.ApprovalSetting.create({
+        await db.ApprovalSetting.bulkCreate(
+            sign.map((s) => ({
                 type,
                 owner_id: ownerid,
-                approver_id: r.approverid,
-                description: r.description,
-                signature: filePath,
-                order: r.order
-            }, { transaction });
-        }
+                approver_id: s.approverid,
+                description: s.description,
+                order: s.order,
+            })),
+            { transaction }
+        );
 
         await transaction.commit();
 

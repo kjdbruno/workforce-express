@@ -691,6 +691,10 @@ exports.GetAttendance = async (req, res) => {
                                                         }
                                                     ],
                                                 },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
+                                                }
                                             ],
                                         },
                                     ],
@@ -720,6 +724,10 @@ exports.GetAttendance = async (req, res) => {
                                                         }
                                                     ],
                                                 },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
+                                                }
                                             ],
                                         },
                                     ],
@@ -906,7 +914,8 @@ exports.Approve = async (req, res) => {
         const approval = await db.Approval.findByPk(approvalid);
 
         await approval.update({
-            status: 'Approved'
+            status: 'Approved',
+            signed_at: new Date()
         })
         const approvals = await db.Approval.count({
             where: {
@@ -1253,6 +1262,10 @@ exports.GenerateAttendancePDF = async (req, res) => {
                                                         }
                                                     ],
                                                 },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
+                                                }
                                             ],
                                         },
                                     ],
@@ -1282,6 +1295,10 @@ exports.GenerateAttendancePDF = async (req, res) => {
                                                         }
                                                     ],
                                                 },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
+                                                }
                                             ],
                                         },
                                     ],
@@ -1309,7 +1326,7 @@ exports.GenerateAttendancePDF = async (req, res) => {
 
             // Only show signature & date if approval is approved
             const isApproved = app?.status === 'Approved';
-            const signaturePath = app?.setting?.signature; // Assuming approval setting stores the signature path
+            const signaturePath = employee?.signature?.signature; // Assuming approval setting stores the signature path
 
             return {
                 description: app?.setting.description || '',

@@ -120,6 +120,10 @@ exports.GetDetails = async (req, res) => {
                                                         model: db.Position, 
                                                         as: 'position' 
                                                     }]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -147,6 +151,10 @@ exports.GetDetails = async (req, res) => {
                                                         model: db.Position, 
                                                         as: 'position' 
                                                     }]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -298,7 +306,7 @@ exports.Approve = async (req, res) => {
             return res.status(404).json({ error: "Approval record not found!" });
         }
 
-        await approval.update({ status: 'Approved' });
+        await approval.update({ status: 'Approved', signed_at: new Date() });
 
         // 3️⃣ Refresh leave status based on approvals
         const pendingApprovals = await db.Approval.count({
@@ -609,7 +617,16 @@ exports.GenerateLeavePDF = async (req, res) => {
                                                 {
                                                     model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: db.Position, as: 'position' }]
+                                                    include: [
+                                                        { 
+                                                            model: db.Position, 
+                                                            as: 'position' 
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -633,7 +650,16 @@ exports.GenerateLeavePDF = async (req, res) => {
                                                 {
                                                     model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: db.Position, as: 'position' }]
+                                                    include: [
+                                                        { 
+                                                            model: db.Position, 
+                                                            as: 'position' 
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -662,7 +688,7 @@ exports.GenerateLeavePDF = async (req, res) => {
 
             // Only show signature & date if approval is approved
             const isApproved = app?.status === 'Approved';
-            const signaturePath = app?.setting?.signature; // Assuming approval setting stores the signature path
+            const signaturePath = employee?.signature?.signature; // Assuming approval setting stores the signature path
 
             return {
                 description: app?.setting.description || '',

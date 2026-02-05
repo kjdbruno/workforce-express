@@ -291,6 +291,10 @@ exports.GetDetails = async (req, res) => {
                                                             as: 'position',
                                                         }
                                                     ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -320,6 +324,10 @@ exports.GetDetails = async (req, res) => {
                                                             as: 'position',
                                                         }
                                                     ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -672,6 +680,10 @@ exports.GeneratePDF = async (req, res) => {
                                                             as: 'position',
                                                         }
                                                     ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -701,6 +713,10 @@ exports.GeneratePDF = async (req, res) => {
                                                             as: 'position',
                                                         }
                                                     ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -821,7 +837,7 @@ exports.GeneratePDF = async (req, res) => {
 
             // Only show signature & date if approval is approved
             const isApproved = app?.status === 'Approved';
-            const signaturePath = app?.setting?.signature; // Assuming approval setting stores the signature path
+            const signaturePath = employee?.signature?.signature; // Assuming approval setting stores the signature path
 
             return {
                 description: app?.setting.description || '',
