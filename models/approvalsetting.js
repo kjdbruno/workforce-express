@@ -64,10 +64,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    signature: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
     order: {
       type: DataTypes.INTEGER,
       allowNull: false

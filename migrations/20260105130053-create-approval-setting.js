@@ -37,10 +37,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      signature: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       order: {
         type: Sequelize.INTEGER,
         allowNull: false

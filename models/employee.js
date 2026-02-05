@@ -99,6 +99,12 @@
           as: 'attendances'
         })
 
+        // Employee → Signature
+        Employee.hasOne(models.EmployeeSignature, {
+          foreignKey: 'employee_id',
+          as: 'signature'
+        });
+
       }
     }
     Employee.init({

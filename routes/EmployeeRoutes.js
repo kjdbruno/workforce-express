@@ -3,6 +3,7 @@ const router = express.Router();
 
 const UploadEmployeePhoto = require("../middlewares/UploadEmployeePhoto");
 const UploadDocument = require("../middlewares/UploadDocument");
+const UploadEmployeeSignature = require('../middlewares/UploadEmployeeSignature');
 
 const multer = require('multer');
 const storage = multer.memoryStorage();
@@ -46,8 +47,12 @@ const {
     CreateLeave,
     CreateBiometric,
     GetAttendance,
+    GenerateIdPDF,
+    GetSignature,
+    CreateSignature,
 } = require('../controllers/EmployeeController');
 const { GetShift } = require('../controllers/RecruitmentController');
+
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAll);
 router.post('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), Create);
@@ -68,6 +73,9 @@ router.post('/:id/photo', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor'
 router.get('/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetAccount);
 router.post('/:id/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), CreateAccount);
 
+router.get('/signature', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetSignature);
+router.post('/:id/signature', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), UploadEmployeeSignature.single("file"), CreateSignature);
+
 router.get('/education', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetEducation);
 router.post('/:id/education', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), UpdateEducation);
 
@@ -82,6 +90,8 @@ router.post('/:id/dependent', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervi
 
 router.get('/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetDocument);
 router.post('/:id/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), UploadDocument.any(), CreateDocument);
+
+router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GenerateIdPDF);
 
 router.get('/leave/balance', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveBalance);
 router.get('/leave/application', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetLeaveApplication);

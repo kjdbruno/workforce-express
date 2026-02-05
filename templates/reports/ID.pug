@@ -1,0 +1,108 @@
+html
+    head
+        meta(charset="utf-8")
+        title ID
+        style.
+            @page {
+                size: 2.125in 3.375in;
+                margin: 0;
+            }
+
+            html, body {
+                width: 2.125in;
+                height: 3.375in;
+                margin: 0;
+                padding: 0;
+            }
+
+            * {
+                font-family: Century Gothic, CenturyGothic, AppleGothic, sans-serif;
+                color: #262626;
+                box-sizing: border-box;
+            }
+
+            .card {
+                width: 2.125in;
+                height: 3.375in;
+                position: relative;
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: cover; /* ✅ background covers whole card */
+                page-break-after: always;
+            }
+
+            .card:last-child {
+                page-break-after: auto;
+            }
+
+            .id-photo {
+                position: absolute;
+                bottom: 0;   /* adjust as needed */
+                right: 0;    /* adjust as needed */
+                width: auto;
+                height: 1.8in;
+            }
+
+            .qr-wrapper {
+                position: absolute;
+                bottom: 10px;
+                left: 10px;
+                text-align: center;
+            }
+
+            .employee-no {
+                font-size: 6pt;
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+
+            .qr-code {
+                width: 50px;
+                height: 50px;
+                object-fit: contain;
+            }
+            
+            .info {
+                position: absolute;
+                top: 1.3in;
+                left: 10px;
+                right: 10px;
+            }
+
+            .id-signature {
+                position: absolute;
+                top: 2.2in;
+                width: 0.75in;
+                height: auto;
+                left: 10px;
+            }
+
+            .name, .position, .contact, .address {
+                margin-bottom: 4px;
+            }
+    body
+        //- FRONT PAGE
+        .card(style=`background-image: url('${front}')`)
+            .info
+                .id
+                    div(style='font-size: .45em; text-transform: uppercase;') id number 
+                    div(style='font-size: .65em; text-transform: uppercase; font-weight: bold;') #{employeeNo}
+                .name
+                    div(style='font-size: .45em; text-transform: capitalize;') name 
+                    div(style='font-size: .65em; text-transform: uppercase; font-weight: bold;') #{name}
+                .position
+                    div(style='font-size: .45em; text-transform: capitalize;') position
+                    div(style='font-size: .65em; text-transform: uppercase; font-weight: bold;') #{position}
+                //- .contact
+                //-     div(style='font-size: .45em; text-transform: capitalize;') contact number 
+                //-     div(style='font-size: .65em; text-transform: uppercase; font-weight: bold;') #{contactNo}
+                //- .address
+                //-     div(style='font-size: .45em; text-transform: capitalize;') address 
+                //-     div(style='font-size: .65em; text-transform: uppercase; font-weight: bold;') #{address}
+            img.id-signature(src=signature)
+            img.id-photo(src=photo)
+            .qr-wrapper
+                img.qr-code(src=qr)
+        //- BACK PAGE
+        .card(style=`background-image: url('${back}')`)
+        

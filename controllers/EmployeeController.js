@@ -11,6 +11,8 @@ const puppeteer = require('puppeteer');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const QR = require('qrcode-base64')
+
 const db = require('../models');
 const { sequelize } = db;
 
@@ -83,7 +85,31 @@ exports.GetApplicant = async (req, res) => {
             include: [
                 {
                     model: db.Vacancy,
-                    as: 'vacancy'
+                    as: 'vacancy',
+                    include: [
+                        {
+                            model: db.Position,
+                            as: 'position',
+                            attributes: [
+                                'name',
+                                'salary_type',
+                                [
+                                    sequelize.literal(`
+                                        CASE
+                                            WHEN ${sequelize.getQueryInterface().quoteIdentifier('vacancy->position')}.${sequelize.getQueryInterface().quoteIdentifier('salary_type')} = 'Monthly'
+                                            THEN ${sequelize.getQueryInterface().quoteIdentifier('vacancy->position')}.${sequelize.getQueryInterface().quoteIdentifier('monthly_salary')}
+                                            WHEN ${sequelize.getQueryInterface().quoteIdentifier('vacancy->position')}.${sequelize.getQueryInterface().quoteIdentifier('salary_type')} = 'Daily'
+                                            THEN ${sequelize.getQueryInterface().quoteIdentifier('vacancy->position')}.${sequelize.getQueryInterface().quoteIdentifier('daily_salary')}
+                                            WHEN ${sequelize.getQueryInterface().quoteIdentifier('vacancy->position')}.${sequelize.getQueryInterface().quoteIdentifier('salary_type')} = 'Hourly'
+                                            THEN ${sequelize.getQueryInterface().quoteIdentifier('vacancy->position')}.${sequelize.getQueryInterface().quoteIdentifier('hourly_salary')}
+                                            ELSE NULL
+                                        END
+                                    `),
+                                    'salary_amount'
+                                ]
+                            ]
+                        }
+                    ]
                 },
                 {
                     model: db.ApplicantEducation,
@@ -310,9 +336,8 @@ const GetSalaryAmount = (position) => {
 };
 
 exports.Create = async (req, res) => {
-
-    const { 
-        //employee
+    const {
+        // applicant
         applicantId,
         firstname,
         middlename,
@@ -323,10 +348,10 @@ exports.Create = async (req, res) => {
         birthdate,
         birthplace,
         address,
-        bloodtype,
         email,
         contactNo,
-        //employment
+
+        // employment
         employeeNo,
         dateHired,
         departmentId,
@@ -336,38 +361,54 @@ exports.Create = async (req, res) => {
         sssNo,
         philhealthNo,
         pagibigNo,
-        //salary
+
+        // salary
         salarygroup,
         payrollgroup,
         taxstatus,
+
         // shift
         shiftId,
         effectiveFrom,
         effectiveTo,
-        notes
+        notes,
     } = req.body;
-    
-    const transaction = await sequelize.transaction();
 
     try {
+        // ✅ 0) Fetch applicant-related data OUTSIDE transaction (keeps locks short)
+        let educations = [];
+        let trainings = [];
+        let experiences = [];
+        let documents = [];
 
+        if (applicantId) {
+        educations = await db.ApplicantEducation.findAll({ where: { applicant_id: applicantId } });
+        trainings = await db.ApplicantTraining.findAll({ where: { applicant_id: applicantId } });
+        experiences = await db.ApplicantExperience.findAll({ where: { applicant_id: applicantId } });
+        documents = await db.ApplicantDocument.findAll({ where: { applicant_id: applicantId } });
+        }
+
+        // ✅ 1) Transaction (managed)
+        const result = await sequelize.transaction(async (transaction) => {
+        // ✅ generate employee no (lock the "latest" row to avoid race)
         const year = new Date(dateHired).getFullYear().toString();
+
         const latest = await db.Employment.findOne({
-        where: {
-            employee_no: {
-            [Op.like]: `${year}-%`
-            }
-        },
-        order: [['employee_no', 'DESC']]
+            where: {
+            employee_no: { [Op.like]: `${year}-%` },
+            },
+            order: [["employee_no", "DESC"]],
+            transaction,
+            lock: transaction.LOCK.UPDATE, // ✅ important for concurrency
         });
-        const nextSeq = latest
-            ? parseInt(latest.employee_no.split('-')[1], 10) + 1
-            : 1;
-        const newEmployeeNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
 
+        const nextSeq = latest ? parseInt(latest.employee_no.split("-")[1], 10) + 1 : 1;
+        const newEmployeeNo = `${year}-${String(nextSeq).padStart(3, "0")}`;
+        const finalEmployeeNo = employeeNo?.trim() ? employeeNo.trim() : newEmployeeNo;
 
-        //employee
-        const employee = await db.Employee.create({
+        // ✅ employee
+        const employee = await db.Employee.create(
+            {
             first_name: firstname,
             middle_name: middlename,
             last_name: lastname,
@@ -376,15 +417,18 @@ exports.Create = async (req, res) => {
             civil_status: civilstatus,
             birthdate,
             birthplace,
-            blood_type: bloodtype,
             address,
             email,
-            contact_number: contactNo
-        }, { transaction });
-        //employment
-        await db.Employment.create({
+            contact_number: contactNo,
+            },
+            { transaction }
+        );
+
+        // ✅ employment
+        await db.Employment.create(
+            {
             employee_id: employee.id,
-            employee_no: (employeeNo?.trim() ? employeeNo : newEmployeeNo),
+            employee_no: finalEmployeeNo,
             date_hired: dateHired,
             tin,
             sss_no: sssNo,
@@ -394,108 +438,116 @@ exports.Create = async (req, res) => {
             employment_status: employmentstatus,
             tax_status: taxstatus,
             position_id: positionId,
-            payroll_group: payrollgroup
-        }, { transaction });
-        // salary
-        const position = await db.Position.findByPk(positionId);
+            payroll_group: payrollgroup,
+            },
+            { transaction }
+        );
+
+        // ✅ salary schedule
+        const position = await db.Position.findByPk(positionId, { transaction, lock: transaction.LOCK.UPDATE });
+        if (!position) throw new Error("Position not found.");
+
         const amount = GetSalaryAmount(position);
-        await db.SalarySchedule.create({
+
+        await db.SalarySchedule.create(
+            {
             employee_id: employee.id,
-            amount: amount,
+            amount,
             salary_type: position.salary_type,
             salary_group: salarygroup,
-            effective_date: dateHired
-        }, { transaction });
-        await position.update({
-            status: 'Filled'
-        }, { transaction })
-        //shift
-        await db.EmployeeShift.create({
+            effective_date: dateHired,
+            },
+            { transaction }
+        );
+
+        // ✅ mark position as filled
+        await position.update({ status: "Filled" }, { transaction });
+
+        // ✅ shift
+        await db.EmployeeShift.create(
+            {
             employee_id: employee.id,
             shift_id: shiftId,
             effective_from: effectiveFrom,
-            effective_to: effectiveTo || null,
-            notes
-        }, { transaction })
-        
+            effective_to: effectiveTo?.trim() ? effectiveTo : null,
+            notes,
+            },
+            { transaction }
+        );
+
+        // ✅ copy applicant data (ALL WITH transaction)
         if (applicantId) {
-            // EDUCATIONS
-            const educations = await db.ApplicantEducation.findAll({ where: { applicant_id: applicantId } });
             if (educations.length) {
-                await db.EmployeeEducation.bulkCreate(
-                    educations.map(e => ({
-                        employee_id: employee.id,
-                        school_level: e.school_level,
-                        school_id: e.school_id,
-                        course_id: e.course_id,
-                        start_date: e.start_date,
-                        end_date: e.end_date
-                    }))
-                );
+            await db.EmployeeEducation.bulkCreate(
+                educations.map((e) => ({
+                employee_id: employee.id,
+                school_level: e.school_level,
+                school_id: e.school_id,
+                course_id: e.course_id,
+                start_date: e.start_date,
+                end_date: e.end_date,
+                })),
+                { transaction }
+            );
             }
 
-            // TRAININGS
-            const trainings = await db.ApplicantTraining.findAll({ where: { applicant_id: applicantId } });
             if (trainings.length) {
-                await db.EmployeeTraining.bulkCreate(
-                    trainings.map(t => ({
-                        employee_id: employee.id,
-                        title: t.title,
-                        type: t.type,
-                        start_date: t.start_date,
-                        end_date: t.end_date,
-                        hour: t.hour
-                    })), { transaction }
-                );
+            await db.EmployeeTraining.bulkCreate(
+                trainings.map((t) => ({
+                employee_id: employee.id,
+                title: t.title,
+                type: t.type,
+                start_date: t.start_date,
+                end_date: t.end_date,
+                hour: t.hour,
+                })),
+                { transaction }
+            );
             }
 
-            // EXPERIENCES
-            const experiences = await db.ApplicantExperience.findAll({ where: { applicant_id: applicantId } });
             if (experiences.length) {
-                await db.EmployeeExperience.bulkCreate(
-                    experiences.map(x => ({
-                        employee_id: employee.id,
-                        position: x.position,
-                        description: x.description,
-                        start_date: x.start_date,
-                        end_date: x.end_date
-                    })), { transaction }
-                );
+            await db.EmployeeExperience.bulkCreate(
+                experiences.map((x) => ({
+                employee_id: employee.id,
+                position: x.position,
+                description: x.description,
+                start_date: x.start_date,
+                end_date: x.end_date,
+                })),
+                { transaction }
+            );
             }
 
-            // DOCUMENTS
-            const documents = await db.ApplicantDocument.findAll({ where: { applicant_id: applicantId } });
             if (documents.length) {
-                await db.EmployeeDocument.bulkCreate(
-                    documents.map(f => ({
-                        employee_id: employee.id,
-                        document: f.document,
-                        filename: f.filename
-                    })), { transaction }
-                );
+            await db.EmployeeDocument.bulkCreate(
+                documents.map((f) => ({
+                employee_id: employee.id,
+                document: f.document,
+                filename: f.filename,
+                })),
+                { transaction } // ✅ FIXED: missing before
+            );
             }
 
-            // DEACTIVATE APPLICANT (only if applicantId is valid)
+            // ✅ deactivate applicant
             await db.Applicant.update(
-                    { is_active: false },
-                    { where: { id: applicantId }, transaction }
-                );
+            { is_active: false },
+            { where: { id: applicantId }, transaction }
+            );
         }
 
-        await transaction.commit();
-
-        res.status(201).json({
-            message: "Record Saved!"
+        return { employeeId: employee.id, employeeNo: finalEmployeeNo };
         });
 
+        return res.status(201).json({
+        message: "Record Saved!",
+        data: result,
+        });
     } catch (error) {
-        await transaction.rollback();
-        res.status(400).json({ 
-            error: error.message 
-        });
-
+        return res.status(400).json({ error: error.message });
     }
 };
+
 
 /**
  * Employee
@@ -957,6 +1009,7 @@ exports.CreatePhoto = async (req, res) => {
 /**
  * Photo
  */
+
 /**
  * Account
  */
@@ -1095,6 +1148,91 @@ exports.CreateAccount = async (req, res) => {
 };
 /**
  * Account
+ */
+
+/**
+ * Signature
+ */
+exports.GetSignature = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await db.EmployeeSignature.findOne({
+            where: {
+                employee_id: id
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.CreateSignature = async (req, res) => {
+
+    const { id } = req.params;
+
+    const transaction = await sequelize.transaction();
+    
+    try {
+
+        const file = req.file;
+        const filePath = `/uploads/signature/${file.filename}`; // public URL path (served from /public)
+
+        const exist = await db.EmployeeSignature.findOne({
+            where: { 
+                employee_id: id 
+            },
+        });
+
+        // If you want to delete the previous physical file
+        if (exist?.signature) {
+            const oldRel = exist.signature.replace("/uploads/signature/", "");
+            const oldAbs = path.join(__dirname, "../public/uploads/signature", oldRel);
+
+            // delete old file if exists
+            if (fs.existsSync(oldAbs)) {
+                fs.unlinkSync(oldAbs);
+            }
+        }
+
+        if (exist) {
+            await exist.update({
+                signature: filePath,
+            }, { transaction });
+        } else {
+            await db.EmployeeSignature.create({
+                employee_id: id,
+                signature: filePath,
+            }, { transaction });
+        }
+
+        await transaction.commit();
+
+        res.status(201).json({
+            message: "Record Saved!",
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Signature
  */
 
 
@@ -1655,13 +1793,126 @@ exports.CreateDocument = async (req, res) => {
  */
 
 /**
+ * ID
+ */
+exports.GenerateIdPDF = async (req, res) => {
+    const { 
+        id
+    } = req.params;
+    let browser;
+    try {
+
+        const employee = await db.Employee.findByPk(id);
+        const employment = await db.Employment.findOne({
+            where: {
+                employee_id: employee.id
+            }
+        });
+        const position = await db.Position.findOne({
+            where: {
+                id: employment.position_id
+            }
+        });
+        const p = await db.EmployeePhoto.findOne({
+            where: {
+                employee_id: employee.id
+            }
+        });
+        const s = await db.EmployeeSignature.findOne({
+            where: {
+                employee_id: employee.id
+            }
+        });
+
+        const templatePath = path.join(__dirname, '../templates/reports/ID.pug');
+
+        const front = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, '../templates/id/Front.png')).toString('base64');
+        const back = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, '../templates/id/Back.png')).toString('base64');
+
+        const photo = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${p.avatar}`)).toString('base64');
+        const signature = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${s.signature}`)).toString('base64');
+
+        const FormatEmployeeName = (employee) => {
+            if (!employee) return '';
+
+            const first = employee.first_name || '';
+            const middle = employee.middle_name
+                ? `${employee.middle_name.charAt(0)}.`
+                : '';
+            const last = employee.last_name || '';
+            const suffix = employee.suffix ? ` ${employee.suffix}` : '';
+
+            return `${first} ${middle} ${last}${suffix}`
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
+
+        const QRCode = QR.drawImg(employment?.employee_no, {
+            typeNumber: 2,
+            errorCorrectLevel: 'M',
+            size: 500
+        });
+
+        const html = pug.renderFile(templatePath, { 
+            front,
+            back,
+            photo,
+            signature,
+            name: FormatEmployeeName(employee),
+            position: position.name,
+            contactNo: employee.contact_number,
+            address: employee.address,
+            employeeNo: employment?.employee_no,
+            qr: QRCode
+        });
+        const browser = await puppeteer.launch({
+          headless: 'new',
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        
+        const page = await browser.newPage();
+    
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+
+        await page.emulateMediaType('print');
+
+        const width = '2.125in'
+        const height = '3.375in'
+    
+        const pdfBuffer = await page.pdf({
+            width: width, 
+            height: height, 
+            landscape: false, 
+            margin: {
+                top: '0px',
+                bottom: '0px',
+                left: '0px',
+                right: '0px'
+            }, 
+            preferCSSPageSize: true,
+            printBackground: true
+        });
+
+        const buffer = Buffer.from(pdfBuffer);
+        res.send(buffer)
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+};
+
+/**
+ * ID
+ */
+
+/**
  * Attendance
  */
-// controllers/AttendanceController.js
-// Assumes you already have somewhere at top-level:
-// const db = require("../models");
-// const { Op } = require("sequelize");
-// const moment = require("moment");
 
 const pos = (n) => (n > 0 ? n : 0);
 

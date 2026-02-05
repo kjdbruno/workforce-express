@@ -38,6 +38,7 @@ db.Employee = require('./employee')(sequelize, Sequelize.DataTypes);
 db.EmployeeAccount = require('./employeeaccount')(sequelize, Sequelize.DataTypes);
 db.Employment = require('./employment')(sequelize, Sequelize.DataTypes);
 db.EmployeePhoto = require('./employeephoto')(sequelize, Sequelize.DataTypes);
+db.EmployeeSignature = require('./employeesignature')(sequelize, Sequelize.DataTypes);
 db.EmployeeEducation = require('./employeeeducation')(sequelize, Sequelize.DataTypes);
 db.EmployeeExperience = require('./employeeexperience')(sequelize, Sequelize.DataTypes);
 db.EmployeeTraining = require('./employeetraining')(sequelize, Sequelize.DataTypes);

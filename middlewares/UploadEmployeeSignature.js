@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
 
-const uploadDir = path.join(__dirname, "../public/uploads/avatar");
+const uploadDir = path.join(__dirname, "../public/uploads/signature");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const employeeId = req.params.id || "unknown";
     const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `emp-avatar-${employeeId}-${unique}.png`); // ✅ always png filename
+    cb(null, `emp-signature-${employeeId}-${unique}.png`); // ✅ always png filename
   },
 });
 
