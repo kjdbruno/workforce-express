@@ -18,7 +18,7 @@ module.exports = (_io) => {
                     where: { 
                         username,
                         role: {
-                            [Op.in]: ['SuperAdmin', 'Admin', 'Supervisor', 'HR', 'Finance']
+                            [Op.in]: ['SuperAdmin', 'Admin', 'Management', 'HR', 'Finance']
                         }
                     }
                 });

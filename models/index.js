@@ -57,6 +57,7 @@ db.EmployeeAttendanceAdjustment = require('./employeeattendanceadjustment')(sequ
 
 db.ApprovalSetting = require('./approvalsetting')(sequelize, Sequelize.DataTypes);
 db.Approval = require('./approval')(sequelize, Sequelize.DataTypes);
+db.ApprovalOveride = require('./approvaloveride')(sequelize, Sequelize.DataTypes);
 // Associate all models
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {

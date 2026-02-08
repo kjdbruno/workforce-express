@@ -12,18 +12,18 @@ const { VerifyToken, AuthorizeRoles } = require('../middlewares/AuthMiddleware')
 
 const { GetAll, Create, Update, GetDetails, GeneratePDF, GetVacancy, GetCourse, GetSchool } = require('../controllers/ApplicationController');
 
-router.get('/', VerifyToken, GetAll);
-router.get('/:id/details', VerifyToken, GetDetails);
-router.post('/', VerifyToken, UploadDocument.any(), Create);
-router.post('/:id/update', VerifyToken, Update);
+router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetAll);
+router.get('/:id/details', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetDetails);
+router.post('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadDocument.any(), Create);
+router.post('/:id/update', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), Update);
 
-router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GeneratePDF);
+router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GeneratePDF);
 
 /**
  * OPTIONS
  */
-router.get('/option/vacancy', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetVacancy);
-router.get('/option/course', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetCourse);
-router.get('/option/school', VerifyToken, AuthorizeRoles('SuperAdmin', 'Supervisor', 'Admin', 'HR'), GetSchool);
+router.get('/option/vacancy', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), GetVacancy);
+router.get('/option/course', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), GetCourse);
+router.get('/option/school', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), GetSchool);
 
 module.exports = router;

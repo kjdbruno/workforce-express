@@ -2,46 +2,32 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Approvals', {
+    await queryInterface.createTable('ApprovalOverides', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      setting_id: {
+      approval_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'ApprovalSettings',
+          model: 'Approvals',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      document_id: {
+      user_id: {
         type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      status: {
-        type: Sequelize.ENUM('Pending', 'Approved', 'Rejected'),
-        defaultValue: 'Pending'
-      },
-      remarks: {
-        type: Sequelize.TEXT('long'),
-        allowNull: true
-      },
-      is_overide: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false
-      },
-      signed_at: {
-        type: Sequelize.DATE,
-        allowNull: true
-      },
-      is_active: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true
+        allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       createdAt: {
         allowNull: false,
@@ -54,6 +40,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Approvals');
+    await queryInterface.dropTable('ApprovalOverides');
   }
 };

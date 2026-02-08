@@ -91,87 +91,116 @@ exports.GetDetails = async (req, res) => {
         });
 
         const approvals = await db.Approval.findAll({
-            where: { document_id: leave.id, is_active: true },
-            include: [
+          where: {
+            document_id: leave.id,
+            is_active: true
+          },
+          include: [
+            {
+              model: db.ApprovalSetting,
+              as: 'setting',
+              where: { type: 'Leave' },
+              include: [
                 {
-                    model: db.ApprovalSetting,
-                    as: 'setting',
-                    where: {
-                        type: 'Leave'
-                    },
-                    include: [
+                  model: db.User,
+                  as: 'approver',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
                         {
-                            model: db.User,
-                            as: 'approver',
-                            attributes: ['id'],
-                            include: [
-                                {
-                                    model: db.EmployeeAccount,
-                                    as: 'employeeAccount',
-                                    include: [
-                                        {
-                                            model: db.Employee,
-                                            as: 'employee',
-                                            include: [
-                                                {
-                                                    model: db.Employment,
-                                                    as: 'employment',
-                                                    include: [{ 
-                                                        model: db.Position, 
-                                                        as: 'position' 
-                                                    }]
-                                                },
-                                                {
-                                                    model: db.EmployeeSignature,
-                                                    as: 'signature'
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            model: db.User,
-                            as: 'owner',
-                            attributes: ['id'],
-                            include: [
-                                {
-                                    model: db.EmployeeAccount,
-                                    as: 'employeeAccount',
-                                    include: [
-                                        {
-                                            model: db.Employee,
-                                            as: 'employee',
-                                            include: [
-                                                {
-                                                    model: db.Employment,
-                                                    as: 'employment',
-                                                    include: [{ 
-                                                        model: db.Position, 
-                                                        as: 'position' 
-                                                    }]
-                                                },
-                                                {
-                                                    model: db.EmployeeSignature,
-                                                    as: 'signature'
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
                         }
-                    ]
+                      ]
+                    }
+                  ]
                 }
-            ],
-            order: [[{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
+              ]
+            },
+            {
+              model: db.ApprovalOveride,
+              as: 'overrides',
+              required: false,
+              include: [
+                {
+                  model: db.User,
+                  as: 'user',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
+                        {
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          order: [
+            [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+            [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+          ]
+        });
+        
+        const mappedApprovals = approvals.map(a => {
+          const row = a.toJSON();
+        
+          const originalUser = row?.setting?.approver || null;
+          const latestOverride = row?.overrides?.[0] || null;
+          const overrideUser = latestOverride?.user || null;
+        
+          return {
+        
+            order: row?.setting?.order ?? null,
+            approver_id: originalUser?.id ?? null,
+        
+            id: row.id,
+            status: row.status,
+            signed_at: row.signed_at,
+            is_overide: row.is_overide,
+        
+            original_approver_name: getEmployeeName(originalUser),
+            original_approver_position: getEmployeePosition(originalUser),
+            original_signature: getSignature(originalUser),
+        
+            override_name: overrideUser ? getEmployeeName(overrideUser) : null,
+            override_position: overrideUser ? getEmployeePosition(overrideUser) : null,
+            override_signature: overrideUser ? getSignature(overrideUser) : null,
+        
+            // optional: quick flag
+            is_overide: row.is_overide === true
+          };
         });
 
         // 3️⃣ Combine vacancy + approvals
         const result = {
             ...leave.toJSON(),
-            approvals
+            approvals: mappedApprovals
         };
 
         res.json({ result });
@@ -184,6 +213,40 @@ exports.GetDetails = async (req, res) => {
 
     }
 };
+
+const getEmployeeName = (user) => {
+  const emp = user?.employeeAccount?.employee;
+  if (!emp) return '';
+
+  const first = emp.first_name || emp.firstName || '';
+  const middleRaw = emp.middle_name || emp.middleName || '';
+  const last = emp.last_name || emp.lastName || '';
+  const suffix = emp.suffix || '';
+
+  const middleInitial = middleRaw
+    ? `${middleRaw.trim().charAt(0).toUpperCase()}.`
+    : '';
+
+  return [first, middleInitial, last, suffix]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const getSignature = (user) => {
+  // return the whole signature object or just a field like signature.image/signature_path
+  return user?.employeeAccount?.employee?.signature || null;
+};
+
+const getEmployeePosition = (user) => {
+  return (
+    user?.employeeAccount?.employee?.employment?.position?.name ||
+    user?.employeeAccount?.employee?.employment?.position?.title ||
+    ''
+  );
+};
+
 
 exports.GetEmployee = async (req, res) => {
     try {
@@ -249,14 +312,12 @@ exports.Create = async (req, res) => {
 
         for (const sig of signatories) {
 
-            const isFirstApprover = sig.order === 1;
-
             await db.Approval.create({
                 setting_id: sig.id,
                 document_id: leave.id,
-                status: isFirstApprover ? 'Approved' : 'Pending',
-                signed_at: isFirstApprover ? new Date() : null,
-                remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
+                status: 'Pending',
+                signed_at: null,
+                remarks: null,
                 is_active: true
             });
         }
@@ -308,21 +369,42 @@ exports.Approve = async (req, res) => {
 
         await approval.update({ status: 'Approved', signed_at: new Date() });
 
-        // 3️⃣ Refresh leave status based on approvals
-        const pendingApprovals = await db.Approval.count({
+        const totalCount = await db.Approval.count({
+            include: [
+                {
+                    model: db.ApprovalSetting,
+                    as: 'setting',
+                    where: {
+                        type: 'Leave'
+                    }
+                }
+            ],
             where: {
                 document_id: id,
-                status: { [Op.ne]: "Approved" }
+                is_active: true
             }
         });
 
-        // If all approvals done OR leave is already approved
-        if (pendingApprovals === 0 || leave.status === 'Approved') {
-            if (leave.status !== 'Approved') {
-                await leave.update({ status: 'Approved' });
+        const approvedCount = await db.Approval.count({
+            include: [
+                {
+                    model: db.ApprovalSetting,
+                    as: 'setting',
+                    where: {
+                        type: 'Leave'
+                    }
+                }
+            ],
+            where: {
+                document_id: id,
+                is_active: true,
+                status: 'Approved'
             }
+        });
 
-            // 4️⃣ Fetch holidays within leave period
+        if (totalCount === approvedCount) {
+            await leave.update({ status: 'Approved' });
+
             const holidays = await db.Holiday.findAll({
                 where: {
                     date: { [Op.between]: [leave.date_from, leave.date_to] },
@@ -380,6 +462,169 @@ exports.Approve = async (req, res) => {
             error: error.message 
         });
 
+    }
+};
+
+exports.Overide = async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    const { signatories } = req.body; // [2, 3]
+
+    const transaction = await sequelize.transaction();
+
+    try {
+        // ---- validate payload ----
+        if (!Array.isArray(signatories) || signatories.length === 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+            message: 'No signatories provided'
+        });
+        }
+
+        const approvalIds = [...new Set(
+            signatories
+                .map(id => Number(id))
+                .filter(id => Number.isInteger(id) && id > 0)
+        )];
+
+        if (approvalIds.length === 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+            message: 'Invalid signatories payload'
+        });
+        }
+
+        // ---- fetch approvals (must belong to same document) ----
+        const approvals = await db.Approval.findAll({
+        where: {
+            id: approvalIds,
+            is_active: true
+        },
+        transaction
+        });
+
+        if (approvals.length === 0) {
+        await transaction.rollback();
+        return res.status(404).json({
+            message: 'No approvals found to override'
+        });
+        }
+
+        // ---- update approvals as overridden ----
+        await db.Approval.update(
+        {
+            status: 'Approved',
+            is_overide: true,
+            signed_at: new Date()
+        },
+        {
+            where: { id: approvalIds }
+        }
+        );
+
+        // ---- save override history ----
+        await db.ApprovalOveride.bulkCreate(
+        approvalIds.map(id => ({
+            approval_id: id,
+            user_id: req.user.id
+        }))
+        );
+
+        const leave = await db.EmployeeLeaveApplication.findByPk(id);
+
+        const totalCount = await db.Approval.count({
+            include: [
+                {
+                    model: db.ApprovalSetting,
+                    as: 'setting',
+                    where: {
+                        type: 'Leave'
+                    }
+                }
+            ],
+            where: {
+                document_id: id,
+                is_active: true
+            }
+        });
+
+        const approvedCount = await db.Approval.count({
+            include: [
+                {
+                    model: db.ApprovalSetting,
+                    as: 'setting',
+                    where: {
+                        type: 'Leave'
+                    }
+                }
+            ],
+            where: {
+                document_id: id,
+                is_active: true,
+                status: 'Approved'
+            }
+        });
+
+        // 4️⃣ If all approvals done, approve vacancy + approve position
+        if (totalCount === approvedCount) {
+           await leave.update({ status: 'Approved' });
+
+            const holidays = await db.Holiday.findAll({
+                where: {
+                    date: { [Op.between]: [leave.date_from, leave.date_to] },
+                    isActive: true
+                }
+            });
+
+            const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
+
+            // 5️⃣ Compute leave days excluding weekends and holidays
+            const start = moment(leave.date_from);
+            const end = moment(leave.date_to);
+            let daysUsed = 0;
+
+            while (start.isSameOrBefore(end)) {
+                const dayOfWeek = start.day(); // 0 = Sunday, 6 = Saturday
+                const formatted = start.format('YYYY-MM-DD');
+
+                if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.includes(formatted)) {
+                    daysUsed += 1;
+                }
+
+                start.add(1, 'day');
+            }
+
+            // 6️⃣ Update EmployeeLeaveBalance
+            const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+                where: {
+                    employee_id: leave.employee_id,
+                    leave_type_id: leave.leave_type_id,
+                    is_active: true
+                }
+            });
+
+            if (!leaveBalance) {
+                return res.status(400).json({ error: "Leave balance not found for employee!" });
+            }
+
+            const newUsed = parseFloat(leaveBalance.used) + daysUsed;
+            const newBalance = parseFloat(leaveBalance.earned) - newUsed;
+
+            await leaveBalance.update({
+                used: newUsed,
+                balance: newBalance
+            });
+        }
+
+        return res.status(200).json({
+        message: 'Approval overridden successfully'
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+        message: 'Failed to override approval',
+        error: error.message
+        });
     }
 };
 
@@ -490,6 +735,8 @@ exports.Cancel = async (req, res) => {
 };
 
 
+
+
 exports.GenerateLeavePDF = async (req, res) => {
 
     const { id } = req.params;
@@ -592,116 +839,102 @@ exports.GenerateLeavePDF = async (req, res) => {
 
         // approvals
         const approvals = await db.Approval.findAll({
-            where: { document_id: leaveApp.id, is_active: true },
-            include: [
+          where: {
+            document_id: id,
+            is_active: true
+          },
+          include: [
+            {
+              model: db.ApprovalSetting,
+              as: 'setting',
+              where: { type: 'Leave' },
+              include: [
                 {
-                    model: db.ApprovalSetting,
-                    as: 'setting',
-                    where: {
-                        type: 'Leave'
-                    },
-                    include: [
+                  model: db.User,
+                  as: 'approver',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
                         {
-                            model: db.User,
-                            as: 'approver',
-                            attributes: ['id'],
-                            include: [
-                                {
-                                    model: db.EmployeeAccount,
-                                    as: 'employeeAccount',
-                                    include: [
-                                        {
-                                            model: db.Employee,
-                                            as: 'employee',
-                                            include: [
-                                                {
-                                                    model: db.Employment,
-                                                    as: 'employment',
-                                                    include: [
-                                                        { 
-                                                            model: db.Position, 
-                                                            as: 'position' 
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    model: db.EmployeeSignature,
-                                                    as: 'signature'
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            model: db.User,
-                            as: 'owner',
-                            attributes: ['id'],
-                            include: [
-                                {
-                                    model: db.EmployeeAccount,
-                                    as: 'employeeAccount',
-                                    include: [
-                                        {
-                                            model: db.Employee,
-                                            as: 'employee',
-                                            include: [
-                                                {
-                                                    model: db.Employment,
-                                                    as: 'employment',
-                                                    include: [
-                                                        { 
-                                                            model: db.Position, 
-                                                            as: 'position' 
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    model: db.EmployeeSignature,
-                                                    as: 'signature'
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
                         }
-                    ]
+                      ]
+                    }
+                  ]
                 }
-            ],
-            order: [[{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
+              ]
+            },
+            {
+              model: db.ApprovalOveride,
+              as: 'overrides',
+              required: false,
+              include: [
+                {
+                  model: db.User,
+                  as: 'user',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
+                        {
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          order: [
+            [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+            [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+          ]
         });
 
         // Map approvals to the desired format
-        const signatories = approvals.map((app) => {
-            const employee = app?.setting?.approver?.employeeAccount?.employee;
-            const profile = employee || {};
-
-            const position = employee?.employment?.position?.name;
-            // Format full name (First M. Last Suffix)
-            const first = profile?.first_name || '';
-            const middle = profile?.middle_name ? `${profile.middle_name.charAt(0)}.` : '';
-            const last = profile?.last_name || '';
-            const suffix = profile?.suffix ? ` ${profile.suffix}` : '';
-            const userName = `${first} ${middle} ${last}${suffix}`.replace(/\s+/g, ' ').trim();
-
-            // Only show signature & date if approval is approved
-            const isApproved = app?.status === 'Approved';
-            const signaturePath = employee?.signature?.signature; // Assuming approval setting stores the signature path
-
-            return {
-                description: app?.setting.description || '',
-                approver: userName,
-                position,
-                signature: isApproved && signaturePath
-                    ? 'data:image/png;base64,' +
-                    fs.readFileSync(path.join(__dirname, `../public/${signaturePath}`)).toString('base64')
-                    : null,
-                date: isApproved ? moment(app?.signed_at || app?.createdAt).format('MMMM DD, YYYY hh:mm A') : null,
-                isSigned: isApproved
-            };
-        });
+        const mappedApprovals = approvals.map(a => {
+                    const row = a.toJSON();
+        
+                    const originalUser = row?.setting?.approver || null;
+                    const latestOverride = row?.overrides?.[0] || null;
+                    const overrideUser = latestOverride?.user || null;
+                    const isApproved = row?.status === 'Approved';
+        
+                    return {
+        
+                        description: row.setting?.description,
+                        approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
+                        position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
+                        signature: row.is_overide ? 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(overrideUser).signature}`)).toString('base64') : 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(originalUser).signature}`)).toString('base64'),
+                        date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
+                        isSigned: isApproved,
+                        isOveride: row.is_overide
+                    };
+                    });
 
         // 6️⃣ Render PDF
         const templatePath = path.join(__dirname, '../templates/reports/Leave.pug');
@@ -720,7 +953,7 @@ exports.GenerateLeavePDF = async (req, res) => {
             leaveEnd,
             totalDays,
             balance,
-            signatories
+            signatories: mappedApprovals
         });
 
         browser = await puppeteer.launch({

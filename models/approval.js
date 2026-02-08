@@ -17,6 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'setting_id',
         as: 'setting'
       });
+
+      // Approval → ApprovalOveride (one approval can have many overrides)
+      Approval.hasMany(models.ApprovalOveride, {
+        foreignKey: 'approval_id',
+        as: 'overrides'
+      });
     }
   }
   Approval.init({
@@ -47,6 +53,10 @@ module.exports = (sequelize, DataTypes) => {
     remarks: {
       type: DataTypes.TEXT('long'),
       allowNull: true
+    },
+    is_overide: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     signed_at: {
       type: DataTypes.DATE,

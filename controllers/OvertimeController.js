@@ -1,5 +1,4 @@
 const { Op } = require("sequelize");
-const { Overtime, EmployeeOvertimeApplication, ApprovalSetting, Approval, Employee, User, EmployeeAccount, Employment, Position } = require('../models');
 
 const fs = require('fs');
 const path = require('path');
@@ -9,6 +8,9 @@ const moment = require('moment');
 
 const pug = require('pug');
 const puppeteer = require('puppeteer');
+
+const db = require('../models');
+const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
 
@@ -37,10 +39,10 @@ exports.GetAll = async (req, res) => {
         //     where.description = { [Op.like]: `%${Filter}%` };
         // }
 
-        const { count, rows } = await Overtime.findAndCountAll({
+        const { count, rows } = await db.Overtime.findAndCountAll({
             include: [
                 {
-                    model: EmployeeOvertimeApplication,
+                    model: db.EmployeeOvertimeApplication,
                     as: 'applications'
                 }
             ],
@@ -74,7 +76,7 @@ exports.GetAll = async (req, res) => {
 
 exports.GetEmployee = async (req, res) => {
     try {
-        const data = await Employee.findAll();
+        const data = await db.Employee.findAll();
         return res.status(200).json(data);
     } catch (error) {
         res.status(500).json({ 
@@ -93,90 +95,84 @@ exports.Create = async (req, res) => {
         employees
     } = req.body;
 
+    const t = await sequelize.transaction();
+
     try {
-        const empList = Array.isArray(employees) ? employees : [];
-
-        // Create overtime header
-        const overtime = await Overtime.create({
-            date,
-            time_start: timeStart,
-            time_end: timeEnd,
-            description
-        });
-
-        // Get existing applications for this overtime (if editing, pass overtime_id)
-        const existingRecords = await EmployeeOvertimeApplication.findAll({
-            where: {
-                overtime_id: overtime.id
-            }
-        });
-
-        const existingIds = existingRecords.map(e => e.id);
-        const sentIds = empList.filter(e => e.id).map(e => e.id);
-
-        for (const emp of empList) {
-            if (emp.id && existingIds.includes(emp.id)) {
-                // UPDATE existing
-                await EmployeeOvertimeApplication.update({
-                    employee_id: emp.employeeid
-                }, {
-                    where: { 
-                        id: emp.id 
-                    }
-                });
-            } else {
-                // INSERT new
-                await EmployeeOvertimeApplication.create({
-                    overtime_id: overtime.id,
-                    employee_id: emp.employeeid
-                });
-            }
-        }
-
-        // Deactivate removed employees
-        const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
-        if (toDeactivate.length > 0) {
-            await EmployeeOvertimeApplication.update({
-                    status: 'Cancelled' 
-                },
-                { where: {
-                    id: toDeactivate 
-                }
-            });
-        }
-
-        // Fetch approval settings by document type
-        const signatories = await ApprovalSetting.findAll({
-            where: {
-                owner_id: req.user.id,
-                type: 'Overtime',
-                is_active: true
-            },
-            order: [['order', 'ASC']]
-        });
-
-        for (const sig of signatories) {
-
-            const isFirstApprover = sig.order === 1;
-
-            await Approval.create({
-                setting_id: sig.id,
-                document_id: overtime.id,
-                status: isFirstApprover ? 'Approved' : 'Pending',
-                signed_at: isFirstApprover ? new Date() : null,
-                remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
-                is_active: true
-            });
-        }
-
-        res.status(201).json({
-            message: 'Record Saved!'
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Failed to save overtime record', error });
+// ---- validate employees ----
+    if (!Array.isArray(employees) || employees.length === 0) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Please select at least one employee.' });
     }
+
+    // normalize to unique numeric ids
+    const employeeIds = [...new Set(
+      employees
+        .map(e => Number(e))
+        .filter(n => Number.isInteger(n) && n > 0)
+    )];
+
+    if (employeeIds.length === 0) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Invalid employees payload.' });
+    }
+
+    // ---- create overtime header ----
+    const overtime = await db.Overtime.create({
+      date,
+      time_start: timeStart,
+      time_end: timeEnd,
+      description
+    }, { transaction: t });
+
+    // ---- create employee applications (bulk) ----
+    await db.EmployeeOvertimeApplication.bulkCreate(
+      employeeIds.map(empId => ({
+        overtime_id: overtime.id,
+        employee_id: empId,
+        status: 'Pending' // optional if you have default
+      })),
+      { transaction: t }
+    );
+
+    // ---- approvals ----
+    const signatories = await db.ApprovalSetting.findAll({
+      where: {
+        // owner_id: req.user.id,
+        type: 'Overtime',
+        is_active: true
+      },
+      order: [['order', 'ASC']],
+      transaction: t
+    });
+
+    await db.Approval.bulkCreate(
+      signatories.map(sig => {
+        return {
+          setting_id: sig.id,
+          document_id: overtime.id,
+          status: 'Pending',
+          signed_at: null,
+          remarks: null,
+          is_active: true
+        };
+      }),
+      { transaction: t }
+    );
+
+    await t.commit();
+
+    return res.status(201).json({
+      message: 'Record Saved!'
+    });
+
+  } catch (error) {
+    await t.rollback();
+    console.error(error);
+    return res.status(500).json({
+      message: 'Failed to save overtime record',
+      error: error.message
+    });
+  }
 
 };
 
@@ -265,10 +261,10 @@ exports.GetDetails = async (req, res) => {
 
     try {
         
-        const overtime = await Overtime.findOne({
+        const overtime = await db.Overtime.findOne({
             include: [
                 {
-                    model: EmployeeOvertimeApplication,
+                    model: db.EmployeeOvertimeApplication,
                     as: 'applications',
                     where: {
                         status: {
@@ -277,15 +273,15 @@ exports.GetDetails = async (req, res) => {
                     },
                     include: [
                         {
-                            model: Employee,
+                            model: db.Employee,
                             as: 'employee',
                             include: [
                                 {
-                                    model: Employment,
+                                    model: db.Employment,
                                     as: 'employment',
                                     include: [
                                         {
-                                            model: Position,
+                                            model: db.Position,
                                             as: 'position'
                                         }
                                     ]
@@ -300,33 +296,42 @@ exports.GetDetails = async (req, res) => {
             }
         });
 
-        const approvals = await Approval.findAll({
+        const approvals = await db.Approval.findAll({
             where: { document_id: overtime.id, is_active: true },
             include: [
                 {
-                    model: ApprovalSetting,
+                    model: db.ApprovalSetting,
                     as: 'setting',
                     where: {
                         type: 'Overtime'
                     },
                     include: [
                         {
-                            model: User,
+                            model: db.User,
                             as: 'approver',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: Position, as: 'position' }]
+                                                    include: [
+                                                        { 
+                                                            model: db.Position, 
+                                                            as: 'position' 
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -335,22 +340,31 @@ exports.GetDetails = async (req, res) => {
                             ]
                         },
                         {
-                            model: User,
+                            model: db.User,
                             as: 'owner',
                             attributes: ['id'],
                             include: [
                                 {
-                                    model: EmployeeAccount,
+                                    model: db.EmployeeAccount,
                                     as: 'employeeAccount',
                                     include: [
                                         {
-                                            model: Employee,
+                                            model: db.Employee,
                                             as: 'employee',
                                             include: [
                                                 {
-                                                    model: Employment,
+                                                    model: db.Employment,
                                                     as: 'employment',
-                                                    include: [{ model: Position, as: 'position' }]
+                                                    include: [
+                                                        { 
+                                                            model: db.Position, 
+                                                            as: 'position' 
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
                                                 }
                                             ]
                                         }
@@ -361,7 +375,7 @@ exports.GetDetails = async (req, res) => {
                     ]
                 }
             ],
-            order: [[{ model: ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
+            order: [[{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC']]
         });
 
         // 3️⃣ Combine vacancy + approvals

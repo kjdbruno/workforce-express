@@ -48,6 +48,12 @@ module.exports = (sequelize, DataTypes) => {
         as: 'attendance_adjustments'
       });
 
+      // User → Approval overrides they performed
+      User.hasMany(models.ApprovalOveride, {
+        foreignKey: 'user_id',
+        as: 'approvalOverrides'
+      });
+
     }
   }
   User.init({
@@ -71,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM('SuperAdmin', 'Admin', 'Employee'),
+      type: DataTypes.ENUM('SuperAdmin', 'Admin', 'Management', 'HR', 'Finance', 'Employee'),
       allowNull: false
     },
     status: {

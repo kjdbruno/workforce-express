@@ -1151,6 +1151,36 @@ exports.CreateAccount = async (req, res) => {
  */
 
 /**
+ * Shift
+ */
+exports.GetSchedule = async (req, res) => {
+
+    const id = parseInt(req.query.id);
+
+    try {
+
+        const rows = await db.EmployeeShift.findOne({
+            where: {
+                employee_id: id
+            }
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+/**
+ * Shift
+ */
+/**
  * Signature
  */
 exports.GetSignature = async (req, res) => {

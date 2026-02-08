@@ -270,8 +270,17 @@ exports.Create = async (req, res) => {
              */
             // Fetch approval settings by document type
             const account = await db.EmployeeAccount.findOne({
-                employee_id: emp.id
-            });
+                employee_id: emp.id,
+                include: [
+                    {
+                        model: db.User,
+                        as: 'user',
+                        where: {
+                            role: 'Employee'
+                        }
+                    }
+                ]
+            }); console.log(account)
             const signatories = await db.ApprovalSetting.findAll({
                 where: {
                     owner_id: account.user_id,
@@ -283,14 +292,12 @@ exports.Create = async (req, res) => {
     
             for (const sig of signatories) {
     
-                const isFirstApprover = sig.order === 1;
-    
                 await db.Approval.create({
                     setting_id: sig.id,
                     document_id: header.id,
-                    status: isFirstApprover ? 'Approved' : 'Pending',
-                    signed_at: isFirstApprover ? new Date() : null,
-                    remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
+                    status: 'Pending',
+                    signed_at: null,
+                    remarks: null,
                     is_active: true
                 });
             }
