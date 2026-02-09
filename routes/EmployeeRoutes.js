@@ -51,7 +51,8 @@ const {
     GetSignature,
     CreateSignature,
     GetShift,
-    GetSchedule
+    GetSchedule,
+    UpdateSchedule
 } = require('../controllers/EmployeeController');
 
 
@@ -75,6 +76,7 @@ router.get('/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', '
 router.post('/:id/account', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), CreateAccount);
 
 router.get('/schedule', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetSchedule);
+router.post('/:id/schedule', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UpdateSchedule);
 
 router.get('/signature', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetSignature);
 router.post('/:id/signature', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadEmployeeSignature.single("file"), CreateSignature);

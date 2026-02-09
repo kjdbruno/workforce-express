@@ -409,17 +409,17 @@ exports.Create = async (req, res) => {
         // ✅ employee
         const employee = await db.Employee.create(
             {
-            first_name: firstname,
-            middle_name: middlename,
-            last_name: lastname,
-            suffix,
-            sex,
-            civil_status: civilstatus,
-            birthdate,
-            birthplace,
-            address,
-            email,
-            contact_number: contactNo,
+                first_name: firstname,
+                middle_name: middlename,
+                last_name: lastname,
+                suffix,
+                sex,
+                civil_status: civilstatus,
+                birthdate,
+                birthplace,
+                address,
+                email,
+                contact_number: contactNo,
             },
             { transaction }
         );
@@ -1159,9 +1159,10 @@ exports.GetSchedule = async (req, res) => {
 
     try {
 
-        const rows = await db.EmployeeShift.findOne({
+        const rows = await db.EmployeeShift.findAll({
             where: {
-                employee_id: id
+                employee_id: id,
+                is_active: true
             }
         });
 
@@ -1171,6 +1172,85 @@ exports.GetSchedule = async (req, res) => {
 
     } catch (error) {
 
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+exports.UpdateSchedule = async (req, res) => {
+
+    const {
+        id
+    } = req.params;
+
+    const { 
+        schedules
+    } = req.body;
+
+    const transaction = await sequelize.transaction();
+    
+    try {
+        const sched = Array.isArray(schedules) ? schedules : [];
+        
+        const existingRecords = await db.EmployeeShift.findAll({
+            where: {
+                employee_id: id, 
+                is_active: true 
+            }
+        });
+        
+        const existingIds = existingRecords.map(e => e.id);
+        const sentIds = sched.filter(e => e.id).map(e => e.id);
+
+        for (const sh of sched) {
+            if (sh.id && existingIds.includes(sh.id)) {
+                // UPDATE if exists
+                await db.EmployeeShift.update({
+                    shift_id: sh.shiftId,
+                    effective_from: sh.effectiveFrom,
+                    effective_to: sh.effectiveTo?.trim() ? sh.effectiveTo : null,
+                    notes: sh.notes
+                }, {
+                    where: { 
+                        id: sh.id 
+                    }
+                }, { transaction });
+            } else {
+                // INSERT new record
+                await db.EmployeeShift.create({
+                    employee_id: id,
+                    shift_id: sh.shiftId,
+                    effective_from: sh.effectiveFrom,
+                    effective_to: sh.effectiveTo?.trim() ? sh.effectiveTo : null,
+                    notes: sh.notes
+                }, { transaction });
+            }
+        }
+
+        const toDeactivate = existingIds.filter(oldId => !sentIds.includes(oldId));
+        if (toDeactivate.length > 0) {
+            await db.EmployeeShift.update(
+                { 
+                    is_active: false 
+                },
+                { 
+                    where: { 
+                        id: toDeactivate 
+                    }, transaction
+                }
+            );
+        }
+
+        await transaction.commit();
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
