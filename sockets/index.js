@@ -1,6 +1,8 @@
 const { Sequelize } = require('sequelize');
 const jwt = require('jsonwebtoken'); // Need jwt for socket auth
-const { User, UserLog, Office, Notification, Profile, ProfilePhoto } = require("../models");
+
+const db = require('../models');
+const { sequelize } = db;
 
 const userSocketMap = new Map(); // userId -> socketId
 const onlineUsers = {};
@@ -90,6 +92,8 @@ module.exports = function (io) {
 
                 EmitNotifications(userId);
 
+                EmitEmployee(userId);
+
                 // Set a timer for token expiration
                 const expiresInSeconds = decoded.exp - (Date.now() / 1000); // Calculate remaining time in seconds
 
@@ -174,7 +178,7 @@ module.exports = function (io) {
 
             console.log(`Socket disconnected: ${socket.id}`);
 
-            const log = await UserLog.findOne(
+            const log = await db.UserLog.findOne(
                 { 
                     where: { 
                         socket_id: socket.id 
@@ -202,7 +206,7 @@ module.exports = function (io) {
 
         socket.on('ReadNotification', async ({ id }) => {
 
-            await Notification.update(
+            await db.Notification.update(
                 { 
                     is_read: true 
                 },
@@ -223,7 +227,7 @@ module.exports = function (io) {
 
         try {
 
-            await UserLog.upsert({
+            await db.UserLog.upsert({
                 user_id: userId,
                 socket_id: socketId,
                 is_online: true
@@ -241,12 +245,12 @@ module.exports = function (io) {
 
         try {
 
-            const users = await UserLog.findAll({
+            const users = await db.UserLog.findAll({
                 where: { 
                     is_online: true 
                 },
                 include: {
-                    model: User,
+                    model: db.User,
                     as: 'User'
                 }
             });
@@ -263,24 +267,24 @@ module.exports = function (io) {
 
     async function EmitNotifications(receiverId) {
 
-        const notificationCount = await Notification.count({
+        const notificationCount = await db.Notification.count({
             where: {
                 receiver_id: receiverId,
                 is_read: false
             }
         });
 
-        const notifications = await Notification.findAll({
+        const notifications = await db.Notification.findAll({
             where: { 
                 receiver_id: receiverId
             },
             include: [
                 {
-                    model: User,
+                    model: db.User,
                     as: 'Receiver'
                 },
                 {
-                    model: User,
+                    model: db.User,
                     as: 'Sender'
                 }
             ],
@@ -290,6 +294,40 @@ module.exports = function (io) {
         });
 
         io.emit('EmitNotifications', notificationCount, notifications);
+        
+    };
+
+    async function EmitEmployee(id) {
+
+        const employees = await db.EmployeeAccount.findAll({
+            where: { 
+                user_id: id
+            },
+            include: [
+                {
+                    model: db.Employee,
+                    as: 'employee',
+                    include: [
+                        {
+                            model: db.Employment,
+                            as: 'employment',
+                            include: [
+                                {
+                                    model: db.Position,
+                                    as: 'position'
+                                }
+                            ]
+                        },
+                        {
+                            model: db.EmployeePhoto,
+                            as: 'photo'
+                        }
+                    ]
+                }
+            ]
+        });
+
+        io.emit('EmitEmployee', employees);
         
     };
 

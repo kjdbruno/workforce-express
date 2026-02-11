@@ -280,7 +280,7 @@ exports.Create = async (req, res) => {
                         }
                     }
                 ]
-            }); console.log(account)
+            });
             const signatories = await db.ApprovalSetting.findAll({
                 where: {
                     owner_id: account.user_id,

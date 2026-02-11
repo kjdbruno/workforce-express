@@ -479,13 +479,13 @@ exports.Create = async (req, res) => {
         });
 
         for (const sig of signatories) {
-
+            const isFirstApprover = sig.order === 1;
             await db.Approval.create({
                 setting_id: sig.id,
                 document_id: vacancy.id,
-                status: 'Pending',
-                signed_at: null,
-                remarks: null,
+                status: isFirstApprover ? 'Approved' : 'Pending',
+                signed_at: isFirstApprover ? new Date() : null,
+                remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
                 is_active: true
             }, { transaction });
         }
