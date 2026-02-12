@@ -64,13 +64,8 @@ exports.GetLog = async (req, res) => {
         }
 
         // Build date range
-        const startDate = moment(`${year}-${String(month).padStart(2, '0')}-01`, 'YYYY-MM-DD')
-            .startOf('month')
-            .toDate()
-
-        const endDate = moment(`${year}-${String(month).padStart(2, '0')}-01`, 'YYYY-MM-DD')
-            .endOf('month')
-            .toDate()
+        const startDate = moment({ year, month: month - 1 }).startOf('month').format('YYYY-MM-DD HH:mm:ss')
+        const endDate = moment({ year, month: month - 1 }).endOf('month').format('YYYY-MM-DD HH:mm:ss')
 
         // 1️ Fetch ALL logs for employee in month
         const logs = await db.EmployeeLog.findAll({
@@ -80,7 +75,6 @@ exports.GetLog = async (req, res) => {
             },
             order: [['captured_at', 'ASC']]
         })
-
         // 2️ Approved leave applications
         const leaves = await db.EmployeeLeaveApplication.findAll({
             where: {
@@ -159,9 +153,8 @@ exports.GetLog = async (req, res) => {
             const dateKey = day.format('YYYY-MM-DD')
 
             const times = logs
-                .filter(l => moment.utc(l.captured_at).format('YYYY-MM-DD') === dateKey)
-                .map(l => moment.utc(l.captured_at).format('HH:mm'))
-
+                .filter(l => moment(l.captured_at).format('YYYY-MM-DD') === dateKey)
+                .map(l => moment(l.captured_at).format('hh:mm A'))
 
             const paddedTimes =
                 times.length < 4

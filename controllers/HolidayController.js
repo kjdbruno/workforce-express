@@ -2,6 +2,8 @@ const { Op } = require("sequelize");
 const db = require('../models');
 const { sequelize } = db;
 
+const moment = require('moment');
+
 exports.GetAll = async (req, res) => {
 
     const Page = parseInt(req.query.Page) || 1;
@@ -75,7 +77,9 @@ exports.Create = async (req, res) => {
         await db.Holiday.create({
             name,
             date,
-            multiplier
+            multiplier,
+            createdAt: moment().toDate(),
+            updatedAt: moment().toDate()
         }, { transaction });
 
         await transaction.commit();

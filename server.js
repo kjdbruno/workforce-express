@@ -1,3 +1,4 @@
+process.env.TZ = 'Asia/Manila'
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -35,8 +36,12 @@ dailyAutoCancel(io);
 
 // Initialize Sequelize
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
+  timezone: '+08:00',
   host: process.env.DB_HOST,
-  dialect: process.env.DB_DIALECT
+  dialect: process.env.DB_DIALECT,
+  dialectOptions: {
+    timezone: '+08:00'
+  }
 });
 
 sequelize.authenticate()
@@ -106,7 +111,7 @@ app.use('/api/log', require('./routes/LogRoutes'));
 /**
  * PORTAL
  */
-app.use('/api/portal', require('./routes/BiometricRoutes'));
+app.use('/api/portal', require('./routes/PortalRoutes'));
 
 app.use(express.static('public'));
 
@@ -114,5 +119,5 @@ require('./sockets')(io);
 
 // Start server
 server.listen(process.env.PORT, () => {
-  console.log(`Server is running on http://localhost:${process.env.PORT}`);
+  console.log(`Server is running on http://localhost:${process.env.PORT} date: ${new Date()}`);
 });

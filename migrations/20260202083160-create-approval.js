@@ -36,7 +36,7 @@ module.exports = {
         defaultValue: false
       },
       signed_at: {
-        type: Sequelize.DATE,
+        type: 'TIMESTAMP',
         allowNull: true
       },
       is_active: {
@@ -45,11 +45,13 @@ module.exports = {
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: 'TIMESTAMP',
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: 'TIMESTAMP',
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
       }
     });
   },

@@ -274,10 +274,7 @@ exports.Create = async (req, res) => {
                 include: [
                     {
                         model: db.User,
-                        as: 'user',
-                        where: {
-                            role: 'Employee'
-                        }
+                        as: 'user'
                     }
                 ]
             });
@@ -291,7 +288,7 @@ exports.Create = async (req, res) => {
             });
     
             for (const sig of signatories) {
-    
+                // const isFirstApprover = (sig.order === 1 && !account.is_management);
                 await db.Approval.create({
                     setting_id: sig.id,
                     document_id: header.id,
