@@ -29,10 +29,6 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      is_management: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false
-      },
       is_active: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

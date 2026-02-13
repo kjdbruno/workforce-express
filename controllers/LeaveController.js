@@ -178,6 +178,7 @@ exports.GetDetails = async (req, res) => {
         
             order: row?.setting?.order ?? null,
             approver_id: originalUser?.id ?? null,
+            description: row.setting?.description,
         
             id: row.id,
             status: row.status,

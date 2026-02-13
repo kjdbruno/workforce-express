@@ -52,11 +52,37 @@ exports.GetAll = async (req, res) => {
     }
 };
 
-exports.GetUser = async (req, res) => {
+exports.GetEmployee = async (req, res) => {
     try {
         const data = await db.User.findAll({
             where: {
-                status: 'Active'
+                status: 'Active',
+                role: 'Employee'
+            },
+            attributes: [
+                ['id', 'value'],
+                [
+                    literal(`CONCAT(name, ' (', username, ')')`),
+                    'label'
+                ],
+                ['role', 'role'],
+            ],
+            order: [['id', 'ASC']]
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+
+exports.GetManagement = async (req, res) => {
+    try {
+        const data = await db.User.findAll({
+            where: {
+                status: 'Active',
+                role: ['Management', 'HR', 'Admin']
             },
             attributes: [
                 ['id', 'value'],
@@ -101,6 +127,7 @@ exports.Create = async (req, res) => {
         });
 
         if (exist) {
+            await transaction.rollback();
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -111,17 +138,38 @@ exports.Create = async (req, res) => {
                 }],
             });
         }
-        
-        await db.ApprovalSetting.bulkCreate(
-            sign.map((s) => ({
-                type,
-                owner_id: ownerid,
-                approver_id: s.approverid,
-                description: s.description,
-                order: s.order,
-            })),
-            { transaction }
-        );
+
+        // ✅ Build full approval chain (owner first)
+        const records = [];
+
+        // 1️⃣ Owner is always order 1
+        records.push({
+            type,
+            owner_id: ownerid,
+            approver_id: ownerid,
+            description: "requested by",
+            order: 1
+        });
+
+        // 2️⃣ Then the rest of signatories
+        if (sign && sign.length > 0) {
+            for (const s of sign) {
+                const approverId = Number(s.approverid);
+                if (!approverId || isNaN(approverId)) {
+                    continue;
+                }
+                records.push({
+                    type,
+                    owner_id: ownerid,
+                    approver_id: approverId,
+                    description: s.description || null,
+                    order: Number(s.order) || null
+                });
+            }
+        }
+
+
+        await db.ApprovalSetting.bulkCreate(records, { transaction });
 
         await transaction.commit();
 
@@ -132,6 +180,7 @@ exports.Create = async (req, res) => {
     } catch (error) {
 
         await transaction.rollback();
+
         res.status(400).json({ 
             error: error.message 
         });

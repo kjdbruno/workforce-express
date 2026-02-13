@@ -50,6 +50,18 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TIME,
       allowNull: false
     },
+    adjusted_late_minutes: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    adjusted_undertime_minutes: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    adjusted_overtime_minutes: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
     reason: {
       type: DataTypes.STRING,
       allowNull: false

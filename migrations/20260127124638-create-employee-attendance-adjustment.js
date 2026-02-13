@@ -27,6 +27,18 @@ module.exports = {
         type: Sequelize.TIME,
         allowNull: false
       },
+      adjusted_late_minutes: {
+        type: Sequelize.FLOAT,
+        allowNull: false
+      },
+      adjusted_undertime_minutes: {
+        type: Sequelize.FLOAT,
+        allowNull: false
+      },
+      adjusted_overtime_minutes: {
+        type: Sequelize.FLOAT,
+        allowNull: false
+      },
       reason: {
         type: Sequelize.STRING,
         allowNull: false
