@@ -61,6 +61,14 @@ const AuthController = require('./controllers/AuthController');
 const Auth = AuthController(io);
 app.use('/api', AuthRoutes(Auth));
 
+/**
+ * Socket
+ */
+const SocketRoutes = require('./routes/SocketRoutes');
+const SocketController = require('./controllers/SocketController');
+const Socket = SocketController(io);
+app.use('/api/socket', SocketRoutes(Socket));
+
 app.use('/api/user', require('./routes/UserRoutes'));
 app.use('/api/position', require('./routes/PositionRoutes'));
 app.use('/api/department', require('./routes/DepartmentRoutes'));

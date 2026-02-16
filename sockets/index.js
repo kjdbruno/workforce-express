@@ -173,6 +173,25 @@ module.exports = function (io) {
             });
         });
 
+        socket.on('ReadNotification', async () => {
+            const userId = socket.userId // set during authenticate
+            await db.Notification.update(
+                { status: 'read' },
+                { where: { receiver_id: userId, status: 'unread' } }
+            )
+
+            const [count, notifications] = await Promise.all([
+                db.Notification.count({ where: { receiver_id: userId, status: 'unread' } }),
+                db.Notification.findAll({
+                    where: { receiver_id: userId, status: 'unread' },
+                    order: [['createdAt', 'DESC']]
+                })
+            ])
+
+            io.to(`user:${userId}`).emit('EmitNotifications', { count, notifications })
+            })
+
+
         //disconnect socket
         socket.on('disconnect', async () => {
 
@@ -204,21 +223,9 @@ module.exports = function (io) {
     
         });
 
-        socket.on('ReadNotification', async ({ id }) => {
-
-            await db.Notification.update(
-                { 
-                    is_read: true 
-                },
-                { 
-                    where: { 
-                        receiver_id: id 
-                    } 
-                }
-            );
-            
-            EmitNotifications(id);
-
+        // join user room
+        socket.on('join', (userId) => {
+            socket.join(`user:${userId}`);
         });
 
     });
@@ -266,35 +273,22 @@ module.exports = function (io) {
     };
 
     async function EmitNotifications(receiverId) {
+        const [notificationCount, notifications] = await Promise.all([
+        db.Notification.count({
+        where: { receiver_id: receiverId, status: 'unread' }
+        }),
+        db.Notification.findAll({
+        where: { receiver_id: receiverId, status: 'unread' },
+        order: [['createdAt', 'DESC']]
+        })
+    ]);
 
-        const notificationCount = await db.Notification.count({
-            where: {
-                receiver_id: receiverId,
-                is_read: false
-            }
-        });
+    // ✅ send ONLY to this user
+    io.to(`user:${receiverId}`).emit('EmitNotifications', {
+        notifications,
+        count: notificationCount,
+    });
 
-        const notifications = await db.Notification.findAll({
-            where: { 
-                receiver_id: receiverId
-            },
-            include: [
-                {
-                    model: db.User,
-                    as: 'Receiver'
-                },
-                {
-                    model: db.User,
-                    as: 'Sender'
-                }
-            ],
-            order: [
-                ['createdAt', 'DESC']
-            ]
-        });
-
-        io.emit('EmitNotifications', notificationCount, notifications);
-        
     };
 
     async function EmitEmployee(id) {

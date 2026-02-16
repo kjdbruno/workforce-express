@@ -18,6 +18,12 @@ exports.GetAll = async (req, res) => {
         }
 
         const { count, rows } = await db.Position.findAndCountAll({
+            include: [
+                {
+                    model: db.Department,
+                    as: 'department'
+                }
+            ],
             where,
             limit: Limit,
             offset: Offset,
@@ -42,10 +48,31 @@ exports.GetAll = async (req, res) => {
     }
 };
 
+exports.GetDepartment = async (req, res) => {
+    try {
+        const data = await db.Department.findAll({
+            where: {
+                is_active: true
+            },
+            attributes: [
+                ['id', 'value'],
+                ['name', "label"]
+            ],
+            order: [['id', 'ASC']]
+        });
+        return res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message 
+        });
+    }
+};
+
 exports.Create = async (req, res) => {
 
     const { 
         name,
+        departmentId,
         monthly,
         daily,
         hourly,
@@ -78,6 +105,7 @@ exports.Create = async (req, res) => {
 
         await db.Position.create({
             name,
+            department_id: departmentId,
             monthly_salary: monthly,
             daily_salary: daily,
             hourly_salary: hourly,
@@ -110,6 +138,7 @@ exports.Update = async (req, res) => {
 
     const { 
         name,
+        departmentId,
         monthly,
         daily,
         hourly,
@@ -159,6 +188,7 @@ exports.Update = async (req, res) => {
     
         await position.update({ 
             name, 
+            department_id: departmentId,
             monthly_salary: monthly,
             daily_salary: daily,
             hourly_salary: hourly,

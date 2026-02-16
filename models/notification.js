@@ -52,9 +52,9 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       type: DataTypes.TEXT('long'),
       allowNull: false
     },
-    is_read: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
+    status: {
+      type: DataTypes.ENUM('unread', 'read', 'archived'),
+      defaultValue: 'unread'
     },
   }, {
     sequelize,

@@ -1,4 +1,7 @@
 'use strict';
+
+const department = require('../models/department');
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -12,6 +15,14 @@ module.exports = {
       name: {
         type: Sequelize.STRING,
         allowNull: false
+      },
+      department_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Departments',
+          key: 'id'
+        },
       },
       monthly_salary: {
         type: Sequelize.DECIMAL(15, 2),

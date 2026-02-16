@@ -75,11 +75,13 @@ exports.GetVacancy = async (req, res) => {
             include: [
                 {
                     model: db.Position,
-                    as: 'position'
-                },
-                {
-                    model: db.Department,
-                    as: 'department'
+                    as: 'position',
+                    include: [
+                        {
+                            model: db.Department,
+                            as: 'department'
+                        },
+                    ]
                 },
                 {
                     model: db.Shift,
@@ -213,14 +215,15 @@ exports.GetDetails = async (req, res) => {
                                     `),
                                     'salary_amount'
                                 ]
-                            ]
-
-                        },
-                        {
-                            model: db.Department,
-                            as: 'department',
-                            attributes: [
-                                'name'
+                            ],
+                            include: [
+                                {
+                                    model: db.Department,
+                                    as: 'department',
+                                    attributes: [
+                                        'name'
+                                    ]
+                                },
                             ]
                         },
                         {

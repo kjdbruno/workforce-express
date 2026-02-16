@@ -1,4 +1,7 @@
 'use strict';
+
+const { stat } = require('fs-extra');
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -33,9 +36,9 @@ module.exports = {
         type: Sequelize.TEXT('long'),
         allowNull: false
       },
-      is_read: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false
+      status: {
+        type: Sequelize.ENUM('unread', 'read', 'archived'),
+        defaultValue: 'unread'
       },
       createdAt: {
         allowNull: false,

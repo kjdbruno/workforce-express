@@ -18,12 +18,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'position'
       });
 
-      // Vacancy -> Department
-      Vacancy.belongsTo(models.Department, {
-        foreignKey: 'department_id',
-        as: 'department'
-      });
-
       // Vacancy -> Applicant
       Vacancy.hasMany(models.Applicant, {
         foreignKey: 'vacancy_id',
@@ -53,16 +47,6 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       references: {
         model: 'Positions',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    },
-    department_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Departments',
         key: 'id'
       },
       onUpdate: 'CASCADE',

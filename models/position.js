@@ -21,6 +21,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'position_id',
         as: 'employments'
       });
+
+      // Position → Department
+      Position.belongsTo(models.Department, {
+        foreignKey: 'department_id',
+        as: 'department'
+      });
     }
   }
   Position.init({
@@ -33,6 +39,14 @@ module.exports = (sequelize, DataTypes) => {
     name: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    department_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Departments',
+        key: 'id'
+      },
     },
     monthly_salary: {
       type: DataTypes.DECIMAL(15, 2),

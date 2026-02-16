@@ -66,13 +66,53 @@ exports.GetAll = async (req, res) => {
 };
 
 exports.GetPosition = async (req, res) => {
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
     try {
+        // Base filters always applied
+        const whereClause = {
+            is_active: true,
+            status: 'Vacant',
+        };
+
+        // If NOT admin, restrict by department
+        const isAdmin = ['Admin', 'SuperAdmin'].includes(userRole);
+
+        if (!isAdmin) {
+            const employeeAccount = await db.EmployeeAccount.findOne({
+                where: { 
+                    user_id: userId 
+                },
+                include: [
+                    {
+                        model: db.Employee,
+                        as: 'employee',
+                        include: [
+                        {
+                            model: db.Employment,
+                            as: 'employment',
+                            include: [{ model: db.Position, as: 'position' }],
+                        },
+                        ],
+                    },
+                ],
+            });
+
+            const departmentId =
+                employeeAccount?.employee?.employment?.position?.department_id;
+
+            if (!departmentId) {
+                return res.status(403).json({
+                    errors: [{ path: 'department_id', msg: 'Department not found for this user.' }],
+                });
+            }
+
+            whereClause.department_id = departmentId;
+        }
+
         const data = await db.Position.findAll({
-            where: {
-                is_active: true,
-                status: 'Vacant'
-            },
+            where: whereClause,
             attributes: [
                 'id',
                 ['id', 'value'],
@@ -81,41 +121,36 @@ exports.GetPosition = async (req, res) => {
                 'qualification',
                 'salary_type',
                 'status',
-                // Dynamic salary range based on salary_type
                 [
                     Sequelize.literal(`
                         CASE salary_type
-                            WHEN 'Monthly' THEN CONCAT(
-                                FORMAT(monthly_salary * 0.9, 2),
-                                ' - ',
-                                FORMAT(monthly_salary * 1.1, 2)
-                            )
-                            WHEN 'Daily' THEN CONCAT(
-                                FORMAT(daily_salary * 0.9, 2),
-                                ' - ',
-                                FORMAT(daily_salary * 1.1, 2)
-                            )
-                            WHEN 'Hourly' THEN CONCAT(
-                                FORMAT(hourly_salary * 0.9, 2),
-                                ' - ',
-                                FORMAT(hourly_salary * 1.1, 2)
-                            )
-                            ELSE NULL
+                        WHEN 'Monthly' THEN CONCAT(
+                            FORMAT(monthly_salary * 0.9, 2),
+                            ' - ',
+                            FORMAT(monthly_salary * 1.1, 2)
+                        )
+                        WHEN 'Daily' THEN CONCAT(
+                            FORMAT(daily_salary * 0.9, 2),
+                            ' - ',
+                            FORMAT(daily_salary * 1.1, 2)
+                        )
+                        WHEN 'Hourly' THEN CONCAT(
+                            FORMAT(hourly_salary * 0.9, 2),
+                            ' - ',
+                            FORMAT(hourly_salary * 1.1, 2)
+                        )
+                        ELSE NULL
                         END
                     `),
-                    'amount'
-                ]
+                    'amount',
+                ],
             ],
-            order: [['id', 'ASC']]
+            order: [['id', 'ASC']],
         });
 
         return res.status(200).json(data);
-
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
-
+        return res.status(500).json({ error: error.message });
     }
 };
 
@@ -236,12 +271,14 @@ exports.GetDetails = async (req, res) => {
                             `),
                             'salary_amount'
                         ]
+                    ],
+                    include: [
+                        {
+                            model: db.Department,
+                            as: 'department',
+                            attributes: ['name']
+                        }
                     ]
-                },
-                {
-                    model: db.Department,
-                    as: 'department',
-                    attributes: ['name']
                 },
                 {
                     model: db.Shift,
@@ -825,13 +862,16 @@ exports.GeneratePDF = async (req, res) => {
             include: [
                 {
                     model: db.Position,
-                    as: 'position'
+                    as: 'position',
+                    include: [
+                        {
+                            model: db.Department,
+                            as: 'department',
+                            attributes: ['name']
+                        }
+                    ]
                 },
-                {
-                    model: db.Department,
-                    as: 'department',
-                    attributes: ['name']
-                },
+                
                 {
                     model: db.Shift,
                     as: 'shift',
@@ -935,7 +975,7 @@ exports.GeneratePDF = async (req, res) => {
 
         const controlNo = result?.control_no;
         const position = result?.position?.name;
-        const department = result?.department?.name;
+        const department = result?.position?.department?.name;
         const location = result?.location;
         const FormatTime = (time) => {
             if (!time) return '';
