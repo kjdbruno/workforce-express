@@ -629,13 +629,15 @@ exports.GeneratePDF = async (req, res) => {
                             as: 'position',
                             attributes: [
                                 'name', 'description', 'qualification'
-                            ]
-                        },
-                        {
-                            model: db.Department,
-                            as: 'department',
-                            attributes: [
-                                'name'
+                            ],
+                            include: [
+                                {
+                                    model: db.Department,
+                                    as: 'department',
+                                    attributes: [
+                                        'name'
+                                    ]
+                                },
                             ]
                         },
                         {
@@ -722,6 +724,7 @@ exports.GeneratePDF = async (req, res) => {
 
         const html = pug.renderFile(templatePath, { 
             seal,
+            controlNo: rows?.control_no,
             name, 
             sex,
             maritalStatus,

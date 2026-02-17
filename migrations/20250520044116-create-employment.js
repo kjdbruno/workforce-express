@@ -52,16 +52,6 @@ module.exports = {
         type: Sequelize.ENUM('S', 'ME', 'S1', 'S2', 'S3', 'S4', 'ME1', 'ME2', 'ME3', 'ME4', 'Z'),
         allowNull: false
       },
-      department_id: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Departments',
-          key: 'id'
-        },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
-      },
       position_id: {
         type: Sequelize.INTEGER,
         allowNull: false,

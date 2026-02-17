@@ -19,6 +19,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
+      position_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Positions',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       amount: {
         type: Sequelize.DECIMAL(15, 2),
         allowNull: false
@@ -52,6 +62,10 @@ module.exports = {
       notes: {
         type: Sequelize.TEXT('long'),
         allowNull: true
+      },
+      is_active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
       },
       is_active: {
         type: Sequelize.BOOLEAN,

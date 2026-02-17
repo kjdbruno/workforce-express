@@ -27,6 +27,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'department_id',
         as: 'department'
       });
+
+      // Position → SalarySchedule (one-to-many)
+      Position.hasMany(models.SalarySchedule, {
+        foreignKey: 'position_id',
+        as: 'salarySchedules'
+      });
     }
   }
   Position.init({

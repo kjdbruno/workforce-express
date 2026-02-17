@@ -580,7 +580,26 @@ module.exports = (_io) => {
             let applicant; // so we can access after commit
 
             try {
+
+                const year = new Date().getFullYear().toString();
+                const latest = await db.Applicant.findOne({
+                    where: { 
+                        control_no: { 
+                            [Op.like]: `${year}-%` 
+                        } 
+                    },
+                    order: [['control_no', 'DESC']]
+                });
+                let nextSeq = 1;
+        
+                if (latest) {
+                    const lastSeq = parseInt(latest.control_no.split('-')[1]);
+                    nextSeq = lastSeq + 1;
+                }
+                const newNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
+
                 applicant = await db.Applicant.create({
+                    control_no: newNo,
                     vacancy_id: vacancyId,
                     first_name: firstname,
                     middle_name: middlename,
@@ -682,12 +701,14 @@ module.exports = (_io) => {
             
             const data = await GetApplicant(applicant.id);
             const position = data?.vacancy?.position?.name;
+            const control_no = data?.control_no;
 
             // Email sending should not break the request
             try {
                 const templatePath = path.join(__dirname, '../templates/NewApplication.html');
                 let htmlContent = fs.readFileSync(templatePath, 'utf8');
                 htmlContent = htmlContent
+                .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
                 .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
                 .replace(/{{\s*position\s*}}/g, position || 'a position');
 
@@ -807,13 +828,15 @@ module.exports = (_io) => {
                         const email = data.email;
                         const firstname = data.first_name;
                         const position = data?.vacancy?.position?.name;
+                        const control_no = data?.control_no;
 
                         const templatePath = path.join(__dirname, '../templates', t.file);
                         let htmlContent = fs.readFileSync(templatePath, 'utf8');
 
                         htmlContent = htmlContent
-                        .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
-                        .replace(/{{\s*position\s*}}/g, position || 'a position');
+                            .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+                            .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                            .replace(/{{\s*position\s*}}/g, position || 'a position');
 
                         await transporter.sendMail({
                             from: `"Recruitment Team" <${process.env.MAIL_USER}>`,

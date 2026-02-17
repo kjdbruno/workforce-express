@@ -17,12 +17,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'employee'
       });
 
-      // Employment → Department
-      Employment.belongsTo(models.Department, {
-        foreignKey: 'department_id',
-        as: 'department'
-      });
-
       // Employment → Position
       Employment.belongsTo(models.Position, {
         foreignKey: 'position_id',
@@ -79,16 +73,6 @@ module.exports = (sequelize, DataTypes) => {
     tax_status: {
       type: DataTypes.ENUM('S', 'ME', 'S1', 'S2', 'S3', 'S4', 'ME1', 'ME2', 'ME3', 'ME4', 'Z'),
       allowNull: false
-    },
-    department_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Departments',
-        key: 'id'
-      },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
     },
     position_id: {
       type: DataTypes.INTEGER,

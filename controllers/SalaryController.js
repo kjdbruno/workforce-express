@@ -100,13 +100,6 @@ exports.GenerateServicePDF = async (req, res) => {
                 {
                     model: Employment,
                     as: 'employment',
-                    include: [
-                        {
-                            model: Position,
-                            as: 'position',
-                            attributes: ['name'] // or position_title if that's your column
-                        }
-                    ],
                     attributes: [
                         'employment_status',
                         'date_hired'
@@ -122,7 +115,15 @@ exports.GenerateServicePDF = async (req, res) => {
                         'effective_date',
                         'end_date'
                     ],
-                    
+                    include: [
+                        {
+                            model: Position,
+                            as: 'position',
+                            attributes: [
+                                'name'
+                            ]
+                        }
+                    ]
 
                 }
             ]
@@ -138,7 +139,7 @@ exports.GenerateServicePDF = async (req, res) => {
         });
 
         const result = sortedSalaries.map(salary => ({
-            position: employee.employment?.position?.name || null,
+            position: salary?.position?.name || null,
             salary: salary.amount,
             employment_status: employee.employment?.employment_status,
             start_date: salary.effective_date,

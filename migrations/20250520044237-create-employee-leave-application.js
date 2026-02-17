@@ -9,6 +9,10 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      control_no: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       employee_id: {
         type: Sequelize.INTEGER,
         allowNull: false,

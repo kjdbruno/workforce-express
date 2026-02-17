@@ -2,10 +2,15 @@ process.env.TZ = 'Asia/Manila'
 const { Op } = require("sequelize");
 const crypto = require('crypto');
 
+const pug = require('pug');
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
+const moment = require('moment');
+const transporter = require('../utils/mailer');
+
 const db = require('../models');
 const { sequelize } = db;
-
-const moment = require('moment')
 
 function euclideanDistance(d1, d2) {
   return Math.sqrt(
@@ -289,6 +294,24 @@ exports.CreateLeave = async (req, res) => {
     } = req.body;
 
     try {
+        //control no
+        const year = new Date().getFullYear().toString();
+        const latest = await db.EmployeeLeaveApplication.findOne({
+            where: { 
+                control_no: { 
+                    [Op.like]: `${year}-%` 
+                } 
+            },
+            order: [['control_no', 'DESC']]
+        });
+        let nextSeq = 1;
+
+        if (latest) {
+            const lastSeq = parseInt(latest.control_no.split('-')[1]);
+            nextSeq = lastSeq + 1;
+        }
+        const newNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
+
         // get employee userid
         const account = await db.EmployeeAccount.findOne({
             employee_id: employeeid
@@ -296,6 +319,7 @@ exports.CreateLeave = async (req, res) => {
 
         // save leave
         const leave = await db.EmployeeLeaveApplication.create({
+            control_no: newNo,
             employee_id: employeeid,
             leave_type_id: typeid,
             date_from: datestart,
@@ -328,8 +352,40 @@ exports.CreateLeave = async (req, res) => {
             });
         }
 
+        // send email
+        const lt = await db.LeaveType.findByPk(typeid)
+        const employee = await db.Employee.findByPk(employeeid);
+        const mail = employee?.email;
+        const control_no = leave?.control_no;
+        const firstname = employee?.first_name;
+        const leavetype = lt?.name;
+        const from = moment(leave?.date_from).format('MMMM DD YYYY');
+        const to = moment(leave?.date_to).format('MMMM DD YYYY');
+        const lreason = leave?.reason;
+        try {
+            const templatePath = path.join(__dirname, '../templates/LeaveApplication.html');
+            let htmlContent = fs.readFileSync(templatePath, 'utf8');
+            htmlContent = htmlContent
+            .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+            .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+            .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+            .replace(/{{\s*from\s*}}/g, from || 'Date From')
+            .replace(/{{\s*to\s*}}/g, to || 'Date To')
+            .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
+
+            await transporter.sendMail({
+                from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                to: mail,
+                subject: 'Leave Application',
+                html: htmlContent,
+            });
+        } catch (emailError) {
+            console.error('Email sending failed:', emailError.message);
+        }
+
         res.status(201).json({
-            message: "Record Saved!"
+            message: "Record Saved!",
+            leave
         });
 
     } catch (error) {
@@ -339,4 +395,287 @@ exports.CreateLeave = async (req, res) => {
         });
 
     }
+};
+
+exports.GenerateLeavePDF = async (req, res) => {
+
+    const { controlno } = req.params;
+    let browser;
+
+    try {
+        // 1️ Get leave application
+        const leaveApp = await db.EmployeeLeaveApplication.findOne({
+            where: { 
+                control_no: controlno
+            },
+            include: [
+                {
+                    model: db.Employee,
+                    as: 'employee',
+                    include: [
+                        {
+                            model: db.Employment,
+                            as: 'employment',
+                            include: [
+                                { 
+                                    model: db.Department, 
+                                    as: 'department', 
+                                    attributes: ['name'] 
+                                },
+                                { 
+                                    model: db.Position, 
+                                    as: 'position' 
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: db.LeaveType,
+                    as: 'leaveType',
+                    attributes: ['id', 'name', 'credit']
+                }
+            ]
+        });
+
+        if (!leaveApp) {
+            return res.status(404).json({
+                message: 'Leave application not found'
+            })
+        }
+
+        const employee = leaveApp.employee;
+        const employment = employee.employment;
+
+        // 2️⃣ Format employee info
+        const name = [
+            employee.first_name,
+            employee.middle_name ? `${employee.middle_name.charAt(0)}.` : '',
+            employee.last_name,
+            employee.suffix || ''
+        ].join(' ').replace(/\s+/g, ' ').trim();
+        
+        const departmentPosition = `${employment?.department?.name || ''} - ${employment?.position?.name || ''}`;
+        const contactNo = employee.contact_number || '';
+
+        const dateFiled = moment(leaveApp.createdAt).format('MMMM DD, YYYY');
+        const reason = leaveApp.reason;
+        const status = leaveApp.status;
+
+        // 3️⃣ Leave date range
+        const leaveStart = moment(leaveApp.date_from).format('MMMM DD, YYYY');
+        const leaveEnd = moment(leaveApp.date_to).format('MMMM DD, YYYY');
+        const totalDays = moment(leaveApp.date_to).diff(moment(leaveApp.date_from), 'days') + 1;
+
+        // 4️⃣ All leave types (checkbox-style display)
+        const leaveTypes = await db.LeaveType.findAll({
+            attributes: ['id', 'name']
+        });
+
+        const formattedLeaveTypes = leaveTypes.map(lt => ({
+            ...lt.toJSON(),
+            active: lt.id === leaveApp.leave_type_id
+        }));
+
+        // 5️⃣ Leave balances of employee
+        const leaveBalances = await db.EmployeeLeaveBalance.findAll({
+            where: {
+                employee_id: employee.id,
+                is_active: true
+            },
+            include: [
+                {
+                    model: db.LeaveType,
+                    as: 'leaveType',
+                    attributes: ['name']
+                }
+            ]
+        });
+
+        const balance = leaveBalances.map(lb => ({
+            leaveType: lb.leaveType?.name,
+            earned: Number(lb.earned),
+            used: Number(lb.used),
+            balance: Number(lb.balance)
+        }));
+
+        // approvals
+        const approvals = await db.Approval.findAll({
+          where: {
+            document_id: leaveApp.id,
+            is_active: true
+          },
+          include: [
+            {
+              model: db.ApprovalSetting,
+              as: 'setting',
+              where: { type: 'Leave' },
+              include: [
+                {
+                  model: db.User,
+                  as: 'approver',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
+                        {
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              model: db.ApprovalOveride,
+              as: 'overrides',
+              required: false,
+              include: [
+                {
+                  model: db.User,
+                  as: 'user',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
+                        {
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          order: [
+            [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+            [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+          ]
+        });
+
+        // Map approvals to the desired format
+        const mappedApprovals = approvals.map(a => {
+                    const row = a.toJSON();
+        
+                    const originalUser = row?.setting?.approver || null;
+                    const latestOverride = row?.overrides?.[0] || null;
+                    const overrideUser = latestOverride?.user || null;
+                    const isApproved = row?.status === 'Approved';
+        
+                    return {
+        
+                        description: row.setting?.description,
+                        approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
+                        position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
+                        signature: row.is_overide ? 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(overrideUser).signature}`)).toString('base64') : 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(originalUser).signature}`)).toString('base64'),
+                        date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
+                        isSigned: isApproved,
+                        isOveride: row.is_overide
+                    };
+                    });
+
+        // 6️⃣ Render PDF
+        const templatePath = path.join(__dirname, '../templates/reports/Leave.pug');
+        const seal = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, '../templates/reports/logo.jpg')).toString('base64');
+
+        const html = pug.renderFile(templatePath, {
+            seal,
+            name,
+            departmentPosition,
+            contactNo,
+            dateFiled,
+            leaves: formattedLeaveTypes,
+            reason,
+            status,
+            leaveStart,
+            leaveEnd,
+            totalDays,
+            balance,
+            signatories: mappedApprovals
+        });
+
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.emulateMediaType('print');
+
+        const pdfBuffer = await page.pdf({
+            width: '8.5in',
+            height: '11in',
+            margin: {
+                top: '25px',
+                bottom: '25px',
+                left: '25px',
+                right: '25px'
+            },
+            printBackground: true
+        });
+        res.send(Buffer.from(pdfBuffer));
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (browser) await browser.close();
+    }
+};
+
+const getEmployeeName = (user) => {
+  const emp = user?.employeeAccount?.employee;
+  if (!emp) return '';
+
+  const first = emp.first_name || emp.firstName || '';
+  const middleRaw = emp.middle_name || emp.middleName || '';
+  const last = emp.last_name || emp.lastName || '';
+  const suffix = emp.suffix || '';
+
+  const middleInitial = middleRaw
+    ? `${middleRaw.trim().charAt(0).toUpperCase()}.`
+    : '';
+
+  return [first, middleInitial, last, suffix]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const getSignature = (user) => {
+  // return the whole signature object or just a field like signature.image/signature_path
+  return user?.employeeAccount?.employee?.signature || null;
+};
+
+const getEmployeePosition = (user) => {
+  return (
+    user?.employeeAccount?.employee?.employment?.position?.name ||
+    user?.employeeAccount?.employee?.employment?.position?.title ||
+    ''
+  );
 };

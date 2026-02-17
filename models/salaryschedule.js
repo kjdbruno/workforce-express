@@ -16,6 +16,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'employee_id',
         as: 'employee'
       });
+
+      // SalarySchedule → Position (many-to-one)
+      SalarySchedule.belongsTo(models.Position, {
+        foreignKey: 'position_id',
+        as: 'position'
+      });
     }
   }
   SalarySchedule.init({
@@ -30,6 +36,16 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       references: {
         model: 'Employees',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    position_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Positions',
         key: 'id'
       },
       onUpdate: 'CASCADE',

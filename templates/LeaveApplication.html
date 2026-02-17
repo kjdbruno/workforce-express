@@ -3,10 +3,10 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Recruitment Notification</title>
+        <title>Leave Application Notification</title>
     </head>
     <body style="margin:0; padding:0; background:#FFF1F1; font-family:Segoe UI, Arial, sans-serif; color:#333;">
-        <div style="display:none; opacity:0;">Application - Control No: {{ control_no }}</div>
+        <div style="display:none; opacity:0;">Leave Application Update - Control No: {{ control_no }}</div>
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF1F1; padding:30px 0;">
             <tr>
                 <td align="center">
@@ -18,7 +18,7 @@
                                         <path d="M12 2L1.5 9l1.4 1.4L4 10v10h16V10l1.1.4 1.4-1.4L12 2z"/>
                                     </svg>
                                 </div>
-                                <div style=" color:#ffffff; margin-top:12px; font-size:14px; letter-spacing:2px; text-transform: uppercase; ">Application Status - Shortlisted</div>
+                                <div style=" color:#ffffff; margin-top:12px; font-size:14px; letter-spacing:2px; text-transform: uppercase; ">Leave application </div>
                             </td>
                         </tr>
                         <tr>
@@ -38,17 +38,30 @@
                         </tr>
                         <tr>
                             <td style="padding:0 35px 20px 35px; font-size:16px; line-height:1.6;">
-                                Congratulations! Your application for the <span style="text-transform: capitalize; font-weight: bold;">{{ position }}</span> position has been <span style="text-transform: capitalize; font-weight: bold;">shortlisted</span>.
+                                Your leave application has been processed. Please use your control number above to track your request.
+
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding:0 35px 20px 35px; font-size:16px; line-height:1.6;">
-                                This means you have successfully passed the initial screening process and will be moving forward to the next stage of our recruitment evaluation.
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:0 35px 20px 35px; font-size:16px; line-height:1.6;">
-                                Our team will contact you soon regarding the next steps. Please keep an eye on your inbox for further updates.
+                            <td style="padding:0 35px 25px 35px;">
+                                <table width="100%" style="background:#FFE5E5; border:1px solid #90020133; border-radius:10px; padding:15px; text-transform: capitalize; ">
+                                    <tr>
+                                        <td width="40%" style="padding:7px;"><strong>Leave Type:</strong></td>
+                                        <td>{{ leavetype }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:7px;"><strong>Date From:</strong></td>
+                                        <td>{{ from }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:7px;"><strong>Date To:</strong></td>
+                                        <td>{{ to }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:7px;"><strong>Reason:</strong></td>
+                                        <td>{{ lreason }}</td>
+                                    </tr>
+                                </table>
                             </td>
                         </tr>
                     </table>

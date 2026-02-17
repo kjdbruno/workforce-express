@@ -354,7 +354,6 @@ exports.Create = async (req, res) => {
         // employment
         employeeNo,
         dateHired,
-        departmentId,
         positionId,
         employmentstatus,
         tin,
@@ -434,7 +433,6 @@ exports.Create = async (req, res) => {
             sss_no: sssNo,
             philhealth_no: philhealthNo,
             pagibig_no: pagibigNo,
-            department_id: departmentId,
             employment_status: employmentstatus,
             tax_status: taxstatus,
             position_id: positionId,
@@ -677,7 +675,6 @@ exports.UpdateEmployment = async (req, res) => {
     const {
         employeeNo,
         dateHired,
-        departmentId,
         employmentstatus,
         tin,
         sssNo,
@@ -703,7 +700,6 @@ exports.UpdateEmployment = async (req, res) => {
         await employment.update({ 
             employee_no: employeeNo,
             date_hired: dateHired,
-            department_id: departmentId,
             employment_status: employmentstatus,
             tin,
             sss_no: sssNo,
@@ -822,6 +818,7 @@ exports.CreateSalary = async (req, res) => {
 
         await db.SalarySchedule.create({
             employee_id: employment.employee_id,
+            position_id: positionid,
             amount: Number(String(amount).replace(/,/g, '')),
             salary_type: salarytype,
             salary_group: salarygroup,
