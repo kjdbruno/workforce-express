@@ -742,7 +742,8 @@ exports.CreateSalary = async (req, res) => {
         salarytype, 
         notes,
         payrollgroup,
-        taxstatus
+        taxstatus,
+        isPremium
     } = req.body
 
     const transaction = await sequelize.transaction();
@@ -773,6 +774,7 @@ exports.CreateSalary = async (req, res) => {
             const previousSalary = await db.SalarySchedule.findOne({
                 where: {
                     employee_id: employment.employee_id,
+                    is_premium: false,
                     is_active: true,
                     end_date: null
                 },
@@ -825,6 +827,7 @@ exports.CreateSalary = async (req, res) => {
             effective_date: datestart,
             end_date: parsedEndDate,
             notes: notes ?? '',
+            is_premium: isPremium,
             is_active: true
         }, { transaction })
 

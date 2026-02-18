@@ -85,6 +85,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT('long'),
       allowNull: true
     },
+    is_premium: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

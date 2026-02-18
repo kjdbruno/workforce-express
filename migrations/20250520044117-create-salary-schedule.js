@@ -63,7 +63,7 @@ module.exports = {
         type: Sequelize.TEXT('long'),
         allowNull: true
       },
-      is_active: {
+      is_premium: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },
