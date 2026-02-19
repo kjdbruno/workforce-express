@@ -103,6 +103,15 @@ exports.GenerateServicePDF = async (req, res) => {
                     attributes: [
                         'employment_status',
                         'date_hired'
+                    ],
+                    include: [
+                        {
+                            model: Position,
+                            as: 'position',
+                            attributes: [
+                                'name'
+                            ]
+                        }
                     ]
                 },
                 {

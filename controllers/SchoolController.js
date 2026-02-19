@@ -2,8 +2,6 @@ const { Op } = require("sequelize");
 const db = require('../models');
 const { sequelize } = db;
 
-const moment = require('moment');
-
 exports.GetAll = async (req, res) => {
 
     const Page = parseInt(req.query.Page) || 1;
@@ -19,7 +17,7 @@ exports.GetAll = async (req, res) => {
             where.name = { [Op.like]: `%${Filter}%` };
         }
 
-        const { count, rows } = await db.Holiday.findAndCountAll({
+        const { count, rows } = await db.School.findAndCountAll({
             where,
             limit: Limit,
             offset: Offset,
@@ -48,17 +46,20 @@ exports.Create = async (req, res) => {
 
     const { 
         name,
-        date,
-        multiplier
+        type,
+        website,
+        contactNo
     } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
 
-        const exist = await db.Holiday.findOne({
-            where: { 
-                date
+        const exist = await db.School.findOne({
+            where: {
+                [Op.or]: [
+                    { name }
+                ]
             }
         });
 
@@ -66,24 +67,26 @@ exports.Create = async (req, res) => {
             return res.status(500).json({
                 errors: [{
                     type: "field",
-                    value: date,
+                    value: name,
                     msg: "Record already exists!",
-                    path: "date",
+                    path: "name",
                     location: "body",
                 }],
             });
         }
 
-        await db.Holiday.create({
+        const school = await db.School.create({
             name,
-            date,
-            multiplier
+            type,
+            website,
+            contactNo
         }, { transaction });
 
         await transaction.commit();
 
         res.status(201).json({
-            message: "Record Saved!"
+            message: "Record Saved!", 
+            school: school
         });
 
     } catch (error) {
@@ -104,17 +107,18 @@ exports.Update = async (req, res) => {
 
     const { 
         name,
-        date,
-        multiplier
+        type,
+        website,
+        contactNo
     } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
 
-        const holiday = await db.Holiday.findByPk(id);
+        const school = await db.School.findByPk(id);
         
-        if (!holiday) {
+        if (!school) {
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -126,9 +130,11 @@ exports.Update = async (req, res) => {
             });
         }
 
-        const exist = await db.Holiday.findOne({
+        const exist = await db.School.findOne({
             where: {
-                date,
+                [Op.or]: [
+                    { name }
+                ],
                 id: { [Op.ne]: id }
             },
         });
@@ -136,25 +142,26 @@ exports.Update = async (req, res) => {
             return res.status(500).json({
                 errors: [{
                     type: "field",
-                    value: date,
+                    value: name,
                     msg: "Record already in use!",
-                    path: "date",
+                    path: "name",
                     location: "body",
                 }],
             });
         }
 
-        await holiday.update({ 
+        await school.update({ 
             name,
-            date,
-            multiplier
+            type,
+            website,
+            contactNo
         }, { transaction });
 
         await transaction.commit();
 
         res.status(201).json({
             message: "Record Modified!", 
-            holiday
+            school: school
         });
 
     } catch (error) {
@@ -177,9 +184,9 @@ exports.Disable = async (req, res) => {
   
     try {
 
-        const holiday = await db.Holiday.findByPk(id);
+        const school = await db.School.findByPk(id);
 
-        if (!holiday) {
+        if (!school) {
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -191,7 +198,7 @@ exports.Disable = async (req, res) => {
             });
         }
 
-        await holiday.update({ 
+        await school.update({ 
             isActive: false
         }, { transaction });
 
@@ -199,7 +206,7 @@ exports.Disable = async (req, res) => {
 
         res.status(200).json({
             message: "Record Disabled!", 
-            holiday
+            school: school 
         });
 
     } catch (error) {
@@ -222,9 +229,9 @@ exports.Enable = async (req, res) => {
   
     try {
 
-        const holiday = await db.Holiday.findByPk(id);
+        const school = await db.School.findByPk(id);
 
-        if (!holiday) {
+        if (!school) {
             return res.status(500).json({
                 errors: [{
                     type: "field",
@@ -236,7 +243,7 @@ exports.Enable = async (req, res) => {
             });
         }
 
-        await holiday.update({ 
+        await school.update({ 
             isActive: true 
         }, { transaction });
 
@@ -244,7 +251,7 @@ exports.Enable = async (req, res) => {
 
         res.status(200).json({
             message: "Record Enabled!.", 
-            holiday
+            school: school
         });
     } catch (error) {
 

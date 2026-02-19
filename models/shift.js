@@ -75,6 +75,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: false
     },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
   }, {
     sequelize,
     modelName: 'Shift',

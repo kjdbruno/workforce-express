@@ -449,11 +449,12 @@ exports.Create = async (req, res) => {
 
         await db.SalarySchedule.create(
             {
-            employee_id: employee.id,
-            amount,
-            salary_type: position.salary_type,
-            salary_group: salarygroup,
-            effective_date: dateHired,
+                position_id: positionId,
+                employee_id: employee.id,
+                amount,
+                salary_type: position.salary_type,
+                salary_group: salarygroup,
+                effective_date: dateHired,
             },
             { transaction }
         );
@@ -464,11 +465,11 @@ exports.Create = async (req, res) => {
         // ✅ shift
         await db.EmployeeShift.create(
             {
-            employee_id: employee.id,
-            shift_id: shiftId,
-            effective_from: effectiveFrom,
-            effective_to: effectiveTo?.trim() ? effectiveTo : null,
-            notes,
+                employee_id: employee.id,
+                shift_id: shiftId,
+                effective_from: effectiveFrom,
+                effective_to: effectiveTo?.trim() ? effectiveTo : null,
+                notes,
             },
             { transaction }
         );

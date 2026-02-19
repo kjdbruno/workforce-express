@@ -126,11 +126,9 @@ exports.Update = async (req, res) => {
 
     const { 
         id 
-    } = req.params;
+    } = req.params
 
-    const transaction = await sequelize.transaction();
-
-    const { 
+    const {
         code,
         name,
         starttime,
@@ -141,85 +139,103 @@ exports.Update = async (req, res) => {
         latestminutes,
         crossesmidnight,
         days
-    } = req.body;
+    } = req.body
+
+    const transaction = await sequelize.transaction()
 
     try {
-
-        await db.ShiftDay.destroy({
-            where: { 
-                shift_id: id 
-            },
-            transaction
-        });
-
-        const shift = await db.Shift.findByPk(id);
-        
+        // 1) check if record exists
+        const shift = await db.Shift.findByPk(id, { transaction })
         if (!shift) {
-            return res.status(500).json({
-                errors: [{
-                    type: "field",
-                    value: name,
-                    msg: "Record not found!",
-                    path: "name",
-                    location: "body",
-                }],
-            });
+            await transaction.rollback()
+            return res.status(404).json({ message: 'Shift not found' })
         }
 
+        // 2) check duplicates (exclude current id)
         const exist = await db.Shift.findOne({
             where: {
                 [Op.or]: [{ code }, { name }],
                 id: { [Op.ne]: id }
             },
-        });
+            transaction
+        })
+
         if (exist) {
-            return res.status(500).json({
-                errors: [{
-                    type: "field",
-                    value: name,
-                    msg: "Record already in use!",
-                    path: "name",
-                    location: "body",
-                }],
-            });
+            await transaction.rollback()
+            return res.status(409).json({
+                errors: [
+                ...(exist.code === code
+                    ? [{
+                        type: "field",
+                        value: code,
+                        msg: "Code already exists!",
+                        path: "code",
+                        location: "body",
+                    }]
+                    : []),
+                ...(exist.name === name
+                    ? [{
+                        type: "field",
+                        value: name,
+                        msg: "Name already exists!",
+                        path: "name",
+                        location: "body",
+                    }]
+                    : [])
+                ]
+            })
         }
 
-        await shift.update({ 
-            code,
-            name,
-            start_time: starttime,
-            end_time: endtime,
-            break_minutes: breakminutes,
-            grace_minutes: graceminutes,
-            earliest_minutes: earliestminutes,
-            latest_minutes: latestminutes,
-            crosses_midnight: crossesmidnight
-        }, { transaction });
+        // 3) update shift
+        await shift.update(
+            {
+                code,
+                name,
+                start_time: starttime,
+                end_time: endtime,
+                break_minutes: breakminutes,
+                grace_minutes: graceminutes,
+                earliest_minutes: earliestminutes,
+                latest_minutes: latestminutes,
+                crosses_midnight: crossesmidnight
+            }, transaction
+        )
 
-        const sd = days.map(day => ({
-            shift_id: id,
-            day_of_week: day
-        }));
-        await db.ShiftDay.bulkCreate(sd, { transaction });
+        // 4) replace days (delete then insert)
+        if (Array.isArray(days)) {
+            await db.ShiftDay.destroy({
+                where: { shift_id: id },
+                transaction
+            })
 
-        const s = await GetShift(id);
+            const sd = days.map(day => ({
+                shift_id: id,
+                day_of_week: day
+            }))
 
-        await transaction.commit();
+            if (sd.length) {
+                await db.ShiftDay.bulkCreate(sd, { transaction })
+            }
+        }
 
-        res.status(201).json({
-            message: "Record Modified!", 
+        // 5) return updated shift with includes
+        const s = await GetShift(id)
+
+        await transaction.commit()
+
+        return res.status(200).json({
+            message: "Record Updated!",
             shift: s
-        });
+        })
 
     } catch (error) {
-
-        await transaction.rollback();
-        res.status(400).json({ 
-            error: error.message 
-        });
-
+        await transaction.rollback()
+            return res.status(400).json({
+            error: error.message
+        })
     }
-};
+}
+
 
 const GetShift = async (id) => {
 
@@ -235,4 +251,97 @@ const GetShift = async (id) => {
         }
     });
 
+};
+
+exports.Disable = async (req, res) => {
+
+    const { 
+        id 
+    } = req.params;
+
+    const transaction = await sequelize.transaction();
+  
+    try {
+
+        const shift = await db.Shift.findByPk(id);
+
+        if (!shift) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Record not found!",
+                    path: "name",
+                    location: "body",
+                }],
+            });
+        }
+
+        await shift.update({ 
+            is_active: false
+        }, transaction);
+
+        const s = await GetShift(shift.id);
+
+        await transaction.commit();
+
+        res.status(200).json({
+            message: "Record Disabled!", 
+            shift: s
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+exports.Enable = async (req, res) => {
+
+    const { 
+        id 
+    } = req.params;
+
+    const transaction = await sequelize.transaction();
+  
+    try {
+
+        const shift = await db.Shift.findByPk(id);
+
+        if (!shift) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Record not found!",
+                    path: "name",
+                    location: "body",
+                }],
+            });
+        }
+
+        await shift.update({ 
+            is_active: true 
+        }, transaction);
+
+        const s = await GetShift(shift.id);
+
+        await transaction.commit();
+
+        res.status(200).json({
+            message: "Record Enabled!.", 
+            shift: s
+        });
+    } catch (error) {
+
+        await transaction.rollback();
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
 };

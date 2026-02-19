@@ -78,6 +78,8 @@ app.use('/api/signatory', require('./routes/SignatoryRoutes'));
 app.use('/api/leavetype', require('./routes/LeaveTypeRoutes'));
 app.use('/api/holiday', require('./routes/HolidayRoutes'));
 app.use('/api/shift', require('./routes/ShiftRoutes'));
+app.use('/api/school', require('./routes/SchoolRoutes'));
+app.use('/api/course', require('./routes/CourseRoutes'));
 // app.use('/api/employmentstatus', require('./routes/EmploymentStatusRoutes'));
 // app.use('/api/appointmentstatus', require('./routes/AppointmentmentStatusRoutes'));
 // app.use('/api/taxcode', require('./routes/TaxCodeRoutes'));
