@@ -628,7 +628,7 @@ exports.Create = async (req, res) => {
         ],
         transaction: tx,
       });
-
+      
       if (managementAccount) {
         
         const managementSignatories = await db.ApprovalSetting.findAll({

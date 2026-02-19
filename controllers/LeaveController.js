@@ -286,6 +286,24 @@ exports.Create = async (req, res) => {
     } = req.body;
 
     try {
+        //control no
+        const year = new Date().getFullYear().toString();
+        const latest = await db.EmployeeLeaveApplication.findOne({
+            where: { 
+                control_no: { 
+                    [Op.like]: `${year}-%` 
+                } 
+            },
+            order: [['control_no', 'DESC']]
+        });
+        let nextSeq = 1;
+
+        if (latest) {
+            const lastSeq = parseInt(latest.control_no.split('-')[1]);
+            nextSeq = lastSeq + 1;
+        }
+        const newNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
+        
         // get employee userid
         const account = await db.EmployeeAccount.findOne({
             employee_id: employeeid
@@ -294,6 +312,7 @@ exports.Create = async (req, res) => {
         // save leave
         const leave = await db.EmployeeLeaveApplication.create({
             employee_id: employeeid,
+            control_no: newNo,
             leave_type_id: typeid,
             date_from: datestart,
             date_to: dateend,
@@ -759,13 +778,15 @@ exports.GenerateLeavePDF = async (req, res) => {
                             as: 'employment',
                             include: [
                                 { 
-                                    model: db.Department, 
-                                    as: 'department', 
-                                    attributes: ['name'] 
-                                },
-                                { 
                                     model: db.Position, 
-                                    as: 'position' 
+                                    as: 'position' ,
+                                    include: [
+                                        { 
+                                            model: db.Department, 
+                                            as: 'department', 
+                                            attributes: ['name'] 
+                                        },
+                                    ]
                                 }
                             ]
                         }
@@ -786,7 +807,8 @@ exports.GenerateLeavePDF = async (req, res) => {
         const employee = leaveApp.employee;
         const employment = employee.employment;
 
-        // 2️⃣ Format employee info
+        // 2️ Format employee info
+        const controlNo = leaveApp.control_no;
         const name = [
             employee.first_name,
             employee.middle_name ? `${employee.middle_name.charAt(0)}.` : '',
@@ -794,7 +816,7 @@ exports.GenerateLeavePDF = async (req, res) => {
             employee.suffix || ''
         ].join(' ').replace(/\s+/g, ' ').trim();
         
-        const departmentPosition = `${employment?.department?.name || ''} - ${employment?.position?.name || ''}`;
+        const departmentPosition = `${employment?.position?.department?.name || ''} - ${employment?.position?.name || ''}`;
         const contactNo = employee.contact_number || '';
 
         const dateFiled = moment(leaveApp.createdAt).format('MMMM DD, YYYY');
@@ -943,6 +965,7 @@ exports.GenerateLeavePDF = async (req, res) => {
 
         const html = pug.renderFile(templatePath, {
             seal,
+            controlNo,
             name,
             departmentPosition,
             contactNo,

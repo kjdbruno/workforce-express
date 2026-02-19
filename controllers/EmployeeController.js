@@ -776,8 +776,7 @@ exports.CreateSalary = async (req, res) => {
                 where: {
                     employee_id: employment.employee_id,
                     is_premium: false,
-                    is_active: true,
-                    end_date: null
+                    is_active: true
                 },
                 order: [['effective_date', 'DESC']]
             })

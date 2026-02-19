@@ -14,44 +14,63 @@ const db = require('../models');
 const { sequelize } = db;
 
 exports.GetAll = async (req, res) => {
-    const Page = parseInt(req.query.Page, 10) || 1
-    const Limit = parseInt(req.query.Limit, 10) || 10
-    const Filter = (req.query.Filter || '').trim()
-    const Offset = (Page - 1) * Limit
+
+    const Page = parseInt(req.query.Page) || 1;
+    const Limit = parseInt(req.query.Limit) || 10;
+    const Filter = req.query.Filter ? req.query.Filter.trim() : "";
+    const Offset = (Page - 1) * Limit;
 
     try {
-        const where = Filter
-            ? {
-                [Op.or]: [
-                    { first_name: { [Op.like]: `%${Filter}%` } },
-                    { middle_name: { [Op.like]: `%${Filter}%` } },
-                    { last_name: { [Op.like]: `%${Filter}%` } },
-                ],
-                }
-            : {}
 
         const { count, rows } = await db.Employee.findAndCountAll({
-            attributes: ['id', 'first_name', 'middle_name', 'last_name', 'status'],
-            where,
-            distinct: true,
-            subQuery: false,
+            include: [
+                {
+                    model: db.Employment,
+                    as: 'employment',
+                    include: [
+                        {
+                            model: db.Position,
+                            as: 'position'
+                        }
+                    ]
+                }
+            ],
+            where: {
+                [Op.and]: [
+                    Filter
+                    ? {
+                        [Op.or]: [
+                            { '$employment.position.name$': { [Op.like]: `%${Filter}%` } },
+                            { 'first_name': { [Op.like]: `%${Filter}%` } },
+                            { 'middle_name': { [Op.like]: `%${Filter}%` } },
+                            { 'last_name': { [Op.like]: `%${Filter}%` } }
+                        ]
+                        }
+                    : {}
+                ]
+            },
             limit: Limit,
             offset: Offset,
-            order: [['createdAt', 'DESC']],
-        })
+            order: [['createdAt', 'DESC']]
+        });
 
-        return res.json({
+        res.json({
             data: rows,
             meta: {
                 TotalItems: count,
                 TotalPages: Math.ceil(count / Limit),
-                CurrentPage: Page,
-            },
-        })
+                CurrentPage: Page
+            }
+        });
+
     } catch (error) {
-        return res.status(500).json({ error: error.message })
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
     }
-}
+};
 
 exports.GetLog = async (req, res) => {
     const id = parseInt(req.params.id, 10)
