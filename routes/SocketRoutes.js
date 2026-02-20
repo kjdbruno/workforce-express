@@ -15,5 +15,10 @@ module.exports = (SocketController) => {
     router.post('/application/create', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), UploadDocument.any(), SocketController.CreateApplication);
     router.post('/application/update', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.UpdateApplication);
 
+    // leave routes
+    router.post('/leave/create', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.CreateLeaveApplication);
+    router.post('/leave/:id/approve', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.ApproveLeaveApplication);
+    router.post('/leave/:id/overide', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.ApproveLeaveApplication);
+
     return router;
 };

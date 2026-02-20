@@ -864,5 +864,283 @@ module.exports = (_io) => {
             }
 
         },
+        /**
+         * Leave
+         */
+        CreateLeaveApplication: async (req, res) => {
+            const { 
+                employeeid,
+                typeid,
+                datestart,
+                dateend,
+                reason
+            } = req.body;
+        
+            try {
+                //control no
+                const year = new Date().getFullYear().toString();
+                const latest = await db.EmployeeLeaveApplication.findOne({
+                    where: { 
+                        control_no: { 
+                            [Op.like]: `${year}-%` 
+                        } 
+                    },
+                    order: [['control_no', 'DESC']]
+                });
+                let nextSeq = 1;
+        
+                if (latest) {
+                    const lastSeq = parseInt(latest.control_no.split('-')[1]);
+                    nextSeq = lastSeq + 1;
+                }
+                const newNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
+                
+                // get employee userid
+                const account = await db.EmployeeAccount.findOne({
+                    where: { employee_id: employeeid },
+                    include: [
+                        {
+                        model: db.User,
+                        as: 'user',
+                        required: true,
+                        where: { role: 'Employee' },
+                        },
+                    ]
+                });
+        
+                // save leave
+                const leave = await db.EmployeeLeaveApplication.create({
+                    employee_id: employeeid,
+                    control_no: newNo,
+                    leave_type_id: typeid,
+                    date_from: datestart,
+                    date_to: dateend,
+                    reason,
+                    status: 'Filed'
+                });
+        
+                // Fetch approval settings by document type
+                const signatories = await db.ApprovalSetting.findAll({
+                    where: {
+                        owner_id: account.user_id,
+                        type: 'Leave',
+                        is_active: true
+                    },
+                    order: [['order', 'ASC']]
+                });
+
+                for (const sig of signatories) {
+
+                    await db.Approval.create({
+                        setting_id: sig.id,
+                        document_id: leave.id,
+                        status: 'Pending',
+                        signed_at: null,
+                        remarks: null,
+                        is_active: true
+                    });
+
+                    /**
+                     * Notification to approver
+                     */
+                    await db.Notification.create({
+                        sender_id: req.user?.id,
+                        receiver_id: sig.approver_id,
+                        content: `New leave application requires your approval.`,
+                        status: 'unread'
+                    });
+
+                    const [notificationCount, notifications] = await Promise.all([
+                        db.Notification.count({
+                        where: { receiver_id: sig.approver_id, status: 'unread' }
+                        }),
+                        db.Notification.findAll({
+                        where: { receiver_id: sig.approver_id, status: 'unread' },
+                        order: [['createdAt', 'DESC']]
+                        })
+                    ]);
+
+                    // ✅ send ONLY to this user
+                    io.to(`user:${sig.approver_id}`).emit('EmitNotifications', {
+                        notifications,
+                        count: notificationCount,
+                    });
+                }
+        
+                res.status(201).json({
+                    message: "Record Saved!"
+                });
+        
+            } catch (error) {
+
+                res.status(400).json({ 
+                    error: error.message 
+                });
+        
+            }
+        },
+        ApproveLeaveApplication: async (req, res) => {
+            const { 
+                id
+            } = req.params;
+            const { approvalid } = req.body;
+        
+            try {
+        
+                // 1️⃣ Fetch the leave application
+                const leave = await db.EmployeeLeaveApplication.findByPk(id, {
+                    include: [{ model: db.LeaveType, as: 'leaveType' }]
+                });
+        
+                if (!leave) {
+                    return res.status(404).json({
+                        errors: [{
+                            type: "field",
+                            value: id,
+                            msg: "Record not found!",
+                            path: "id",
+                            location: "body",
+                        }],
+                    });
+                }
+        
+                // 2️⃣ Update the specific approval record
+                const approval = await db.Approval.findByPk(approvalid);
+                if (!approval) {
+                    return res.status(404).json({ error: "Approval record not found!" });
+                }
+        
+                await approval.update({ status: 'Approved', signed_at: new Date() });
+        
+                const totalCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'Leave'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true
+                    }
+                });
+        
+                const approvedCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'Leave'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true,
+                        status: 'Approved'
+                    }
+                });
+        
+                if (totalCount === approvedCount) {
+                    await leave.update({ status: 'Approved' });
+        
+                    const holidays = await db.Holiday.findAll({
+                        where: {
+                            date: { [Op.between]: [leave.date_from, leave.date_to] },
+                            isActive: true
+                        }
+                    });
+        
+                    const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
+        
+                    // 5️⃣ Compute leave days excluding weekends and holidays
+                    const start = moment(leave.date_from);
+                    const end = moment(leave.date_to);
+                    let daysUsed = 0;
+        
+                    while (start.isSameOrBefore(end)) {
+                        const dayOfWeek = start.day(); // 0 = Sunday, 6 = Saturday
+                        const formatted = start.format('YYYY-MM-DD');
+        
+                        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.includes(formatted)) {
+                            daysUsed += 1;
+                        }
+        
+                        start.add(1, 'day');
+                    }
+        
+                    // 6️⃣ Update EmployeeLeaveBalance
+                    const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+                        where: {
+                            employee_id: leave.employee_id,
+                            leave_type_id: leave.leave_type_id,
+                            is_active: true
+                        }
+                    });
+        
+                    if (!leaveBalance) {
+                        return res.status(400).json({ error: "Leave balance not found for employee!" });
+                    }
+        
+                    const newUsed = parseFloat(leaveBalance.used) + daysUsed;
+                    const newBalance = parseFloat(leaveBalance.earned) - newUsed;
+        
+                    await leaveBalance.update({
+                        used: newUsed,
+                        balance: newBalance
+                    });
+
+                    /**
+                     * Send Notification
+                     */
+                    const employeeid = leave.employee_id;
+                    const accounts = await db.EmployeeAccount.findOne({
+                        where: {
+                            employee_id: employeeid
+                        }
+                    });
+                    await db.Notification.create({
+                        sender_id: req.user?.id,
+                        receiver_id: accounts?.user_id,
+                        content: `Leave application with control number: ${leave.control_no} has been approved.`,
+                        status: 'unread'
+                    });
+
+                    const [notificationCount, notifications] = await Promise.all([
+                        db.Notification.count({
+                            where: { receiver_id: accounts?.user_id, status: 'unread' }
+                        }),
+                        db.Notification.findAll({
+                            where: { receiver_id: accounts?.user_id, status: 'unread' },
+                            order: [['createdAt', 'DESC']]
+                        })
+                    ]);
+
+                    // ✅ send ONLY to this user
+                    io.to(`user:${accounts?.user_id}`).emit('EmitNotifications', {
+                        notifications,
+                        count: notificationCount,
+                    });
+                }
+        
+                res.status(201).json({
+                    message: "Record Updated!"
+                });
+        
+            } catch (error) {
+        
+                res.status(400).json({ 
+                    error: error.message 
+                });
+        
+            }
+        },
+        OverideLeaveApplication: async (req, res) => {
+            
+        }
     };
 };
