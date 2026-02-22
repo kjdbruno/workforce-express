@@ -966,6 +966,37 @@ module.exports = (_io) => {
                         count: notificationCount,
                     });
                 }
+
+                // send email
+                const lt = await db.LeaveType.findByPk(typeid)
+                const employee = await db.Employee.findByPk(employeeid);
+                const mail = employee?.email;
+                const control_no = leave?.control_no;
+                const firstname = employee?.first_name;
+                const leavetype = lt?.name;
+                const from = moment(leave?.date_from).format('MMMM DD YYYY');
+                const to = moment(leave?.date_to).format('MMMM DD YYYY');
+                const lreason = leave?.reason;
+                try {
+                    const templatePath = path.join(__dirname, '../templates/LeaveApplication.html');
+                    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+                    htmlContent = htmlContent
+                    .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+                    .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                    .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                    .replace(/{{\s*from\s*}}/g, from || 'Date From')
+                    .replace(/{{\s*to\s*}}/g, to || 'Date To')
+                    .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
+
+                    await transporter.sendMail({
+                        from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                        to: mail,
+                        subject: 'Leave Application',
+                        html: htmlContent,
+                    });
+                } catch (emailError) {
+                    console.error('Email sending failed:', emailError.message);
+                }
         
                 res.status(201).json({
                     message: "Record Saved!"

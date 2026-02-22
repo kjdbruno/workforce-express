@@ -397,16 +397,293 @@ exports.CreateLeave = async (req, res) => {
     }
 };
 
-exports.GenerateLeavePDF = async (req, res) => {
+exports.GetLeave = async (req, res) => {
 
     const { controlno } = req.params;
+
+    try {
+        
+        const leave = await db.EmployeeLeaveApplication.findOne({
+            where: { 
+                control_no: controlno 
+            },
+            include: [
+                {
+                    model: db.Employee,
+                    as: 'employee',
+                },
+                {
+                    model: db.LeaveType,
+                    as: 'leaveType'
+                }
+            ]
+        });
+
+        const approvals = await db.Approval.findAll({
+          where: {
+            document_id: leave.id,
+            is_active: true
+          },
+          include: [
+            {
+              model: db.ApprovalSetting,
+              as: 'setting',
+              where: { type: 'Leave' },
+              include: [
+                {
+                  model: db.User,
+                  as: 'approver',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
+                        {
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              model: db.ApprovalOveride,
+              as: 'overrides',
+              required: false,
+              include: [
+                {
+                  model: db.User,
+                  as: 'user',
+                  attributes: ['id'],
+                  include: [
+                    {
+                      model: db.EmployeeAccount,
+                      as: 'employeeAccount',
+                      include: [
+                        {
+                          model: db.Employee,
+                          as: 'employee',
+                          include: [
+                            {
+                              model: db.Employment,
+                              as: 'employment',
+                              include: [{ model: db.Position, as: 'position' }]
+                            },
+                            { model: db.EmployeeSignature, as: 'signature' }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          order: [
+            [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+            [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+          ]
+        });
+        
+        const mappedApprovals = approvals.map(a => {
+          const row = a.toJSON();
+        
+          const originalUser = row?.setting?.approver || null;
+          const latestOverride = row?.overrides?.[0] || null;
+          const overrideUser = latestOverride?.user || null;
+        
+          return {
+        
+            order: row?.setting?.order ?? null,
+            approver_id: originalUser?.id ?? null,
+            description: row.setting?.description,
+        
+            id: row.id,
+            status: row.status,
+            signed_at: row.signed_at,
+            is_overide: row.is_overide,
+        
+            original_approver_name: getEmployeeName(originalUser),
+            original_approver_position: getEmployeePosition(originalUser),
+            original_signature: getSignature(originalUser),
+        
+            override_name: overrideUser ? getEmployeeName(overrideUser) : null,
+            override_position: overrideUser ? getEmployeePosition(overrideUser) : null,
+            override_signature: overrideUser ? getSignature(overrideUser) : null,
+        
+            // optional: quick flag
+            is_overide: row.is_overide === true
+          };
+        });
+
+        // 3️⃣ Combine vacancy + approvals
+        const result = {
+            ...leave.toJSON(),
+            approvals: mappedApprovals
+        };
+
+        res.json({ result });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+exports.Approve = async (req, res) => {
+
+    const { 
+        id,
+        approverId: approvalid
+    } = req.params;
+
+    try {
+
+        // 1️⃣ Fetch the leave application
+        const leave = await db.EmployeeLeaveApplication.findByPk(id, {
+            include: [{ model: db.LeaveType, as: 'leaveType' }]
+        });
+
+        if (!leave) {
+            return res.status(404).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Record not found!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
+        }
+
+        // 2️⃣ Update the specific approval record
+        const approval = await db.Approval.findByPk(approvalid);
+        if (!approval) {
+            return res.status(404).json({ error: "Approval record not found!" });
+        }
+
+        await approval.update({ status: 'Approved', signed_at: new Date() });
+
+        const totalCount = await db.Approval.count({
+            include: [
+                {
+                    model: db.ApprovalSetting,
+                    as: 'setting',
+                    where: {
+                        type: 'Leave'
+                    }
+                }
+            ],
+            where: {
+                document_id: id,
+                is_active: true
+            }
+        });
+
+        const approvedCount = await db.Approval.count({
+            include: [
+                {
+                    model: db.ApprovalSetting,
+                    as: 'setting',
+                    where: {
+                        type: 'Leave'
+                    }
+                }
+            ],
+            where: {
+                document_id: id,
+                is_active: true,
+                status: 'Approved'
+            }
+        });
+
+        if (totalCount === approvedCount) {
+            await leave.update({ status: 'Approved' });
+
+            const holidays = await db.Holiday.findAll({
+                where: {
+                    date: { [Op.between]: [leave.date_from, leave.date_to] },
+                    isActive: true
+                }
+            });
+
+            const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
+
+            // 5️⃣ Compute leave days excluding weekends and holidays
+            const start = moment(leave.date_from);
+            const end = moment(leave.date_to);
+            let daysUsed = 0;
+
+            while (start.isSameOrBefore(end)) {
+                const dayOfWeek = start.day(); // 0 = Sunday, 6 = Saturday
+                const formatted = start.format('YYYY-MM-DD');
+
+                if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.includes(formatted)) {
+                    daysUsed += 1;
+                }
+
+                start.add(1, 'day');
+            }
+
+            // 6️⃣ Update EmployeeLeaveBalance
+            const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+                where: {
+                    employee_id: leave.employee_id,
+                    leave_type_id: leave.leave_type_id,
+                    is_active: true
+                }
+            });
+
+            if (!leaveBalance) {
+                return res.status(400).json({ error: "Leave balance not found for employee!" });
+            }
+
+            const newUsed = parseFloat(leaveBalance.used) + daysUsed;
+            const newBalance = parseFloat(leaveBalance.earned) - newUsed;
+
+            await leaveBalance.update({
+                used: newUsed,
+                balance: newBalance
+            });
+        }
+
+        res.status(201).json({
+            message: "Record Updated!"
+        });
+
+    } catch (error) {
+
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+exports.GenerateLeavePDF = async (req, res) => {
+
+    const { id } = req.params;
     let browser;
 
     try {
         // 1️ Get leave application
         const leaveApp = await db.EmployeeLeaveApplication.findOne({
             where: { 
-                control_no: controlno
+                id
             },
             include: [
                 {
@@ -418,13 +695,15 @@ exports.GenerateLeavePDF = async (req, res) => {
                             as: 'employment',
                             include: [
                                 { 
-                                    model: db.Department, 
-                                    as: 'department', 
-                                    attributes: ['name'] 
-                                },
-                                { 
                                     model: db.Position, 
-                                    as: 'position' 
+                                    as: 'position',
+                                    include: [
+                                        { 
+                                            model: db.Department, 
+                                            as: 'department', 
+                                            attributes: ['name'] 
+                                        },
+                                    ]
                                 }
                             ]
                         }
@@ -455,7 +734,7 @@ exports.GenerateLeavePDF = async (req, res) => {
             employee.suffix || ''
         ].join(' ').replace(/\s+/g, ' ').trim();
         
-        const departmentPosition = `${employment?.department?.name || ''} - ${employment?.position?.name || ''}`;
+        const departmentPosition = `${employment?.position?.department?.name || ''} - ${employment?.position?.name || ''}`;
         const contactNo = employee.contact_number || '';
 
         const dateFiled = moment(leaveApp.createdAt).format('MMMM DD, YYYY');
