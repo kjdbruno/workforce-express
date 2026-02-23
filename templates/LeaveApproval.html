@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Leave Approval Notification</title>
+        <title>Leave Application Notification</title>
     </head>
     <body style="margin:0; padding:0; background:#FFF1F1; font-family:Segoe UI, Arial, sans-serif; color:#333;">
         <div style="display:none; opacity:0;">Leave Application Update - Control No: {{ control_no }}</div>
@@ -38,7 +38,7 @@
                         </tr>
                         <tr>
                             <td style="padding:0 35px 20px 35px; font-size:16px; line-height:1.6;">
-                                Your leave application has been approved.
+                                This is to notify you of the status of your Leave Application.
                             </td>
                         </tr>
                         <tr>
@@ -47,6 +47,10 @@
                                     <tr>
                                         <td width="40%" style="padding:7px;"><strong>Leave Type:</strong></td>
                                         <td>{{ leavetype }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td width="40%" style="padding:7px;"><strong>Status:</strong></td>
+                                        <td>{{ status }}</td>
                                     </tr>
                                     <tr>
                                         <td style="padding:7px;"><strong>Date From:</strong></td>

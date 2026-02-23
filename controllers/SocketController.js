@@ -1163,6 +1163,7 @@ module.exports = (_io) => {
                     const control_no = leave?.control_no;
                     const firstname = employee?.first_name;
                     const leavetype = lt?.name;
+                    const status = leave?.status;
                     const from = moment(leave?.date_from).format('MMMM DD YYYY');
                     const to = moment(leave?.date_to).format('MMMM DD YYYY');
                     const lreason = leave?.reason;
@@ -1173,6 +1174,7 @@ module.exports = (_io) => {
                         .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
                         .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
                         .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                        .replace(/{{\s*status\s*}}/g, status || 'Status')
                         .replace(/{{\s*from\s*}}/g, from || 'Date From')
                         .replace(/{{\s*to\s*}}/g, to || 'Date To')
                         .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
@@ -1386,6 +1388,7 @@ module.exports = (_io) => {
                     const control_no = leave?.control_no;
                     const firstname = employee?.first_name;
                     const leavetype = lt?.name;
+                    const status = leave?.status;
                     const from = moment(leave?.date_from).format('MMMM DD YYYY');
                     const to = moment(leave?.date_to).format('MMMM DD YYYY');
                     const lreason = leave?.reason;
@@ -1396,6 +1399,7 @@ module.exports = (_io) => {
                         .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
                         .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
                         .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                        .replace(/{{\s*status\s*}}/g, status || 'Status')
                         .replace(/{{\s*from\s*}}/g, from || 'Date From')
                         .replace(/{{\s*to\s*}}/g, to || 'Date To')
                         .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
@@ -1425,7 +1429,172 @@ module.exports = (_io) => {
             }
         },
         CancelLeaveApplication: async (req, res) => {
-            
+            const { 
+                id 
+            } = req.params;
+        
+            const transaction = await db.sequelize.transaction();
+        
+            try {
+                const leave = await db.EmployeeLeaveApplication.findByPk(id, {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                });
+        
+                if (!leave) {
+                    await transaction.rollback();
+                    return res.status(500).json({
+                        errors: [
+                        {
+                            type: "field",
+                            value: id,
+                            msg: "Record not found!",
+                            path: "name",
+                            location: "body",
+                        },
+                        ],
+                    });
+                }
+        
+                // If already cancelled, just return OK (idempotent)
+                if (leave.status === "Cancelled") {
+                    await transaction.commit();
+                    return res.status(200).json({ message: "Record already cancelled." });
+                }
+        
+                // Only restore leave balance if it was previously Approved
+                if (leave.status === "Approved") {
+                    // Compute applied leave days (inclusive)
+                    // NOTE: This counts ALL calendar days. If you want to exclude weekends/holidays,
+                    // tell me your rules and we’ll adjust.
+                    const from = moment(leave.date_from, "YYYY-MM-DD", true);
+                    const to = moment(leave.date_to, "YYYY-MM-DD", true);
+        
+                    if (!from.isValid() || !to.isValid() || to.isBefore(from, "day")) {
+                        await transaction.rollback();
+                        return res.status(400).json({ error: "Invalid leave date range." });
+                    }
+        
+                    const appliedDays = to.diff(from, "days") + 1; // inclusive
+        
+                    // Get leave balance row (lock it to avoid race conditions)
+                    const bal = await db.EmployeeLeaveBalance.findOne({
+                        where: {
+                            employee_id: leave.employee_id,
+                            leave_type_id: leave.leave_type_id,
+                            is_active: true,
+                        },
+                        transaction,
+                        lock: transaction.LOCK.UPDATE,
+                    });
+        
+                    if (!bal) {
+                        await transaction.rollback();
+                            return res.status(400).json({
+                            error: "Leave balance record not found for this employee and leave type.",
+                        });
+                    }
+        
+                    const used = parseFloat(bal.used || 0);
+                    const balance = parseFloat(bal.balance || 0);
+        
+                    // Restore: used goes down, balance goes up
+                    // Guard: used should not go negative even if data is inconsistent
+                    const newUsed = Math.max(0, used - appliedDays);
+                    const newBalance = balance + appliedDays;
+        
+                    await bal.update(
+                        {
+                            used: newUsed,
+                            balance: newBalance,
+                        },
+                        { transaction }
+                    );
+                }
+        
+                // Finally cancel the leave application
+                await leave.update(
+                    {
+                        status: "Cancelled",
+                    },
+                    { transaction }
+                );
+
+                /**
+                 * Send Notification
+                 */
+                const employeeid = leave.employee_id;
+                const accounts = await db.EmployeeAccount.findOne({
+                    where: {
+                        employee_id: employeeid
+                    }
+                });
+                await db.Notification.create({
+                    sender_id: req.user?.id,
+                    receiver_id: accounts?.user_id,
+                    content: `Leave application with control number: ${leave.control_no} has been approved.`,
+                    status: 'unread'
+                });
+                const [notificationCount, notifications] = await Promise.all([
+                    db.Notification.count({
+                        where: { receiver_id: accounts?.user_id, status: 'unread' }
+                    }),
+                    db.Notification.findAll({
+                        where: { receiver_id: accounts?.user_id, status: 'unread' },
+                        order: [['createdAt', 'DESC']]
+                    })
+                ]);
+                io.to(`user:${accounts?.user_id}`).emit('EmitNotifications', {
+                    notifications,
+                    count: notificationCount,
+                });
+                /**
+                 * send email
+                 */
+                const lt = await db.LeaveType.findByPk(leave.leave_type_id)
+                const employee = await db.Employee.findByPk(leave.employee_id);
+                const mail = employee?.email;
+                const control_no = leave?.control_no;
+                const firstname = employee?.first_name;
+                const leavetype = lt?.name;
+                const status = leave?.status;
+                const from = moment(leave?.date_from).format('MMMM DD YYYY');
+                const to = moment(leave?.date_to).format('MMMM DD YYYY');
+                const lreason = leave?.reason;
+                try {
+                    const templatePath = path.join(__dirname, '../templates/LeaveApproval.html');
+                    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+                    htmlContent = htmlContent
+                    .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+                    .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                    .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                    .replace(/{{\s*status\s*}}/g, status || 'Status')
+                    .replace(/{{\s*from\s*}}/g, from || 'Date From')
+                    .replace(/{{\s*to\s*}}/g, to || 'Date To')
+                    .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
+
+                    await transporter.sendMail({
+                        from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                        to: mail,
+                        subject: 'Leave Appoval',
+                        html: htmlContent,
+                    });
+                } catch (emailError) {
+                    console.error('Email sending failed:', emailError.message);
+                }
+        
+                await transaction.commit();
+        
+                return res.status(200).json({
+                    message:
+                        leave.status === "Approved"
+                        ? "Record Cancelled! Leave balance restored."
+                        : "Record Cancelled!",
+                });
+            } catch (error) {
+                await transaction.rollback();
+                return res.status(500).json({ error: error.message });
+            }
         }
     };
 };
