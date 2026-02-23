@@ -1,0 +1,442 @@
+html
+    head
+        title= ID
+        style.
+            * {
+                font-family: Century Gothic, CenturyGothic, AppleGothic, sans-serif;
+                color: #262626;
+            }
+            body {
+                padding: 0px !important;
+                margin: 0px !important;
+            }
+            .empty-page {
+                page-break-after: always;
+                visibility: hidden;
+            }
+            .table, .table td, .table th {
+                border: 1px solid;
+                font-size: .90em;
+            }
+
+            .table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+    body
+        div
+            div(style="text-align: center;")
+                img(style='width: 75px; height: auto;' src= seal)
+                div(style="font-size: 1em; font-weight: bold; text-transform: uppercase; margin-top: 5px;") help us serve you better!
+            div(style="font-size: .85em; margin-top: 10px; text-align: justify;") This Client Satisfaction Measurement (CSM) tracks the customer experience of government offices. Your feedback on your recently conducted transaction will help this office provide a better service. Personal information shared will be kept confidential and you always have the option to not answer this form.
+            div(style="margin-top: 10px;")
+                table(style="width: 100%;")
+                    tr
+                        td(colspan="3")
+                            div
+                                span(style="font-size: .85em; text-transform: uppercase; font-weight: bold; margin-right: 5px;") Client Type:
+                                input(type="checkbox" id="citizen" name="client_type" value="citizen" checked=type === 'citizen')
+                                label(for="citizen") Citizen
+
+                                input(type="checkbox" id="business" name="client_type" value="business" checked=type === 'business')
+                                label(for="business") Business
+
+                                input(type="checkbox" id="government" name="client_type" value="government" checked=type === 'government')
+                                label(for="government") Government 
+                    tr
+                        td(style="width: 40%")
+                            div
+                                span(style="font-size: .85em; font-weight: bold; margin-right: 5px; text-transform: uppercase; margin-right: 5px;") date:
+                                span(style="font-size: .85em; text-transform: uppercase; margin-right: 5px;")= date
+                        td(style="width: 40%")
+                            div
+                                span(style="font-size: .85em; font-weight: bold; margin-right: 5px; text-transform: uppercase; margin-right: 5px;") sex:
+                                input(type="checkbox" id="male" name="sex" value="1" checked=sex === 1)
+                                label(for="male") Male
+
+                                input(type="checkbox" id="female" name="sex" value="2" checked=sex === 2)
+                                label(for="female") Female
+                        td(style="width: 20%")
+                            div
+                                span(style="font-size: .85em; font-weight: bold; margin-right: 5px; text-transform: uppercase; margin-right: 5px;") age:
+                                span(style="font-size: .85em; text-transform: uppercase; margin-right: 5px;")= age
+                    tr
+                        td(colspan="3")
+                            div
+                                span(style="font-size: .85em; font-weight: bold; margin-right: 5px; text-transform: uppercase; margin-right: 5px;") residence:
+                                span(style="font-size: .85em; text-transform: uppercase; margin-right: 5px;")= residence
+                    tr
+                        td(colspan="3")
+                            div
+                                span(style="font-size: .85em; font-weight: bold; margin-right: 5px; text-transform: uppercase; margin-right: 5px;") service availed:
+                                span(style="font-size: .85em; text-transform: uppercase; margin-right: 5px;")= serviceAvailed
+            hr
+            div(style="margin-top: 10px;")
+                div(style="text-align: justify; ")
+                    span(style="font-size: .85em; font-weight: bold; text-transform: uppercase;") instructions:&nbsp;
+                    span(style="font-size: .85em; font-weight: bold;") Check mark&nbsp;
+                    span(style="font-size: .85em; ") your answer to the Citizen's Charter (CC) questions. The Citizen's Charter is an official document that reflects the services of a government agency/office including it requirements, fees, and processing times among others.
+            div(style="margin-top: 10px;")
+                div(style="text-align: justify; font-size: .85em;") Which of the following best describes your awareness of the Citizen's Charter?
+                div
+                    div
+                        input(type="checkbox" id="1" name="1" value="1" checked=cc1 == 1)
+                        label(for="1")(style="font-size: .85em;") I know what a Citizen's Charter is and I saw this office's Citizen's Charter.
+                    div
+                        input(type="checkbox" id="2" name="2" value="2" checked=cc1 == 2)
+                        label(for="2")(style="font-size: .85em;") I know what a Citizen's Charter is but I did NOT see this office's Citizen's Charter.
+                    div
+                        input(type="checkbox" id="3" name="3" value="3" checked=cc1 == 3)
+                        label(for="3")(style="font-size: .85em;") I learned og the Citizen's Charter only when I saw this office's Citizen's Charter.
+                    div
+                        input(type="checkbox" id="4" name="4" value="4" checked=cc1 == 4)
+                        label(for="4")(style="font-size: .85em;") I do not know what Citizen's Charter is and I did not see in this office.
+
+            div(style="margin-top: 10px;")
+                div(style="text-align: justify; font-size: .85em;") If aware of the Citizen's Charter, would you say that the Citizen's Charter of this office was?
+                div
+                    div
+                        input(type="checkbox" id="1" name="1" value="1" checked=cc2 == 1)
+                        label(for="1")(style="font-size: .85em;") Easy to see
+                    div
+                        input(type="checkbox" id="2" name="2" value="2" checked=cc2 == 2)
+                        label(for="2")(style="font-size: .85em;") Somewhat easy to see
+                    div
+                        input(type="checkbox" id="3" name="3" value="3" checked=cc2 == 3)
+                        label(for="3")(style="font-size: .85em;") Difficult to see
+                    div
+                        input(type="checkbox" id="4" name="4" value="4" checked=cc2 == 4)
+                        label(for="4")(style="font-size: .85em;") Not visible at all
+                    div
+                        input(type="checkbox" id="5" name="5" value="5" checked=cc2 == 5)
+                        label(for="5")(style="font-size: .85em;") Not applicable
+            div(style="margin-top: 10px;")
+                div(style="text-align: justify; font-size: .85em;") If aware of the Citizen's Charter, how much did the Citizen's Charter help you in your transaction?
+                div
+                    div
+                        input(type="checkbox" id="1" name="1" value="1" checked=cc3 == 1)
+                        label(for="1")(style="font-size: .85em;") Helped very much
+                    div
+                        input(type="checkbox" id="2" name="2" value="2" checked=cc3 == 2)
+                        label(for="2")(style="font-size: .85em;") Somewhat helped
+                    div
+                        input(type="checkbox" id="3" name="3" value="3" checked=cc3 == 3)
+                        label(for="3")(style="font-size: .85em;") Did not help
+                    div
+                        input(type="checkbox" id="5" name="5" value="5" checked=cc3 == 4)
+                        label(for="5")(style="font-size: .85em;") Not applicable
+        .empty-page
+        div(style="margin-top: 10px;")
+                div(style="text-align: justify; ")
+                    span(style="font-size: .85em; font-weight: bold; text-transform: uppercase;") instructions:&nbsp;
+                    span(style="font-size: .85em; ") For Service Quality Dimension (SQD) 0-8, please put a check mark on the column that best corresponds to your answer.
+        div(style="margin-top: 10px;")
+            table.table 
+                tr
+                    td(rowspan="2", style="width: 40%")
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div(style="font-size: 30px") &#128551;
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div(style="font-size: 30px") &#128542;
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div(style="font-size: 30px") &#128528;
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div(style="font-size: 30px") &#128522;
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div(style="font-size: 30px") &#128515;
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div(style="font-size: 30px") n/a
+                tr
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div strongly disagree
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div disagree
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div neither agree or disagree
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div agree
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div strongly agree
+                    td(style="width: 10%")
+                        div(style="font-size: .85em; text-transform: uppercase; text-align: center;") 
+                            div not applicable
+                tr
+                    td(style="width: 40%;")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd0.&nbsp;
+                            span I am satisfied with the service that I availed
+                    td(style="width: 10%")
+                        if sqd0 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd0 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd0 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd0 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd0 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd0 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd1.&nbsp;
+                            span I spent a reasonable amount of time for my transaction
+                    td(style="width: 10%")
+                        if sqd1 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd1 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd1 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd1 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd1 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd1 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd2.&nbsp;
+                            span The office followed the transaction's requirements and steps based on the information provided
+                    td(style="width: 10%")
+                        if sqd2 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd2 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd2 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd2 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd2 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd2 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd3.&nbsp;
+                            span The steps (including payment) I needed to do for my transaction were easy and simple
+                    td(style="width: 10%")
+                        if sqd3 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd3 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd3 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd3 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd3 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd3 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd4.&nbsp;
+                            span I easily found information about my transaction from the office or its website
+                    td(style="width: 10%")
+                        if sqd4 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd4 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd4 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd4 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd4 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd4 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd5.&nbsp;
+                            span I paid a reasonable amount of fees for my transaction
+                    td(style="width: 10%")
+                        if sqd5 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd5 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd5 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd5 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd5 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd5 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd6.&nbsp;
+                            span I feel the office was fair to everyone, or "walang palakasan", during my transaction
+                    td(style="width: 10%")
+                        if sqd6 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd6 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd6 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd6 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd6 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd6 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd7.&nbsp;
+                            span I was treated courteously by the staff, and (if asked for help) the staff was helpful
+                    td(style="width: 10%")
+                        if sqd7 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd7 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd7 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd7 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd7 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd7 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                tr
+                    td(style="width: 40%")
+                        div
+                            span(style="font-weight: bold; text-transform: uppercase;") sqd8.&nbsp;
+                            span I got what I needed from the government office, or (if denied) denial of request was sufficiently explained to me
+                    td(style="width: 10%")
+                        if sqd8 == 1
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd8 == 2
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd8 == 3
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd8 == 4
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd8 == 5
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+                    td(style="width: 10%")
+                        if sqd8 == 0
+                            div(style="text-transform: uppercase; text-align: center;") 
+                                div(style="font-size: 20px") &#10004;
+        div(style="margin-top: 10px;")
+            div Suggestion on how we can further improve our services.
+            div(style="text-decoration: underline; width: 100%;")= suggestion
+        div(style="margin-top: 25px;")
+            div Email address: 
+                span(style="text-decoration: underline;")= email
+        div(style="margin-top: 25px; text-transform: uppercase; font-weight: bold; text-align: center;") thank you for your feedback!
+                

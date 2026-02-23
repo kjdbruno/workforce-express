@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "ncc build src/index.js -o dist -m --no-source-map --asset-base-url ./ --copy-files --target node --external sequelize --external pg --external pg-hstore --asset-base-url ./dist",
-    "build-with-models": "ncc build src/app.js -o dist -m --no-source-map --asset-base-url ./ --copy-files --target node",
+    "build": "ncc build server.js -o dist",
+    "build-with-models": "ncc build src/server.js -o dist -m --target node",
     "start": "node dist/index.js",
     "dev": "nodemon server.js"
   },
