@@ -1150,12 +1150,42 @@ module.exports = (_io) => {
                             order: [['createdAt', 'DESC']]
                         })
                     ]);
-
-                    // ✅ send ONLY to this user
                     io.to(`user:${accounts?.user_id}`).emit('EmitNotifications', {
                         notifications,
                         count: notificationCount,
                     });
+                    /**
+                     * send email
+                     */
+                    const lt = await db.LeaveType.findByPk(leave.leave_type_id)
+                    const employee = await db.Employee.findByPk(leave.employee_id);
+                    const mail = employee?.email;
+                    const control_no = leave?.control_no;
+                    const firstname = employee?.first_name;
+                    const leavetype = lt?.name;
+                    const from = moment(leave?.date_from).format('MMMM DD YYYY');
+                    const to = moment(leave?.date_to).format('MMMM DD YYYY');
+                    const lreason = leave?.reason;
+                    try {
+                        const templatePath = path.join(__dirname, '../templates/LeaveApproval.html');
+                        let htmlContent = fs.readFileSync(templatePath, 'utf8');
+                        htmlContent = htmlContent
+                        .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+                        .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                        .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                        .replace(/{{\s*from\s*}}/g, from || 'Date From')
+                        .replace(/{{\s*to\s*}}/g, to || 'Date To')
+                        .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
+
+                        await transporter.sendMail({
+                            from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                            to: mail,
+                            subject: 'Leave Appoval',
+                            html: htmlContent,
+                        });
+                    } catch (emailError) {
+                        console.error('Email sending failed:', emailError.message);
+                    }
                 }
         
                 res.status(201).json({
@@ -1171,6 +1201,230 @@ module.exports = (_io) => {
             }
         },
         OverideLeaveApplication: async (req, res) => {
+            const id = parseInt(req.params.id, 10);
+            const { signatories } = req.body; // [2, 3]
+        
+            const transaction = await sequelize.transaction();
+        
+            try {
+                // ---- validate payload ----
+                if (!Array.isArray(signatories) || signatories.length === 0) {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        message: 'No signatories provided'
+                    });
+                }
+        
+                const approvalIds = [...new Set(
+                    signatories
+                        .map(id => Number(id))
+                        .filter(id => Number.isInteger(id) && id > 0)
+                )];
+        
+                if (approvalIds.length === 0) {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        message: 'Invalid signatories payload'
+                    });
+                }
+        
+                // ---- fetch approvals (must belong to same document) ----
+                const approvals = await db.Approval.findAll({
+                    where: {
+                        id: approvalIds,
+                        is_active: true
+                    },
+                    transaction
+                });
+        
+                if (approvals.length === 0) {
+                    await transaction.rollback();
+                    return res.status(404).json({
+                        message: 'No approvals found to override'
+                    });
+                }
+        
+                // ---- update approvals as overridden ----
+                await db.Approval.update(
+                    {
+                        status: 'Approved',
+                        is_overide: true,
+                        signed_at: new Date()
+                    },
+                    {
+                        where: { id: approvalIds }
+                    }
+                );
+        
+                // ---- save override history ----
+                await db.ApprovalOveride.bulkCreate(
+                    approvalIds.map(id => ({
+                        approval_id: id,
+                        user_id: req.user.id
+                    }))
+                );
+        
+                const leave = await db.EmployeeLeaveApplication.findByPk(id);
+        
+                const totalCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'Leave'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true
+                    }
+                });
+        
+                const approvedCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'Leave'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true,
+                        status: 'Approved'
+                    }
+                });
+        
+                // 4️⃣ If all approvals done, approve vacancy + approve position
+                if (totalCount === approvedCount) {
+                    await leave.update({ status: 'Approved' });
+        
+                    const holidays = await db.Holiday.findAll({
+                        where: {
+                            date: { [Op.between]: [leave.date_from, leave.date_to] },
+                            isActive: true
+                        }
+                    });
+        
+                    const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
+        
+                    // 5️⃣ Compute leave days excluding weekends and holidays
+                    const start = moment(leave.date_from);
+                    const end = moment(leave.date_to);
+                    let daysUsed = 0;
+        
+                    while (start.isSameOrBefore(end)) {
+                        const dayOfWeek = start.day(); // 0 = Sunday, 6 = Saturday
+                        const formatted = start.format('YYYY-MM-DD');
+        
+                        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.includes(formatted)) {
+                            daysUsed += 1;
+                        }
+        
+                        start.add(1, 'day');
+                    }
+        
+                    // 6️⃣ Update EmployeeLeaveBalance
+                    const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+                        where: {
+                            employee_id: leave.employee_id,
+                            leave_type_id: leave.leave_type_id,
+                            is_active: true
+                        }
+                    });
+        
+                    if (!leaveBalance) {
+                        return res.status(400).json({ error: "Leave balance not found for employee!" });
+                    }
+        
+                    const newUsed = parseFloat(leaveBalance.used) + daysUsed;
+                    const newBalance = parseFloat(leaveBalance.earned) - newUsed;
+        
+                    await leaveBalance.update({
+                        used: newUsed,
+                        balance: newBalance
+                    });
+
+                    /**
+                     * Send Notification
+                     */
+                    const employeeid = leave.employee_id;
+                    const accounts = await db.EmployeeAccount.findOne({
+                        where: {
+                            employee_id: employeeid
+                        }
+                    });
+                    await db.Notification.create({
+                        sender_id: req.user?.id,
+                        receiver_id: accounts?.user_id,
+                        content: `Leave application with control number: ${leave.control_no} has been approved.`,
+                        status: 'unread'
+                    });
+                    const [notificationCount, notifications] = await Promise.all([
+                        db.Notification.count({
+                            where: { receiver_id: accounts?.user_id, status: 'unread' }
+                        }),
+                        db.Notification.findAll({
+                            where: { receiver_id: accounts?.user_id, status: 'unread' },
+                            order: [['createdAt', 'DESC']]
+                        })
+                    ]);
+                    io.to(`user:${accounts?.user_id}`).emit('EmitNotifications', {
+                        notifications,
+                        count: notificationCount,
+                    });
+                    /**
+                     * send email
+                     */
+                    const lt = await db.LeaveType.findByPk(leave.leave_type_id)
+                    const employee = await db.Employee.findByPk(leave.employee_id);
+                    const mail = employee?.email;
+                    const control_no = leave?.control_no;
+                    const firstname = employee?.first_name;
+                    const leavetype = lt?.name;
+                    const from = moment(leave?.date_from).format('MMMM DD YYYY');
+                    const to = moment(leave?.date_to).format('MMMM DD YYYY');
+                    const lreason = leave?.reason;
+                    try {
+                        const templatePath = path.join(__dirname, '../templates/LeaveApproval.html');
+                        let htmlContent = fs.readFileSync(templatePath, 'utf8');
+                        htmlContent = htmlContent
+                        .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+                        .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                        .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                        .replace(/{{\s*from\s*}}/g, from || 'Date From')
+                        .replace(/{{\s*to\s*}}/g, to || 'Date To')
+                        .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
+
+                        await transporter.sendMail({
+                            from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                            to: mail,
+                            subject: 'Leave Appoval',
+                            html: htmlContent,
+                        });
+                    } catch (emailError) {
+                        console.error('Email sending failed:', emailError.message);
+                    }
+                       
+                }
+        
+                return res.status(200).json({
+                    message: 'Approval overridden successfully'
+                });
+        
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({
+                message: 'Failed to override approval',
+                error: error.message
+                });
+            }
+        },
+        CancelLeaveApplication: async (req, res) => {
             
         }
     };

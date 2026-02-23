@@ -18,7 +18,7 @@ module.exports = (SocketController) => {
     // leave routes
     router.post('/leave/create', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.CreateLeaveApplication);
     router.post('/leave/:id/approve', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.ApproveLeaveApplication);
-    router.post('/leave/:id/overide', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.ApproveLeaveApplication);
+    router.post('/leave/:id/overide', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.OverideLeaveApplication);
 
     return router;
 };
