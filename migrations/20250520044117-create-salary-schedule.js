@@ -51,6 +51,10 @@ module.exports = {
          * GOVT = Government Mandated Increase
          */
       },
+      employment_status: {
+        type: Sequelize.ENUM('Regular', 'Probationary', 'Contractual', 'Temporary', 'Intern'),
+        allowNull: false
+      },
       effective_date: {
         type: Sequelize.DATEONLY,
         allowNull: false

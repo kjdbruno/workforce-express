@@ -73,6 +73,10 @@ module.exports = (sequelize, DataTypes) => {
        * GOVT = Government Mandated Increase
        */
     },
+    employment_status: {
+      type: DataTypes.ENUM('Regular', 'Probationary', 'Contractual', 'Temporary', 'Intern'),
+      allowNull: false
+    },
     effective_date: {
       type: DataTypes.DATEONLY,
       allowNull: false

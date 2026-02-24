@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     image_file: {
-      type: DataTypes.TEXT('long'),
+      type: DataTypes.BLOB('long'),
       allowNull: false
     },
     is_active: {

@@ -24,7 +24,7 @@ module.exports = {
         allowNull: false
       },
       document: {
-        type: Sequelize.STRING,
+        type: Sequelize.BLOB('long'),
         allowNull: false
       },
       is_active: {

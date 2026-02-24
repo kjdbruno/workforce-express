@@ -556,12 +556,12 @@ exports.GetEmployeeRecord = async (req, res) => {
 
   try {
         const rows = await db.Employee.findOne({
-        where: { id },
-        include: [
-            { model: db.Employment, as: 'employment', include: [{ model: db.Position, as: 'position' }] },
-            { model: db.EmployeePhoto, as: 'photo', attributes: ['filename', 'avatar'] }
-        ]
-    });
+            where: { id },
+            include: [
+                { model: db.Employment, as: 'employment', include: [{ model: db.Position, as: 'position' }] },
+                { model: db.EmployeePhoto, as: 'photo', attributes: ['filename', 'avatar'] }
+            ]
+        });
 
     if (!rows) return res.status(404).json({ error: 'Employee not found' });
 
@@ -573,6 +573,9 @@ exports.GetEmployeeRecord = async (req, res) => {
         middle_name: rows.middle_name,
         last_name: rows.last_name,
         suffix: rows.suffix,
+        email: rows.email,
+        contact_number: rows.contact_number,
+        address: rows.address,
         employment: rows.employment,
         photo: `data:${mime};base64,${rows.photo.avatar.toString("base64")}`
     };
@@ -655,63 +658,121 @@ exports.UpdateEmployee = async (req, res) => {
 /**
  * Employment
  */
+function getNextWeekday(date = new Date()) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + 1);
+
+    // 0 = Sunday, 6 = Saturday
+    if (next.getDay() === 6) {
+        // Saturday → add 2 days (Monday)
+        next.setDate(next.getDate() + 2);
+    } else if (next.getDay() === 0) {
+        // Sunday → add 1 day (Monday)
+        next.setDate(next.getDate() + 1);
+    }
+
+    return next.toISOString().slice(0, 10); // YYYY-MM-DD
+}
 exports.UpdateEmployment = async (req, res) => {
+  const { id } = req.params;
+  const transaction = await sequelize.transaction();
 
-    const { 
-        id 
-    } = req.params;
+  const {
+    employeeNo,
+    dateHired,
+    employmentstatus,
+    tin,
+    sssNo,
+    philhealthNo,
+    pagibigNo
+  } = req.body;
 
-    const transaction = await sequelize.transaction();
+  try {
+    const employment = await db.Employment.findByPk(id, { transaction });
+    if (!employment) {
+      await transaction.rollback();
+      return res.status(500).json({
+        errors: [{
+          type: "field",
+          value: employeeNo,
+          msg: "Record not found!",
+          path: "employeeNo",
+          location: "body",
+        }],
+      });
+    }
 
-    const {
-        employeeNo,
-        dateHired,
-        employmentstatus,
-        tin,
-        sssNo,
-        philhealthNo,
-        pagibigNo
-    } = req.body;
+    const employeeId = employment.employee_id;
+    const prevEmploymentStatus = employment.employment_status;
 
-    try {
+    const isEmploymentStatusChanged =
+      String(prevEmploymentStatus || "") !== String(employmentstatus || "");
 
-        const employment = await db.Employment.findByPk(id);
-        if (!employment) {
-            return res.status(500).json({
-                errors: [{
-                    type: "field",
-                    value: employeeNo,
-                    msg: "Record not found!",
-                    path: "employeeNo",
-                    location: "body",
-                }],
-            });
-        }
+    await employment.update({
+      employee_no: employeeNo,
+      date_hired: dateHired,
+      employment_status: employmentstatus,
+      tin,
+      sss_no: sssNo,
+      philhealth_no: philhealthNo,
+      pagibig_no: pagibigNo
+    }, { transaction });
 
-        await employment.update({ 
-            employee_no: employeeNo,
-            date_hired: dateHired,
-            employment_status: employmentstatus,
-            tin,
-            sss_no: sssNo,
-            philhealth_no: philhealthNo,
-            pagibig_no: pagibigNo
+    if (isEmploymentStatusChanged) {
+
+      const latestBase = await db.SalarySchedule.findOne({
+        where: {
+          employee_id: employeeId,
+          is_premium: false,
+          is_active: true
+        },
+        order: [
+          ["effective_date", "DESC"],
+          ["createdAt", "DESC"]
+        ],
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+
+      if (latestBase) {
+
+        const newEffectiveDate = getNextWeekday(); // ✅ automatic
+
+        // Close previous schedule
+        await latestBase.update({
+          is_active: false,
+          end_date: newEffectiveDate
         }, { transaction });
 
-        await transaction.commit();
-
-        res.status(201).json({
-            message: "Record Saved!"
-        });
-
-    } catch (error) {
-
-        await transaction.rollback();
-        res.status(500).json({ 
-            error: error.message 
-        });
-
+        // Duplicate schedule
+        await db.SalarySchedule.create({
+          employee_id: latestBase.employee_id,
+          position_id: latestBase.position_id,
+          amount: latestBase.amount,
+          salary_type: latestBase.salary_type,
+          salary_group: latestBase.salary_group,
+          employment_status: employmentstatus,
+          effective_date: newEffectiveDate,
+          end_date: null,
+          notes: `Auto-generated due to Employment status change: ${prevEmploymentStatus} → ${employmentstatus}`,
+          is_premium: false,
+          is_active: true
+        }, { transaction });
+      }
     }
+
+    await transaction.commit();
+
+    return res.status(201).json({
+      message: "Record Saved!"
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).json({
+      error: error.message
+    });
+  }
 };
 /**
  * Employment
@@ -729,6 +790,7 @@ exports.CreateSalary = async (req, res) => {
         datestart, 
         dateend, 
         salarygroup, 
+        employmentstatus,
         amount, 
         salarytype, 
         notes,
@@ -814,6 +876,7 @@ exports.CreateSalary = async (req, res) => {
             amount: Number(String(amount).replace(/,/g, '')),
             salary_type: salarytype,
             salary_group: salarygroup,
+            employment_status: employmentstatus,
             effective_date: datestart,
             end_date: parsedEndDate,
             notes: notes ?? '',
@@ -823,7 +886,8 @@ exports.CreateSalary = async (req, res) => {
 
         await employment.update({
             tax_status: taxstatus,
-            payroll_group: payrollgroup
+            payroll_group: payrollgroup,
+            employment_status: employmentstatus,
         }, { transaction })
 
         await transaction.commit();
@@ -1254,23 +1318,12 @@ exports.GetSignature = async (req, res) => {
             }
         });
 
-        const record = rows.get({ plain: true });
-
-        if (record && record.signature) {
-            const filePath = path.join(__dirname, '..', 'public', record.signature);
-
-            if (fs.existsSync(filePath)) {
-                const ext = path.extname(filePath).toLowerCase();
-                const mime =
-                ext === '.png' ? 'image/png' :
-                ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-                ext === '.webp' ? 'image/webp' :
-                'application/octet-stream';
-
-                const base64 = fs.readFileSync(filePath).toString('base64');
-                record.signature = `data:${mime};base64,${base64}`;
-            }
-        }
+        const mime = "image/png";
+        // ✅ map only what you want
+        const record = {
+            id: rows.id,
+            signature: `data:${mime};base64,${rows.signature.toString("base64")}`
+        };
 
         res.json({
             record
@@ -1292,34 +1345,20 @@ exports.CreateSignature = async (req, res) => {
     
     try {
 
-        const file = req.file;
-        const filePath = `/uploads/signature/${file.filename}`; // public URL path (served from /public)
-
         const exist = await db.EmployeeSignature.findOne({
             where: { 
                 employee_id: id 
             },
         });
 
-        // If you want to delete the previous physical file
-        if (exist?.signature) {
-            const oldRel = exist.signature.replace("/uploads/signature/", "");
-            const oldAbs = path.join(__dirname, "../public/uploads/signature", oldRel);
-
-            // delete old file if exists
-            if (fs.existsSync(oldAbs)) {
-                fs.unlinkSync(oldAbs);
-            }
-        }
-
         if (exist) {
             await exist.update({
-                signature: filePath,
+                signature: req.signatureBlob,
             }, { transaction });
         } else {
             await db.EmployeeSignature.create({
                 employee_id: id,
-                signature: filePath,
+                signature: req.signatureBlob,
             }, { transaction });
         }
 
@@ -1348,35 +1387,48 @@ exports.CreateSignature = async (req, res) => {
  */
 exports.CreateBiometric = async (req, res) => {
     const { id } = req.params;
-        const { descriptor, imageBase64 } = req.body;
+    const { descriptor, imageBase64 } = req.body;
+
     try {
 
+        if (!imageBase64) {
+        return res.status(400).json({ message: "Image is required." });
+        }
+
+        // Remove data:image/...;base64, prefix if exists
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+        // Convert Base64 string to Buffer (BLOB)
+        const imageBuffer = Buffer.from(base64Data, "base64");
+
         const face = await db.EmployeeFace.findOne({
-            where: { employee_id: id }
+            where: { 
+                employee_id: id 
+            }
         });
 
         if (face) {
             await face.update({
                 descriptor: JSON.stringify(descriptor),
-                image_file: imageBase64
-            }) 
+                image_file: imageBuffer,   // ✅ SAVE AS BLOB
+            });
         } else {
             await db.EmployeeFace.create({
                 employee_id: id,
                 descriptor: JSON.stringify(descriptor),
-                image_file: imageBase64
-            })
+                image_file: imageBuffer,   // ✅ SAVE AS BLOB
+            });
         }
 
         return res.status(201).json({
-        message: 'Record Saved!'
-        })
+            message: "Record Saved!",
+        });
 
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ error: error.message })
+        console.error(error);
+        res.status(500).json({ error: error.message });
     }
-}
+};
 /**
  * Face Recognition
  */
@@ -1874,21 +1926,30 @@ exports.CreateDocument = async (req, res) => {
         const files = req.files || [];
 
         if (!files.length) {
-        return res.status(400).json({ error: "No files uploaded." });
+            return res.status(400).json({ error: "No files uploaded." });
+        }
+
+        const indexToDocumentId = {};
+        for (const [key, value] of Object.entries(req.body || {})) {
+            const match = key.match(/^documents\[(\d+)\]\[documentId\]$/);
+            if (match) {
+                const idx = match[1];
+                indexToDocumentId[idx] = value;
+            }
         }
 
         for (const file of files) {
-            const filePath = `/uploads/documents/${file.filename}`;
-
+            const match = file.fieldname.match(/^documents\[(\d+)\]\[file\]$/);
+            if (!match) continue;
             await db.EmployeeDocument.create({
                 employee_id: id,
-                document: filePath,
+                document: file.buffer,
                 filename: file.originalname,
             });
         }
 
         return res.status(201).json({
-        message: "Record Saved!"
+            message: "Record Saved!"
         });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -1896,35 +1957,37 @@ exports.CreateDocument = async (req, res) => {
 };
 
 exports.GenerateDocument = async (req, res) => {
-    const {id} = req.params; // ✅ use req.params.id
+    const { 
+        id 
+    } = req.params;
 
     try {
-        // Example: get latest active document for employee
         const doc = await db.EmployeeDocument.findOne({
-        where: {
-            id,
-            is_active: true
-        },
-        order: [['createdAt', 'DESC']]
+            where: {
+                id,
+                is_active: true
+            },
+            order: [['createdAt', 'DESC']]
         });
 
         if (!doc) {
-            return res.status(404).json({ error: 'No active document found' });
+            return res.status(404).json({ error: "No active document found" });
         }
 
-        // Adjust this field name to your DB column:
-        // e.g. doc.file_path = "documents/employee/leave-123.pdf"
-        const filePath = path.join(__dirname, '..', 'public', doc.document);
-
-        if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'PDF file not found on server', file: safeRel });
+        if (!doc.document) {
+            return res.status(404).json({ error: "Document file is empty" });
         }
 
-        // ✅ Stream PDF to client
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
+        // Set correct headers
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `inline; filename="${doc.filename || "document.pdf"}"`
+        );
 
-        return fs.createReadStream(filePath).pipe(res);
+        // ✅ Send BLOB directly
+        return res.send(doc.document);
+
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }

@@ -406,7 +406,7 @@ const mappedApprovals = approvals.map(a => {
             ...vacancy.toJSON(),
             approvals: mappedApprovals
         };
-console.log(mappedApprovals)
+
         res.json({ data: result });
 
     } catch (error) {
@@ -436,20 +436,9 @@ const getEmployeeName = (user) => {
 };
 
 const getSignature = (user) => {
-  // return the whole signature object or just a field like signature.image/signature_path
-  const sign = user?.employeeAccount?.employee?.signature;
-  const filePath = path.join(__dirname, '..', 'public', sign.signature);
-    if (fs.existsSync(filePath)) {
-        const ext = path.extname(filePath).toLowerCase();
-        const mime =
-        ext === '.png' ? 'image/png' :
-        ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-        ext === '.webp' ? 'image/webp' :
-        'application/octet-stream';
-
-        const base64 = fs.readFileSync(filePath).toString('base64');
-        return `data:${mime};base64,${base64}`;
-    }
+    const mime = "image/png";
+    const sign = user?.employeeAccount?.employee?.signature;
+    return `data:${mime};base64,${sign.signature.toString("base64")}`
 };
 
 const getEmployeePosition = (user) => {
@@ -1078,7 +1067,7 @@ exports.GeneratePDF = async (req, res) => {
                 description: row.setting?.description,
                 approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
                 position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
-                signature: row.is_overide ? 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(overrideUser).signature}`)).toString('base64') : 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(originalUser).signature}`)).toString('base64'),
+                signature: row.is_overide ? getSignature(overrideUser) : getSignature(originalUser),
                 date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
                 isSigned: isApproved,
                 isOveride: row.is_overide

@@ -121,6 +121,7 @@ exports.GenerateServicePDF = async (req, res) => {
                         'amount',
                         'salary_type',
                         'salary_group',
+                        'employment_status',
                         'effective_date',
                         'end_date'
                     ],
@@ -150,7 +151,7 @@ exports.GenerateServicePDF = async (req, res) => {
         const result = sortedSalaries.map(salary => ({
             position: salary?.position?.name || null,
             salary: salary.amount,
-            employment_status: employee.employment?.employment_status,
+            employment_status: salary?.employment_status,
             start_date: salary.effective_date,
             end_date: salary.end_date,
             salary_type: salary.salary_type,

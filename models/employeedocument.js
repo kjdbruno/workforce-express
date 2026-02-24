@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     document: {
-      type: DataTypes.STRING,
+      type: DataTypes.BLOB('long'),
       allowNull: false
     },
     is_active: {

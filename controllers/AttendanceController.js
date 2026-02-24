@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const sharp = require('sharp');
 const moment = require('moment');
+const transporter = require('../utils/mailer');
 
 const pug = require('pug');
 const puppeteer = require('puppeteer');
@@ -438,6 +439,23 @@ exports.Create = async (req, res) => {
     let attendanceDaysCreated = 0;
 
     for (const emp of employees) {
+      //control no
+      const year = new Date().getFullYear().toString();
+      const latest = await db.Attendance.findOne({
+          where: { 
+              control_no: { 
+                  [Op.like]: `${year}-%` 
+              } 
+          },
+          order: [['control_no', 'DESC']]
+      });
+      let nextSeq = 1;
+
+      if (latest) {
+          const lastSeq = parseInt(latest.control_no.split('-')[1]);
+          nextSeq = lastSeq + 1;
+      }
+      const newNo = `${year}-${String(nextSeq).padStart(3, '0')}`;
       // ✅ Prevent duplicate Attendance header
       const existingHeader = await db.Attendance.findOne({
         where: {
@@ -453,6 +471,7 @@ exports.Create = async (req, res) => {
       // ✅ Create Attendance header ALWAYS
       const header = await db.Attendance.create(
         {
+          control_no: newNo,
           employee_id: emp.id,
           date_from: dateStart,
           date_to: dateEnd,
@@ -654,6 +673,30 @@ exports.Create = async (req, res) => {
             { transaction: tx }
           );
         }
+      }
+      // send email
+      const mail = emp?.email;
+      const control_no = header?.control_no;
+      const firstname = emp?.first_name;
+      const from = moment(dateStart).format('MMMM DD YYYY');
+      const to = moment(dateEnd).format('MMMM DD YYYY');
+      try {
+          const templatePath = path.join(__dirname, '../templates/TimeLog.html');
+          let htmlContent = fs.readFileSync(templatePath, 'utf8');
+          htmlContent = htmlContent
+          .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+          .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+          .replace(/{{\s*from\s*}}/g, from || 'Date From')
+          .replace(/{{\s*to\s*}}/g, to || 'Date To')
+
+          await transporter.sendMail({
+              from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+              to: mail,
+              subject: 'Daily Time Record',
+              html: htmlContent,
+          });
+      } catch (emailError) {
+          console.error('Email sending failed:', emailError.message);
       }
     }
 
@@ -1826,20 +1869,9 @@ const getEmployeeName = (user) => {
 };
 
 const getSignature = (user) => {
-  // return the whole signature object or just a field like signature.image/signature_path
-  const sign = user?.employeeAccount?.employee?.signature;
-  const filePath = path.join(__dirname, '..', 'public', sign.signature);
-    if (fs.existsSync(filePath)) {
-        const ext = path.extname(filePath).toLowerCase();
-        const mime =
-        ext === '.png' ? 'image/png' :
-        ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-        ext === '.webp' ? 'image/webp' :
-        'application/octet-stream';
-
-        const base64 = fs.readFileSync(filePath).toString('base64');
-        return `data:${mime};base64,${base64}`;
-    }
+    const mime = "image/png";
+      const sign = user?.employeeAccount?.employee?.signature;
+      return `data:${mime};base64,${sign.signature.toString("base64")}`
 };
 
 const getEmployeePosition = (user) => {

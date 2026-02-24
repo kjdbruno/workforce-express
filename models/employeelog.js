@@ -69,7 +69,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     image_path: {
-      type: DataTypes.STRING,
+      type: DataTypes.BLOB('long'),
       allowNull: false
     },
     image_hash: {

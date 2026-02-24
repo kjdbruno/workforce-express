@@ -646,11 +646,20 @@ module.exports = (_io) => {
                     }, { transaction });
                 }
 
+                const indexToDocumentId = {};
+                for (const [key, value] of Object.entries(req.body || {})) {
+                    const match = key.match(/^documents\[(\d+)\]\[documentId\]$/);
+                    if (match) {
+                        const idx = match[1];
+                        indexToDocumentId[idx] = value;
+                    }
+                }
                 for (const file of files) {
-                    const filePath = `/uploads/documents/${file.filename}`;
+                    const match = file.fieldname.match(/^documents\[(\d+)\]\[file\]$/);
+                    if (!match) continue;
                     await db.ApplicantDocument.create({
                         applicant_id: applicant.id,
-                        document: filePath,
+                        document: file.buffer,
                         filename: file.originalname
                     }, { transaction });
                 }

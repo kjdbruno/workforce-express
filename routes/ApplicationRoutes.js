@@ -14,7 +14,7 @@ const { GetAll, Create, Update, GetDetails, GeneratePDF, GetVacancy, GetCourse, 
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetAll);
 router.get('/:id/details', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetDetails);
-router.post('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadDocument.any(), Create);
+router.post('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadDocument, Create);
 router.post('/:id/update', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), Update);
 
 router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GeneratePDF);

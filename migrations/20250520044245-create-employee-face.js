@@ -24,7 +24,7 @@ module.exports = {
         allowNull: false
       },
       image_file: {
-        type: Sequelize.TEXT('long'),
+        type: Sequelize.BLOB('long'),
         allowNull: false
       },
       is_active: {

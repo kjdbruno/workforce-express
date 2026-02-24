@@ -96,7 +96,7 @@ router.post('/:id/dependent', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin',
 
 router.get('/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetDocument);
 router.get('/document/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GenerateDocument);
-router.post('/:id/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadDocument.any(), CreateDocument);
+router.post('/:id/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadDocument, CreateDocument);
 
 router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GenerateIdPDF);
 

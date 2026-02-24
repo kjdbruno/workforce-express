@@ -12,7 +12,7 @@ module.exports = (SocketController) => {
     router.post('/vacancy/overide', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.OverideVacancy);
 
     // application routes
-    router.post('/application/create', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), UploadDocument.any(), SocketController.CreateApplication);
+    router.post('/application/create', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), UploadDocument, SocketController.CreateApplication);
     router.post('/application/update', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.UpdateApplication);
 
     // leave routes

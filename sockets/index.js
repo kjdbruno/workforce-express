@@ -230,63 +230,59 @@ module.exports = function (io) {
     }
 
     async function EmitEmployee(id) {
-        const employees = await db.EmployeeAccount.findAll({
-            where: { 
-                user_id: id 
-            },
+        const row = await db.EmployeeAccount.findOne({
+            where: { user_id: id },
             include: [
                 {
                 model: db.Employee,
-                as: 'employee',
+                as: "employee",
                 include: [
                     {
-                        model: db.Employment,
-                        as: 'employment',
-                        include: [
-                            { 
-                                model: db.Position, 
-                                as: 'position' 
-                            }
-                        ],
+                    model: db.Employment,
+                    as: "employment",
+                    include: [
+                        {
+                        model: db.Position,
+                        as: "position",
+                        },
+                    ],
                     },
-                    { 
-                        model: db.EmployeePhoto, 
-                        as: 'photo' 
+                    {
+                    model: db.EmployeePhoto,
+                    as: "photo",
                     },
                 ],
                 },
             ],
-        });
-        const data = employees.map(emp => {
-        const record = emp.get({ plain: true });
+            });
+            if (!row) {
+  return res.status(404).json({ message: "Record not found" });
+}
 
-        if (record.employee?.photo?.avatar) {
-        const relativePath = record.employee.photo.avatar;
+const employee = row.employee;
+const photo = employee?.photo;
 
-        const absolutePath = path.join(
-            __dirname,
-            '..',
-            'public',
-            relativePath
-        );
+let photoBase64 = null;
 
-        if (fs.existsSync(absolutePath)) {
-            const ext = path.extname(absolutePath).toLowerCase();
+if (photo?.avatar) {
+  const mime = "image/png";
+  photoBase64 = `data:${mime};base64,${photo.avatar.toString("base64")}`;
+}
 
-            const mime =
-            ext === '.png' ? 'image/png' :
-            ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-            ext === '.webp' ? 'image/webp' :
-            'application/octet-stream';
+const record = {
+  id: employee?.id,
+  first_name: employee?.first_name,
+  middle_name: employee?.middle_name,
+  last_name: employee?.last_name,
+  suffix: employee?.suffix,
+  email: employee?.email,
+  contact_number: employee?.contact_number,
+  address: employee?.address,
+  employment: employee?.employment,
+  photo: photoBase64,
+};
 
-            const base64 = fs.readFileSync(absolutePath).toString('base64');
-
-            record.employee.photo.avatar = `data:${mime};base64,${base64}`;
-        }
-        }
-
-        return record;
-    });
+const data = record;
         io.emit('EmitEmployee', data);
     }
 };
