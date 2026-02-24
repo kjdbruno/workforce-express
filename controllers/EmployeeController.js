@@ -565,6 +565,7 @@ exports.GetEmployeeRecord = async (req, res) => {
 
     if (!rows) return res.status(404).json({ error: 'Employee not found' });
 
+    const mime = "image/png";
     // ✅ map only what you want
     const record = {
         id: rows.id,
@@ -573,28 +574,8 @@ exports.GetEmployeeRecord = async (req, res) => {
         last_name: rows.last_name,
         suffix: rows.suffix,
         employment: rows.employment,
-        photo: rows.photo
+        photo: `data:${mime};base64,${rows.photo.avatar.toString("base64")}`
     };
-
-    // ✅ convert avatar to base64 (public/uploads/avatar/...)
-    if (rows.photo?.avatar) {
-        const rel = rows.photo.avatar.replace(/^\/+/, ''); // remove leading "/"
-        const filePath = path.join(__dirname, '..', 'public', rel);
-
-        if (fs.existsSync(filePath)) {
-            const ext = path.extname(filePath).toLowerCase();
-            const mime =
-            ext === '.png' ? 'image/png' :
-            ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-            ext === '.webp' ? 'image/webp' :
-            'application/octet-stream';
-
-            const base64 = fs.readFileSync(filePath, 'base64');
-            record.photo = {
-                avatar: `data:${mime};base64,${base64}`
-            };
-        }
-    }
 
     return res.json({ record });
   } catch (error) {
@@ -947,23 +928,12 @@ exports.GetPhoto = async (req, res) => {
             where: { employee_id: id }
         });
 
-        const record = rows.get({ plain: true });
-
-        if (record && record.avatar) {
-            const filePath = path.join(__dirname, '..', 'public', record.avatar);
-
-            if (fs.existsSync(filePath)) {
-                const ext = path.extname(filePath).toLowerCase();
-                const mime =
-                ext === '.png' ? 'image/png' :
-                ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-                ext === '.webp' ? 'image/webp' :
-                'application/octet-stream';
-
-                const base64 = fs.readFileSync(filePath).toString('base64');
-                record.avatar = `data:${mime};base64,${base64}`;
-            }
-        }
+        const mime = "image/png";
+        // ✅ map only what you want
+        const record = {
+            id: rows.id,
+            photo: `data:${mime};base64,${rows.avatar.toString("base64")}`
+        };
 
         return res.json({
             record
@@ -980,36 +950,22 @@ exports.CreatePhoto = async (req, res) => {
     
     try {
 
-        const file = req.file;
-        const filePath = `/uploads/avatar/${file.filename}`; // public URL path (served from /public)
-
         const exist = await db.EmployeePhoto.findOne({
             where: { 
                 employee_id: id 
             },
         });
 
-        // If you want to delete the previous physical file
-        if (exist?.avatar) {
-            const oldRel = exist.avatar.replace("/uploads/avatar/", "");
-            const oldAbs = path.join(__dirname, "../public/uploads/avatar", oldRel);
-
-            // delete old file if exists
-            if (fs.existsSync(oldAbs)) {
-                fs.unlinkSync(oldAbs);
-            }
-        }
-
         if (exist) {
             await exist.update({
-                filename: file.filename,
-                avatar: filePath,
+                filename: req.avatarOriginalName,
+                avatar: req.avatarBlob,
             }, { transaction });
         } else {
             await db.EmployeePhoto.create({
                 employee_id: id,
-                filename: file.filename,
-                avatar: filePath,
+                filename: req.avatarOriginalName,
+                avatar: req.avatarBlob,
             }, { transaction });
         }
 

@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     avatar: {
-      type: DataTypes.STRING,
+      type: DataTypes.BLOB('long'),
       allowNull: true
     },
   }, {
