@@ -331248,19 +331248,25 @@ app.use(express.static('public'));
 
 __nccwpck_require__(23333)(io);
 
-const MainPath = path.join(__dirname, "..", "..", "workforce-quasar", "dist", "spa");
+const MainPath   = path.join(__dirname, "..", "..", "workforce-quasar", "dist", "spa");
 const PortalPath = path.join(__dirname, "..", "..", "workforce-portal", "dist", "spa");
 
-// Main Index
-app.use("/", express.static(MainPath));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(MainPath, "index.html"));
-});
-
-// Portal
+// Serve Portal FIRST
 app.use('/portal', express.static(PortalPath));
 app.get('/portal/*', (req, res) => {
   res.sendFile(path.join(PortalPath, 'index.html'));
+});
+
+// Serve Main NEXT
+app.use('/', express.static(MainPath));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(MainPath, 'index.html'));
+});
+
+// Catch-all LAST (but exclude /api and /portal if you want)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/portal')) return next();
+  return res.sendFile(path.join(MainPath, 'index.html'));
 });
 
 // Start server
