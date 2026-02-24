@@ -15175,16 +15175,18 @@ module.exports = (_io) => {
                     const control_no = leave?.control_no;
                     const firstname = employee?.first_name;
                     const leavetype = lt?.name;
+                    const status = leave?.status;
                     const from = moment(leave?.date_from).format('MMMM DD YYYY');
                     const to = moment(leave?.date_to).format('MMMM DD YYYY');
                     const lreason = leave?.reason;
                     try {
-                        const templatePath = __nccwpck_require__.ab + "LeaveApproval.html";
-                        let htmlContent = fs.readFileSync(__nccwpck_require__.ab + "LeaveApproval.html", 'utf8');
+                        const templatePath = __nccwpck_require__.ab + "LeaveApplicationUpdate.html";
+                        let htmlContent = fs.readFileSync(__nccwpck_require__.ab + "LeaveApplicationUpdate.html", 'utf8');
                         htmlContent = htmlContent
                         .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
                         .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
                         .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                        .replace(/{{\s*status\s*}}/g, status || 'Status')
                         .replace(/{{\s*from\s*}}/g, from || 'Date From')
                         .replace(/{{\s*to\s*}}/g, to || 'Date To')
                         .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
@@ -15398,16 +15400,18 @@ module.exports = (_io) => {
                     const control_no = leave?.control_no;
                     const firstname = employee?.first_name;
                     const leavetype = lt?.name;
+                    const status = leave?.status;
                     const from = moment(leave?.date_from).format('MMMM DD YYYY');
                     const to = moment(leave?.date_to).format('MMMM DD YYYY');
                     const lreason = leave?.reason;
                     try {
-                        const templatePath = __nccwpck_require__.ab + "LeaveApproval.html";
-                        let htmlContent = fs.readFileSync(__nccwpck_require__.ab + "LeaveApproval.html", 'utf8');
+                        const templatePath = __nccwpck_require__.ab + "LeaveApplicationUpdate.html";
+                        let htmlContent = fs.readFileSync(__nccwpck_require__.ab + "LeaveApplicationUpdate.html", 'utf8');
                         htmlContent = htmlContent
                         .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
                         .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
                         .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                        .replace(/{{\s*status\s*}}/g, status || 'Status')
                         .replace(/{{\s*from\s*}}/g, from || 'Date From')
                         .replace(/{{\s*to\s*}}/g, to || 'Date To')
                         .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
@@ -15437,7 +15441,172 @@ module.exports = (_io) => {
             }
         },
         CancelLeaveApplication: async (req, res) => {
-            
+            const { 
+                id 
+            } = req.params;
+        
+            const transaction = await db.sequelize.transaction();
+        
+            try {
+                const leave = await db.EmployeeLeaveApplication.findByPk(id, {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                });
+        
+                if (!leave) {
+                    await transaction.rollback();
+                    return res.status(500).json({
+                        errors: [
+                        {
+                            type: "field",
+                            value: id,
+                            msg: "Record not found!",
+                            path: "name",
+                            location: "body",
+                        },
+                        ],
+                    });
+                }
+        
+                // If already cancelled, just return OK (idempotent)
+                if (leave.status === "Cancelled") {
+                    await transaction.commit();
+                    return res.status(200).json({ message: "Record already cancelled." });
+                }
+        
+                // Only restore leave balance if it was previously Approved
+                if (leave.status === "Approved") {
+                    // Compute applied leave days (inclusive)
+                    // NOTE: This counts ALL calendar days. If you want to exclude weekends/holidays,
+                    // tell me your rules and we’ll adjust.
+                    const from = moment(leave.date_from, "YYYY-MM-DD", true);
+                    const to = moment(leave.date_to, "YYYY-MM-DD", true);
+        
+                    if (!from.isValid() || !to.isValid() || to.isBefore(from, "day")) {
+                        await transaction.rollback();
+                        return res.status(400).json({ error: "Invalid leave date range." });
+                    }
+        
+                    const appliedDays = to.diff(from, "days") + 1; // inclusive
+        
+                    // Get leave balance row (lock it to avoid race conditions)
+                    const bal = await db.EmployeeLeaveBalance.findOne({
+                        where: {
+                            employee_id: leave.employee_id,
+                            leave_type_id: leave.leave_type_id,
+                            is_active: true,
+                        },
+                        transaction,
+                        lock: transaction.LOCK.UPDATE,
+                    });
+        
+                    if (!bal) {
+                        await transaction.rollback();
+                            return res.status(400).json({
+                            error: "Leave balance record not found for this employee and leave type.",
+                        });
+                    }
+        
+                    const used = parseFloat(bal.used || 0);
+                    const balance = parseFloat(bal.balance || 0);
+        
+                    // Restore: used goes down, balance goes up
+                    // Guard: used should not go negative even if data is inconsistent
+                    const newUsed = Math.max(0, used - appliedDays);
+                    const newBalance = balance + appliedDays;
+        
+                    await bal.update(
+                        {
+                            used: newUsed,
+                            balance: newBalance,
+                        },
+                        { transaction }
+                    );
+                }
+        
+                // Finally cancel the leave application
+                await leave.update(
+                    {
+                        status: "Cancelled",
+                    },
+                    { transaction }
+                );
+
+                /**
+                 * Send Notification
+                 */
+                const employeeid = leave.employee_id;
+                const accounts = await db.EmployeeAccount.findOne({
+                    where: {
+                        employee_id: employeeid
+                    }
+                });
+                await db.Notification.create({
+                    sender_id: req.user?.id,
+                    receiver_id: accounts?.user_id,
+                    content: `Leave application with control number: ${leave.control_no} has been approved.`,
+                    status: 'unread'
+                });
+                const [notificationCount, notifications] = await Promise.all([
+                    db.Notification.count({
+                        where: { receiver_id: accounts?.user_id, status: 'unread' }
+                    }),
+                    db.Notification.findAll({
+                        where: { receiver_id: accounts?.user_id, status: 'unread' },
+                        order: [['createdAt', 'DESC']]
+                    })
+                ]);
+                io.to(`user:${accounts?.user_id}`).emit('EmitNotifications', {
+                    notifications,
+                    count: notificationCount,
+                });
+                /**
+                 * send email
+                 */
+                const lt = await db.LeaveType.findByPk(leave.leave_type_id)
+                const employee = await db.Employee.findByPk(leave.employee_id);
+                const mail = employee?.email;
+                const control_no = leave?.control_no;
+                const firstname = employee?.first_name;
+                const leavetype = lt?.name;
+                const status = leave?.status;
+                const from = moment(leave?.date_from).format('MMMM DD YYYY');
+                const to = moment(leave?.date_to).format('MMMM DD YYYY');
+                const lreason = leave?.reason;
+                try {
+                    const templatePath = __nccwpck_require__.ab + "LeaveApplicationUpdate.html";
+                    let htmlContent = fs.readFileSync(__nccwpck_require__.ab + "LeaveApplicationUpdate.html", 'utf8');
+                    htmlContent = htmlContent
+                    .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+                    .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+                    .replace(/{{\s*leavetype\s*}}/g, leavetype || 'Leave')
+                    .replace(/{{\s*status\s*}}/g, status || 'Status')
+                    .replace(/{{\s*from\s*}}/g, from || 'Date From')
+                    .replace(/{{\s*to\s*}}/g, to || 'Date To')
+                    .replace(/{{\s*lreason\s*}}/g, lreason || 'Reason')
+
+                    await transporter.sendMail({
+                        from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                        to: mail,
+                        subject: 'Leave Appoval',
+                        html: htmlContent,
+                    });
+                } catch (emailError) {
+                    console.error('Email sending failed:', emailError.message);
+                }
+        
+                await transaction.commit();
+        
+                return res.status(200).json({
+                    message:
+                        leave.status === "Approved"
+                        ? "Record Cancelled! Leave balance restored."
+                        : "Record Cancelled!",
+                });
+            } catch (error) {
+                await transaction.rollback();
+                return res.status(500).json({ error: error.message });
+            }
         }
     };
 };
@@ -216265,6 +216434,7 @@ module.exports = (SocketController) => {
     router.post('/leave/create', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.CreateLeaveApplication);
     router.post('/leave/:id/approve', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.ApproveLeaveApplication);
     router.post('/leave/:id/overide', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.OverideLeaveApplication);
+    router.post('/leave/:id/cancel', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.CancelLeaveApplication);
 
     return router;
 };
@@ -330974,137 +331144,6 @@ var __webpack_exports__ = {};
  * Dev
  * 
  */
-// process.env.TZ = 'Asia/Manila'
-// require('dotenv').config();
-// const express = require('express');
-// const cors = require('cors');
-// const http = require('http');
-// const socketIo = require('socket.io');
-// const { Sequelize } = require('sequelize');
-// const path = require('path');
-// const app = express();
-// const server = http.createServer(app);
-// const { loginResetJob, yearlyLeaveBalance, dailyAutoCancel } = require('./utils/cron');
-
-// const io = socketIo(server, {
-//   pingInterval: 25000,
-//   pingTimeout: 5000,
-//     cors: {
-//       origin: '*', // Change this to your frontend's origin http://localhost:9000
-//       methods: ['GET', 'POST'],
-//       allowedHeaders: ['Content-Type'],
-//       credentials: true, // Optional, if you need to support credentials
-//     }
-// });
-
-// // Middleware
-// app.use(cors({
-//   origin: '*', // Change this to your frontend's origin http://localhost:9000
-//   methods: ['GET', 'POST'],
-//   credentials: true, // Optional, if you need to support credentials
-// }));
-// app.use(express.json({ limit: '50mb' }));
-// app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// loginResetJob(io);
-// yearlyLeaveBalance(io);
-// dailyAutoCancel(io);
-
-// // Initialize Sequelize
-// const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
-//   timezone: '+08:00',
-//   host: process.env.DB_HOST,
-//   dialect: process.env.DB_DIALECT,
-//   dialectOptions: {
-//     timezone: '+08:00'
-//   }
-// });
-
-// sequelize.authenticate()
-//   .then(() => {
-//     console.log('✅ Database connected successfully');
-//   })
-//   .catch(err => {
-//     console.error('❌ Database connection error:', err);
-//   })
-//   .finally(() => {
-//     console.log('🔄 Sequelize authentication attempt completed');
-//   });
-
-// // Routes
-// const AuthRoutes = require('./routes/AuthRoutes');
-// const AuthController = require('./controllers/AuthController');
-// const Auth = AuthController(io);
-// app.use('/api', AuthRoutes(Auth));
-
-// /**
-//  * Socket
-//  */
-// const SocketRoutes = require('./routes/SocketRoutes');
-// const SocketController = require('./controllers/SocketController');
-// const Socket = SocketController(io);
-// app.use('/api/socket', SocketRoutes(Socket));
-
-// app.use('/api/user', require('./routes/UserRoutes'));
-// app.use('/api/position', require('./routes/PositionRoutes'));
-// app.use('/api/department', require('./routes/DepartmentRoutes'));
-// app.use('/api/company', require('./routes/CompanyRoutes'));
-// app.use('/api/schedule', require('./routes/ScheduleRoutes'));
-// app.use('/api/signatory', require('./routes/SignatoryRoutes'));
-// app.use('/api/leavetype', require('./routes/LeaveTypeRoutes'));
-// app.use('/api/holiday', require('./routes/HolidayRoutes'));
-// app.use('/api/shift', require('./routes/ShiftRoutes'));
-// app.use('/api/school', require('./routes/SchoolRoutes'));
-// app.use('/api/course', require('./routes/CourseRoutes'));
-
-// app.use('/api/recruitment', require('./routes/RecruitmentRoutes'));
-// app.use('/api/application', require('./routes/ApplicationRoutes'));
-
-// app.use('/api/employee', require('./routes/EmployeeRoutes'));
-// app.use('/api/leave', require('./routes/LeaveRoutes'));
-// app.use('/api/attendance', require('./routes/AttendanceRoutes'));
-// app.use('/api/overtime', require('./routes/OvertimeRoutes'));
-
-// app.use('/api/salary', require('./routes/SalaryRoutes'));
-
-// app.use('/api/log', require('./routes/LogRoutes'));
-
-// /**
-//  * PORTAL
-//  */
-// app.use('/api/portal', require('./routes/PortalRoutes'));
-
-// app.use(express.static('public'));
-
-// require('./sockets')(io);
-
-// const MainPath = path.join(__dirname, "..", "..", "workforce-quasar", "dist", "spa");
-
-// // 🚀 Serve static assets FIRST
-// app.use("/", express.static(MainPath));
-
-// // Start server
-// server.listen(process.env.PORT, () => {
-//   console.log(`Server is running on http://localhost:${process.env.PORT} date: ${new Date()}`);
-// });
-
-/**
- * 
- * 
- * ***********************************************************************************************
- * 
- * 
- */
-
-/**
- * 
- * 
- * 
- * Deployment
- * 
- * 
- * 
- */
 process.env.TZ = 'Asia/Manila'
 __nccwpck_require__(18889).config();
 const express = __nccwpck_require__(85152);
@@ -331210,17 +331249,32 @@ app.use(express.static('public'));
 __nccwpck_require__(23333)(io);
 
 const MainPath = path.join(__dirname, "..", "..", "workforce-quasar", "dist", "spa");
+const PortalPath = path.join(__dirname, "..", "..", "workforce-portal", "dist", "spa");
 
-// 🚀 Serve static assets FIRST
+// Main Index
 app.use("/", express.static(MainPath));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(MainPath, "index.html"));
+});
+
+// Portal
+app.use('/portal', express.static(PortalPath));
+app.get('/portal/*', (req, res) => {
+  res.sendFile(path.join(PortalPath, 'index.html'));
+});
 
 // Start server
 server.listen(process.env.PORT, () => {
   console.log(`Server is running on http://localhost:${process.env.PORT} date: ${new Date()}`);
 });
 
-
-
+/**
+ * 
+ * 
+ * ***********************************************************************************************
+ * 
+ * 
+ */
 module.exports = __webpack_exports__;
 /******/ })()
 ;

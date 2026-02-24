@@ -1168,7 +1168,7 @@ module.exports = (_io) => {
                     const to = moment(leave?.date_to).format('MMMM DD YYYY');
                     const lreason = leave?.reason;
                     try {
-                        const templatePath = path.join(__dirname, '../templates/LeaveApproval.html');
+                        const templatePath = path.join(__dirname, '../templates/LeaveApplicationUpdate.html');
                         let htmlContent = fs.readFileSync(templatePath, 'utf8');
                         htmlContent = htmlContent
                         .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
@@ -1393,7 +1393,7 @@ module.exports = (_io) => {
                     const to = moment(leave?.date_to).format('MMMM DD YYYY');
                     const lreason = leave?.reason;
                     try {
-                        const templatePath = path.join(__dirname, '../templates/LeaveApproval.html');
+                        const templatePath = path.join(__dirname, '../templates/LeaveApplicationUpdate.html');
                         let htmlContent = fs.readFileSync(templatePath, 'utf8');
                         htmlContent = htmlContent
                         .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
@@ -1562,7 +1562,7 @@ module.exports = (_io) => {
                 const to = moment(leave?.date_to).format('MMMM DD YYYY');
                 const lreason = leave?.reason;
                 try {
-                    const templatePath = path.join(__dirname, '../templates/LeaveApproval.html');
+                    const templatePath = path.join(__dirname, '../templates/LeaveApplicationUpdate.html');
                     let htmlContent = fs.readFileSync(templatePath, 'utf8');
                     htmlContent = htmlContent
                     .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
