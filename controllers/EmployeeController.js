@@ -580,8 +580,26 @@ exports.GetEmployeeRecord = async (req, res) => {
             ]
         });
 
+        const record = rows.get({ plain: true });
+
+        if (record.photo && record.photo.avatar) {
+            const filePath = path.join(__dirname, '..', 'public', record.photo.avatar);
+
+            if (fs.existsSync(filePath)) {
+                const ext = path.extname(filePath).toLowerCase();
+                const mime =
+                ext === '.png' ? 'image/png' :
+                ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+                ext === '.webp' ? 'image/webp' :
+                'application/octet-stream';
+
+                const base64 = fs.readFileSync(filePath).toString('base64');
+                record.photo.avatar = `data:${mime};base64,${base64}`;
+            }
+        }
+
         res.json({
-            record: rows
+            record
         });
 
     } catch (error) {
@@ -927,27 +945,40 @@ exports.RemoveSalary = async (req, res) => {
  * Photo
  */
 exports.GetPhoto = async (req, res) => {
+    const id = parseInt(req.query.id, 10);
 
-    const id = parseInt(req.query.id);
+    if (!Number.isInteger(id)) {
+        return res.status(400).json({ error: 'Invalid id' });
+    }
 
     try {
-
         const rows = await db.EmployeePhoto.findOne({
-            where: {
-                employee_id: id
+            where: { employee_id: id }
+        });
+
+        const record = rows.get({ plain: true });
+
+        if (record && record.avatar) {
+            const filePath = path.join(__dirname, '..', 'public', record.avatar);
+
+            if (fs.existsSync(filePath)) {
+                const ext = path.extname(filePath).toLowerCase();
+                const mime =
+                ext === '.png' ? 'image/png' :
+                ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+                ext === '.webp' ? 'image/webp' :
+                'application/octet-stream';
+
+                const base64 = fs.readFileSync(filePath).toString('base64');
+                record.avatar = `data:${mime};base64,${base64}`;
             }
-        });
+        }
 
-        res.json({
-            record: rows
+        return res.json({
+            record
         });
-
     } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
+        return res.status(500).json({ error: error.message });
     }
 };
 exports.CreatePhoto = async (req, res) => {
@@ -1276,8 +1307,26 @@ exports.GetSignature = async (req, res) => {
             }
         });
 
+        const record = rows.get({ plain: true });
+
+        if (record && record.signature) {
+            const filePath = path.join(__dirname, '..', 'public', record.signature);
+
+            if (fs.existsSync(filePath)) {
+                const ext = path.extname(filePath).toLowerCase();
+                const mime =
+                ext === '.png' ? 'image/png' :
+                ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+                ext === '.webp' ? 'image/webp' :
+                'application/octet-stream';
+
+                const base64 = fs.readFileSync(filePath).toString('base64');
+                record.signature = `data:${mime};base64,${base64}`;
+            }
+        }
+
         res.json({
-            record: rows
+            record
         });
 
     } catch (error) {
@@ -1899,6 +1948,40 @@ exports.CreateDocument = async (req, res) => {
     }
 };
 
+exports.GenerateDocument = async (req, res) => {
+    const {id} = req.params; // ✅ use req.params.id
+
+    try {
+        // Example: get latest active document for employee
+        const doc = await db.EmployeeDocument.findOne({
+        where: {
+            id,
+            is_active: true
+        },
+        order: [['createdAt', 'DESC']]
+        });
+
+        if (!doc) {
+            return res.status(404).json({ error: 'No active document found' });
+        }
+
+        // Adjust this field name to your DB column:
+        // e.g. doc.file_path = "documents/employee/leave-123.pdf"
+        const filePath = path.join(__dirname, '..', 'public', doc.document);
+
+        if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'PDF file not found on server', file: safeRel });
+        }
+
+        // ✅ Stream PDF to client
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
+
+        return fs.createReadStream(filePath).pipe(res);
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
 /**
  * Document
  */

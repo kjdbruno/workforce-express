@@ -294,80 +294,80 @@ exports.GetDetails = async (req, res) => {
         });
 
         const approvals = await db.Approval.findAll({
-  where: {
-    document_id: vacancy.id,
-    is_active: true
-  },
-  include: [
-    {
-      model: db.ApprovalSetting,
-      as: 'setting',
-      where: { type: 'Vacancy' },
-      include: [
-        {
-          model: db.User,
-          as: 'approver',
-          attributes: ['id'],
-          include: [
-            {
-              model: db.EmployeeAccount,
-              as: 'employeeAccount',
-              include: [
+            where: {
+                document_id: vacancy.id,
+                is_active: true
+            },
+            include: [
                 {
-                  model: db.Employee,
-                  as: 'employee',
-                  include: [
+                model: db.ApprovalSetting,
+                as: 'setting',
+                where: { type: 'Vacancy' },
+                include: [
                     {
-                      model: db.Employment,
-                      as: 'employment',
-                      include: [{ model: db.Position, as: 'position' }]
-                    },
-                    { model: db.EmployeeSignature, as: 'signature' }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      model: db.ApprovalOveride,
-      as: 'overrides',
-      required: false,
-      include: [
-        {
-          model: db.User,
-          as: 'user',
-          attributes: ['id'],
-          include: [
-            {
-              model: db.EmployeeAccount,
-              as: 'employeeAccount',
-              include: [
+                    model: db.User,
+                    as: 'approver',
+                    attributes: ['id'],
+                    include: [
+                        {
+                        model: db.EmployeeAccount,
+                        as: 'employeeAccount',
+                        include: [
+                            {
+                            model: db.Employee,
+                            as: 'employee',
+                            include: [
+                                {
+                                model: db.Employment,
+                                as: 'employment',
+                                include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                            ]
+                            }
+                        ]
+                        }
+                    ]
+                    }
+                ]
+                },
                 {
-                  model: db.Employee,
-                  as: 'employee',
-                  include: [
+                model: db.ApprovalOveride,
+                as: 'overrides',
+                required: false,
+                include: [
                     {
-                      model: db.Employment,
-                      as: 'employment',
-                      include: [{ model: db.Position, as: 'position' }]
-                    },
-                    { model: db.EmployeeSignature, as: 'signature' }
-                  ]
+                    model: db.User,
+                    as: 'user',
+                    attributes: ['id'],
+                    include: [
+                        {
+                        model: db.EmployeeAccount,
+                        as: 'employeeAccount',
+                        include: [
+                            {
+                            model: db.Employee,
+                            as: 'employee',
+                            include: [
+                                {
+                                model: db.Employment,
+                                as: 'employment',
+                                include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                            ]
+                            }
+                        ]
+                        }
+                    ]
+                    }
+                ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  order: [
-    [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
-    [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
-  ]
+            ],
+            order: [
+                [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+                [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+            ]
 });
 
 const mappedApprovals = approvals.map(a => {
@@ -406,7 +406,7 @@ const mappedApprovals = approvals.map(a => {
             ...vacancy.toJSON(),
             approvals: mappedApprovals
         };
-
+console.log(mappedApprovals)
         res.json({ data: result });
 
     } catch (error) {
@@ -437,7 +437,19 @@ const getEmployeeName = (user) => {
 
 const getSignature = (user) => {
   // return the whole signature object or just a field like signature.image/signature_path
-  return user?.employeeAccount?.employee?.signature || null;
+  const sign = user?.employeeAccount?.employee?.signature;
+  const filePath = path.join(__dirname, '..', 'public', sign.signature);
+    if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        const mime =
+        ext === '.png' ? 'image/png' :
+        ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+        ext === '.webp' ? 'image/webp' :
+        'application/octet-stream';
+
+        const base64 = fs.readFileSync(filePath).toString('base64');
+        return `data:${mime};base64,${base64}`;
+    }
 };
 
 const getEmployeePosition = (user) => {

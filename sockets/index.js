@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const db = require('../models');
 
+const fs = require('fs');
+const path = require('path');
+
 const connectedUsers = new Map(); // userId -> Set(socketIds)
 const socketExpirationTimers = new Map(); // socketId -> timer
 
@@ -254,6 +257,36 @@ module.exports = function (io) {
                 },
             ],
         });
-        io.emit('EmitEmployee', employees);
+        const data = employees.map(emp => {
+        const record = emp.get({ plain: true });
+
+        if (record.employee?.photo?.avatar) {
+        const relativePath = record.employee.photo.avatar;
+
+        const absolutePath = path.join(
+            __dirname,
+            '..',
+            'public',
+            relativePath
+        );
+
+        if (fs.existsSync(absolutePath)) {
+            const ext = path.extname(absolutePath).toLowerCase();
+
+            const mime =
+            ext === '.png' ? 'image/png' :
+            ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+            ext === '.webp' ? 'image/webp' :
+            'application/octet-stream';
+
+            const base64 = fs.readFileSync(absolutePath).toString('base64');
+
+            record.employee.photo.avatar = `data:${mime};base64,${base64}`;
+        }
+        }
+
+        return record;
+    });
+        io.emit('EmitEmployee', data);
     }
 };

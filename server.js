@@ -104,7 +104,11 @@ app.use('/api/log', require('./routes/LogRoutes'));
  */
 app.use('/api/portal', require('./routes/PortalRoutes'));
 
-app.use(express.static('public'));
+// app.use(express.static('public'));
+// put near the top (after app = express())
+app.use('/uploads/avatar', express.static('/mnt/workforce/storage/avatar'));
+app.use('/uploads/documents', express.static('/mnt/workforce/storage/documents'));
+app.use('/uploads/signatures', express.static('/mnt/workforce/storage/signatures'));
 
 require('./sockets')(io);
 
@@ -125,7 +129,12 @@ app.get('/', (req, res) => {
 
 // Catch-all LAST (but exclude /api and /portal if you want)
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/portal')) return next();
+  if (
+    req.path.startsWith('/api') ||
+    req.path.startsWith('/portal') ||
+    req.path.startsWith('/uploads')
+  ) return next();
+
   return res.sendFile(path.join(MainPath, 'index.html'));
 });
 

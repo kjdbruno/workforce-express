@@ -52,7 +52,8 @@ const {
     CreateSignature,
     GetShift,
     GetSchedule,
-    UpdateSchedule
+    UpdateSchedule,
+    GenerateDocument
 } = require('../controllers/EmployeeController');
 
 
@@ -94,6 +95,7 @@ router.get('/dependent', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management',
 router.post('/:id/dependent', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UpdateDependent);
 
 router.get('/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetDocument);
+router.get('/document/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GenerateDocument);
 router.post('/:id/document', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadDocument.any(), CreateDocument);
 
 router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GenerateIdPDF);

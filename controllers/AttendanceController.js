@@ -1827,7 +1827,19 @@ const getEmployeeName = (user) => {
 
 const getSignature = (user) => {
   // return the whole signature object or just a field like signature.image/signature_path
-  return user?.employeeAccount?.employee?.signature || null;
+  const sign = user?.employeeAccount?.employee?.signature;
+  const filePath = path.join(__dirname, '..', 'public', sign.signature);
+    if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        const mime =
+        ext === '.png' ? 'image/png' :
+        ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+        ext === '.webp' ? 'image/webp' :
+        'application/octet-stream';
+
+        const base64 = fs.readFileSync(filePath).toString('base64');
+        return `data:${mime};base64,${base64}`;
+    }
 };
 
 const getEmployeePosition = (user) => {
@@ -2363,16 +2375,42 @@ exports.Approve = async (req, res) => {
             status: 'Approved',
             signed_at: new Date()
         })
-        const approvals = await db.Approval.count({
-            where: {
-                document_id: id,
-                status: { [Op.ne]: "Approved" }
-            }
-        });
-        if (approvals === 0) {
-            await attendance.update({ 
-                status: 'Approved'
-            });
+        
+                const totalCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'TimeCard'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true
+                    }
+                });
+        
+                const approvedCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'TimeCard'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true,
+                        status: 'Approved'
+                    }
+                });
+        
+                if (totalCount === approvedCount) {
+                  await attendance.update({ status: 'Approved' });
         }
 
         res.status(201).json({
@@ -2389,107 +2427,140 @@ exports.Approve = async (req, res) => {
 };
 
 exports.Overide = async (req, res) => {
-    const id = parseInt(req.params.id, 10);
-    const { signatories } = req.body; // [2, 3]
+  const id = parseInt(req.params.id, 10);
+  const { signatories } = req.body; // [2, 3]
 
-    const transaction = await sequelize.transaction();
+  const transaction = await sequelize.transaction();
 
-    try {
+  try {
+    const attendance = await db.Attendance.findByPk(id, { transaction });
 
-        const attendance = await db.Attendance.findByPk(id);
-        
-        if (!attendance) {
-            return res.status(500).json({
-                errors: [{
-                    type: "field",
-                    value: id,
-                    msg: "Record not found!",
-                    path: "id",
-                    location: "body",
-                }],
-            });
-        }
-        
-        // ---- validate payload ----
-        if (!Array.isArray(signatories) || signatories.length === 0) {
-        await transaction.rollback();
-        return res.status(400).json({
-            message: 'No signatories provided'
-        });
-        }
-
-        const approvalIds = [...new Set(
-            signatories
-                .map(id => Number(id))
-                .filter(id => Number.isInteger(id) && id > 0)
-        )];
-
-        if (approvalIds.length === 0) {
-        await transaction.rollback();
-        return res.status(400).json({
-            message: 'Invalid signatories payload'
-        });
-        }
-
-        // ---- fetch approvals (must belong to same document) ----
-        const approvals = await db.Approval.findAll({
-            where: {
-                id: approvalIds,
-                is_active: true
-            },
-            transaction
-        });
-
-        if (approvals.length === 0) {
-        await transaction.rollback();
-        return res.status(404).json({
-            message: 'No approvals found to override'
-        });
-        }
-
-        // ---- update approvals as overridden ----
-        await db.Approval.update(
-        {
-            status: 'Approved',
-            is_overide: true,
-            signed_at: new Date()
-        },
-        {
-            where: { id: approvalIds }
-        }
-        );
-
-        // ---- save override history ----
-        await db.ApprovalOveride.bulkCreate(
-        approvalIds.map(id => ({
-            approval_id: id,
-            user_id: req.user.id
-        }))
-        );
-
-        const appcount = await db.Approval.count({
-            where: {
-                document_id: id,
-                status: { [Op.ne]: "Approved" }
-            }
-        });
-        if (appcount === 0) {
-            await attendance.update({ 
-                status: 'Approved'
-            });
-        }
-
-        return res.status(200).json({
-        message: 'Approval overridden successfully'
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-        message: 'Failed to override approval',
-        error: error.message
-        });
+    if (!attendance) {
+      await transaction.rollback();
+      return res.status(404).json({
+        errors: [{
+          type: "field",
+          value: id,
+          msg: "Record not found!",
+          path: "id",
+          location: "params",
+        }],
+      });
     }
+
+    // ---- validate payload ----
+    if (!Array.isArray(signatories) || signatories.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({ message: "No signatories provided" });
+    }
+
+    const approvalIds = [...new Set(
+      signatories
+        .map(v => Number(v))
+        .filter(v => Number.isInteger(v) && v > 0)
+    )];
+
+    if (approvalIds.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({ message: "Invalid signatories payload" });
+    }
+
+    // ---- fetch approvals (must be active) ----
+    const approvals = await db.Approval.findAll({
+      where: { id: approvalIds, is_active: true },
+      transaction
+    });
+
+    if (approvals.length === 0) {
+      await transaction.rollback();
+      return res.status(404).json({ message: "No approvals found to override" });
+    }
+
+    // OPTIONAL but recommended: ensure approvals belong to the same document_id
+    // (prevents overriding approvals from other documents)
+    const invalid = approvals.some(a => Number(a.document_id) !== Number(id));
+    if (invalid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: "Some approvals do not belong to this document."
+      });
+    }
+
+    // ---- update approvals as overridden/approved ----
+    await db.Approval.update(
+      {
+        status: "Approved",
+        is_overide: true,
+        signed_at: new Date(),
+      },
+      {
+        where: { id: approvalIds },
+        transaction
+      }
+    );
+
+    // ---- save override history ----
+    await db.ApprovalOveride.bulkCreate(
+      approvalIds.map(approval_id => ({
+        approval_id,
+        user_id: req.user.id,
+      })),
+      { transaction }
+    );
+
+    // ✅ ---- NEW LOGIC: if all required approvals are approved, approve attendance ----
+    const totalCount = await db.Approval.count({
+      include: [
+        {
+          model: db.ApprovalSetting,
+          as: "setting",
+          where: { type: "TimeCard" }
+        }
+      ],
+      where: {
+        document_id: id,
+        is_active: true,
+      },
+      transaction
+    });
+
+    const approvedCount = await db.Approval.count({
+      include: [
+        {
+          model: db.ApprovalSetting,
+          as: "setting",
+          where: { type: "TimeCard" }
+        }
+      ],
+      where: {
+        document_id: id,
+        is_active: true,
+        status: "Approved",
+      },
+      transaction
+    });
+
+    if (totalCount > 0 && totalCount === approvedCount) {
+      await attendance.update({ status: "Approved" }, { transaction });
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      message: "Approval overridden successfully",
+      totalCount,
+      approvedCount,
+      attendanceStatus: totalCount > 0 && totalCount === approvedCount ? "Approved" : attendance.status,
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to override approval",
+      error: error.message,
+    });
+  }
 };
 
 exports.GenerateAttendancePDF = async (req, res) => {

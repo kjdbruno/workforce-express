@@ -236,8 +236,20 @@ const getEmployeeName = (user) => {
 };
 
 const getSignature = (user) => {
-  // return the whole signature object or just a field like signature.image/signature_path
-  return user?.employeeAccount?.employee?.signature || null;
+    // return the whole signature object or just a field like signature.image/signature_path
+    const sign = user?.employeeAccount?.employee?.signature;
+    const filePath = path.join(__dirname, '..', 'public', sign.signature);
+    if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        const mime =
+        ext === '.png' ? 'image/png' :
+        ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+        ext === '.webp' ? 'image/webp' :
+        'application/octet-stream';
+
+        const base64 = fs.readFileSync(filePath).toString('base64');
+        return `data:${mime};base64,${base64}`;
+    }
 };
 
 const getEmployeePosition = (user) => {
