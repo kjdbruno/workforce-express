@@ -552,63 +552,54 @@ exports.Create = async (req, res) => {
  * Employee
  */
 exports.GetEmployeeRecord = async (req, res) => {
+  const id = parseInt(req.params.id, 10);
 
-    const id = parseInt(req.params.id);
+  try {
+    const rows = await db.Employee.findOne({
+      where: { id },
+      include: [
+        { model: db.Employment, as: 'employment', include: [{ model: db.Position, as: 'position' }] },
+        { model: db.EmployeePhoto, as: 'photo', attributes: ['filename', 'avatar'] }
+      ]
+    });
 
-    try {
+    if (!rows) return res.status(404).json({ error: 'Employee not found' });
 
-        const rows = await db.Employee.findOne({
-            where: {
-                id
-            },
-            include: [
-                {
-                    model: db.Employment,
-                    as: 'employment',
-                    include: [
-                        {
-                            model: db.Position,
-                            as: 'position'
-                        }
-                    ]
-                },
-                {
-                    model: db.EmployeePhoto,
-                    as: 'photo',
-                    attributes: ['filename', 'avatar']
-                }
-            ]
-        });
+    // ✅ map only what you want
+    const record = {
+      id: rows.id,
+      first_name: rows.first_name,
+      middle_name: rows.middle_name,
+      last_name: rows.last_name,
+      suffix: rows.suffix,
+      employment: rows.employment,
+      photo: rows.photo
+    };
 
-        const record = rows.get({ plain: true });
+    // ✅ convert avatar to base64 (public/uploads/avatar/...)
+    if (rows.photo?.avatar) {
+      const rel = rows.photo.avatar.replace(/^\/+/, ''); // remove leading "/"
+      const filePath = path.join(__dirname, '..', 'public', rel);
 
-        if (record.photo && record.photo.avatar) {
-            const filePath = path.join(__dirname, '..', 'public', record.photo.avatar);
+      if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        const mime =
+          ext === '.png' ? 'image/png' :
+          ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+          ext === '.webp' ? 'image/webp' :
+          'application/octet-stream';
 
-            if (fs.existsSync(filePath)) {
-                const ext = path.extname(filePath).toLowerCase();
-                const mime =
-                ext === '.png' ? 'image/png' :
-                ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-                ext === '.webp' ? 'image/webp' :
-                'application/octet-stream';
-
-                const base64 = fs.readFileSync(filePath).toString('base64');
-                record.photo.avatar = `data:${mime};base64,${base64}`;
-            }
-        }
-
-        res.json({
-            record
-        });
-
-    } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
+        const base64 = fs.readFileSync(filePath, 'base64');
+        record.photo = {
+          avatar: `data:${mime};base64,${base64}`
+        };
+      }
     }
+
+    return res.json({ record });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };
 exports.UpdateEmployee = async (req, res) => {
 
