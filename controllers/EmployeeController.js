@@ -8,7 +8,7 @@ const moment = require('moment');
 const pug = require('pug');
 const puppeteer = require('puppeteer');
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const QR = require('qrcode-base64')
