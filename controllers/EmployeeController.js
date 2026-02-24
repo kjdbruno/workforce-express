@@ -555,45 +555,45 @@ exports.GetEmployeeRecord = async (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   try {
-    const rows = await db.Employee.findOne({
-      where: { id },
-      include: [
-        { model: db.Employment, as: 'employment', include: [{ model: db.Position, as: 'position' }] },
-        { model: db.EmployeePhoto, as: 'photo', attributes: ['filename', 'avatar'] }
-      ]
+        const rows = await db.Employee.findOne({
+        where: { id },
+        include: [
+            { model: db.Employment, as: 'employment', include: [{ model: db.Position, as: 'position' }] },
+            { model: db.EmployeePhoto, as: 'photo', attributes: ['filename', 'avatar'] }
+        ]
     });
 
     if (!rows) return res.status(404).json({ error: 'Employee not found' });
 
     // ✅ map only what you want
     const record = {
-      id: rows.id,
-      first_name: rows.first_name,
-      middle_name: rows.middle_name,
-      last_name: rows.last_name,
-      suffix: rows.suffix,
-      employment: rows.employment,
-      photo: rows.photo
+        id: rows.id,
+        first_name: rows.first_name,
+        middle_name: rows.middle_name,
+        last_name: rows.last_name,
+        suffix: rows.suffix,
+        employment: rows.employment,
+        photo: rows.photo
     };
 
     // ✅ convert avatar to base64 (public/uploads/avatar/...)
     if (rows.photo?.avatar) {
-      const rel = rows.photo.avatar.replace(/^\/+/, ''); // remove leading "/"
-      const filePath = path.join(__dirname, '..', 'public', rel);
+        const rel = rows.photo.avatar.replace(/^\/+/, ''); // remove leading "/"
+        const filePath = path.join(__dirname, '..', 'public', rel);
 
-      if (fs.existsSync(filePath)) {
-        const ext = path.extname(filePath).toLowerCase();
-        const mime =
-          ext === '.png' ? 'image/png' :
-          ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-          ext === '.webp' ? 'image/webp' :
-          'application/octet-stream';
+        if (fs.existsSync(filePath)) {
+            const ext = path.extname(filePath).toLowerCase();
+            const mime =
+            ext === '.png' ? 'image/png' :
+            ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+            ext === '.webp' ? 'image/webp' :
+            'application/octet-stream';
 
-        const base64 = fs.readFileSync(filePath, 'base64');
-        record.photo = {
-          avatar: `data:${mime};base64,${base64}`
-        };
-      }
+            const base64 = fs.readFileSync(filePath, 'base64');
+            record.photo = {
+                avatar: `data:${mime};base64,${base64}`
+            };
+        }
     }
 
     return res.json({ record });
