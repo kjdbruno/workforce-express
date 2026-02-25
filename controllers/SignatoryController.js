@@ -110,100 +110,120 @@ exports.GetDetail = async (req, res) => {
       include: [
         {
           model: db.User,
-          as: 'owner',
-          attributes: ['id'],
+          as: "owner",
+          attributes: ["id"],
           include: [
             {
               model: db.EmployeeAccount,
-              as: 'employeeAccount',
-              attributes: ['id'],
+              as: "employeeAccount",
+              attributes: ["id"],
               include: [
                 {
                   model: db.Employee,
-                  as: 'employee',
-                  attributes: ['first_name', 'middle_name', 'last_name', 'suffix'],
+                  as: "employee",
+                  attributes: ["first_name", "middle_name", "last_name", "suffix"],
                   include: [
                     {
                       model: db.Employment,
-                      as: 'employment',
-                      attributes: ['id'],
-                      include: [
-                        { model: db.Position, as: 'position', attributes: ['name'] }
-                      ]
+                      as: "employment",
+                      attributes: ["id"],
+                      include: [{ model: db.Position, as: "position", attributes: ["name"] }],
                     },
-                    { model: db.EmployeeSignature, as: 'signature', attributes: ['signature'] }
-                  ]
-                }
-              ]
-            }
-          ]
+                    { model: db.EmployeeSignature, as: "signature", attributes: ["signature"] },
+                  ],
+                },
+              ],
+            },
+          ],
         },
         {
           model: db.User,
-          as: 'approver',
-          attributes: ['id'],
+          as: "approver",
+          attributes: ["id"],
           include: [
             {
               model: db.EmployeeAccount,
-              as: 'employeeAccount',
-              attributes: ['id'],
+              as: "employeeAccount",
+              attributes: ["id"],
               include: [
                 {
                   model: db.Employee,
-                  as: 'employee',
-                  attributes: ['first_name', 'middle_name', 'last_name', 'suffix'],
+                  as: "employee",
+                  attributes: ["first_name", "middle_name", "last_name", "suffix"],
                   include: [
                     {
                       model: db.Employment,
-                      as: 'employment',
-                      attributes: ['id'],
-                      include: [
-                        { model: db.Position, as: 'position', attributes: ['name'] }
-                      ]
+                      as: "employment",
+                      attributes: ["id"],
+                      include: [{ model: db.Position, as: "position", attributes: ["name"] }],
                     },
-                    { model: db.EmployeeSignature, as: 'signature', attributes: ['signature'] }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+                    { model: db.EmployeeSignature, as: "signature", attributes: ["signature"] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       ],
       where: { owner_id: id },
-      order: [
-        ['type', 'ASC'],
-        ['order', 'ASC'],
-        ['createdAt', 'DESC']
-      ]
+      order: [["type", "ASC"], ["order", "ASC"], ["createdAt", "DESC"]],
     });
 
     // group by type -> array structure
     const map = new Map();
 
-    rows.forEach(row => {
+    rows.forEach((row) => {
       const r = row.toJSON();
-      const type = r.type || 'Unknown';
+      const type = r.type || "Unknown";
 
       if (!map.has(type)) {
         map.set(type, {
-            id: r.id,
-            isActive: r.is_active,
-            type,
-            signatories: []
+          id: r.id,
+          isActive: r.is_active,
+          type,
+          signatories: [],
         });
+      }
+
+      // ✅ Convert approver signature BLOB -> base64 data URL (if exists)
+      const approverSigBlob =
+        r?.approver?.employeeAccount?.employee?.signature?.signature;
+
+      if (approverSigBlob) {
+        // mutate safely on the JSON object
+        r.approver.employeeAccount.employee.signature.signature =
+          `data:image/png;base64,${Buffer.from(approverSigBlob).toString("base64")}`;
+      } else {
+        // normalize when missing
+        if (r?.approver?.employeeAccount?.employee?.signature) {
+          r.approver.employeeAccount.employee.signature.signature = null;
+        }
+      }
+
+      // OPTIONAL: also convert owner signature (if you want)
+      const ownerSigBlob =
+        r?.owner?.employeeAccount?.employee?.signature?.signature;
+
+      if (ownerSigBlob) {
+        r.owner.employeeAccount.employee.signature.signature =
+          `data:image/png;base64,${Buffer.from(ownerSigBlob).toString("base64")}`;
+      } else {
+        if (r?.owner?.employeeAccount?.employee?.signature) {
+          r.owner.employeeAccount.employee.signature.signature = null;
+        }
       }
 
       // push the signatory record
       map.get(type).signatories.push({
         id: r.id,
         order: r.order,
-        description: r.description,   // if you have
+        description: r.description,
         owner_id: r.owner_id,
         approver_id: r.approver_id,
-        approver: r.approver,         // ✅ contains full include tree
-        owner: r.owner,               // optional (can remove if not needed)
+        approver: r.approver, // ✅ now includes base64 signature
+        owner: r.owner,       // ✅ now includes base64 signature (optional)
         createdAt: r.createdAt,
-        updatedAt: r.updatedAt
+        updatedAt: r.updatedAt,
       });
     });
 
@@ -211,7 +231,6 @@ exports.GetDetail = async (req, res) => {
     const result = Array.from(map.values());
 
     return res.status(200).json(result);
-
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

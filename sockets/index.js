@@ -255,34 +255,32 @@ module.exports = function (io) {
                 },
             ],
             });
-            if (!row) {
-  return res.status(404).json({ message: "Record not found" });
-}
+            if (row) {
+                const employee = row.employee;
+            const photo = employee?.photo;
 
-const employee = row.employee;
-const photo = employee?.photo;
+            let photoBase64 = null;
 
-let photoBase64 = null;
+            if (photo?.avatar) {
+            const mime = "image/png";
+            photoBase64 = `data:${mime};base64,${photo.avatar.toString("base64")}`;
+            }
 
-if (photo?.avatar) {
-  const mime = "image/png";
-  photoBase64 = `data:${mime};base64,${photo.avatar.toString("base64")}`;
-}
+            const record = {
+            id: employee?.id,
+            first_name: employee?.first_name,
+            middle_name: employee?.middle_name,
+            last_name: employee?.last_name,
+            suffix: employee?.suffix,
+            email: employee?.email,
+            contact_number: employee?.contact_number,
+            address: employee?.address,
+            employment: employee?.employment,
+            photo: photoBase64,
+            };
 
-const record = {
-  id: employee?.id,
-  first_name: employee?.first_name,
-  middle_name: employee?.middle_name,
-  last_name: employee?.last_name,
-  suffix: employee?.suffix,
-  email: employee?.email,
-  contact_number: employee?.contact_number,
-  address: employee?.address,
-  employment: employee?.employment,
-  photo: photoBase64,
-};
-
-const data = record;
-        io.emit('EmitEmployee', data);
+            const data = record;
+        io.emit('EmitEmployee', data);   
+            }
     }
 };

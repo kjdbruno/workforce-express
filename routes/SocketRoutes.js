@@ -21,5 +21,10 @@ module.exports = (SocketController) => {
     router.post('/leave/:id/overide', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.OverideLeaveApplication);
     router.post('/leave/:id/cancel', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.CancelLeaveApplication);
 
+    // attendance routes
+    router.post('/attendance/create', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.CreateAttendance);
+    router.post('/attendance/:id/approve', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.ApproveAttendance);
+    router.post('/attendance/:id/overide', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'Management', 'HR'), SocketController.OverideAttendance);
+
     return router;
 };

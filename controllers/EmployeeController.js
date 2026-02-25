@@ -373,41 +373,43 @@ exports.Create = async (req, res) => {
         notes,
     } = req.body;
 
+    const avatarPath = path.join(__dirname, '../public/default.png');
+    const avatarBuffer = fs.readFileSync(avatarPath);
+
     try {
-        // ✅ 0) Fetch applicant-related data OUTSIDE transaction (keeps locks short)
+        // 0) Fetch applicant-related data OUTSIDE transaction (keeps locks short)
         let educations = [];
         let trainings = [];
         let experiences = [];
         let documents = [];
 
         if (applicantId) {
-        educations = await db.ApplicantEducation.findAll({ where: { applicant_id: applicantId } });
-        trainings = await db.ApplicantTraining.findAll({ where: { applicant_id: applicantId } });
-        experiences = await db.ApplicantExperience.findAll({ where: { applicant_id: applicantId } });
-        documents = await db.ApplicantDocument.findAll({ where: { applicant_id: applicantId } });
+            educations = await db.ApplicantEducation.findAll({ where: { applicant_id: applicantId } });
+            trainings = await db.ApplicantTraining.findAll({ where: { applicant_id: applicantId } });
+            experiences = await db.ApplicantExperience.findAll({ where: { applicant_id: applicantId } });
+            documents = await db.ApplicantDocument.findAll({ where: { applicant_id: applicantId } });
         }
 
-        // ✅ 1) Transaction (managed)
+        // Transaction (managed)
         const result = await sequelize.transaction(async (transaction) => {
-        // ✅ generate employee no (lock the "latest" row to avoid race)
-        const year = new Date(dateHired).getFullYear().toString();
+            // generate employee no (lock the "latest" row to avoid race)
+            const year = new Date(dateHired).getFullYear().toString();
 
-        const latest = await db.Employment.findOne({
-            where: {
-            employee_no: { [Op.like]: `${year}-%` },
-            },
-            order: [["employee_no", "DESC"]],
-            transaction,
-            lock: transaction.LOCK.UPDATE, // ✅ important for concurrency
-        });
+            const latest = await db.Employment.findOne({
+                where: {
+                    employee_no: { [Op.like]: `${year}-%` },
+                },
+                order: [["employee_no", "DESC"]],
+                transaction,
+                lock: transaction.LOCK.UPDATE, // important for concurrency
+            });
 
-        const nextSeq = latest ? parseInt(latest.employee_no.split("-")[1], 10) + 1 : 1;
-        const newEmployeeNo = `${year}-${String(nextSeq).padStart(3, "0")}`;
-        const finalEmployeeNo = employeeNo?.trim() ? employeeNo.trim() : newEmployeeNo;
+            const nextSeq = latest ? parseInt(latest.employee_no.split("-")[1], 10) + 1 : 1;
+            const newEmployeeNo = `${year}-${String(nextSeq).padStart(3, "0")}`;
+            const finalEmployeeNo = employeeNo?.trim() ? employeeNo.trim() : newEmployeeNo;
 
-        // ✅ employee
-        const employee = await db.Employee.create(
-            {
+            // employee
+            const employee = await db.Employee.create({
                 first_name: firstname,
                 middle_name: middlename,
                 last_name: lastname,
@@ -419,128 +421,118 @@ exports.Create = async (req, res) => {
                 address,
                 email,
                 contact_number: contactNo,
-            },
-            { transaction }
-        );
+            }, { transaction } );
 
-        // ✅ employment
-        await db.Employment.create(
-            {
-            employee_id: employee.id,
-            employee_no: finalEmployeeNo,
-            date_hired: dateHired,
-            tin,
-            sss_no: sssNo,
-            philhealth_no: philhealthNo,
-            pagibig_no: pagibigNo,
-            employment_status: employmentstatus,
-            tax_status: taxstatus,
-            position_id: positionId,
-            payroll_group: payrollgroup,
-            },
-            { transaction }
-        );
+            // employment
+            await db.Employment.create({
+                employee_id: employee.id,
+                employee_no: finalEmployeeNo,
+                date_hired: dateHired,
+                tin,
+                sss_no: sssNo,
+                philhealth_no: philhealthNo,
+                pagibig_no: pagibigNo,
+                employment_status: employmentstatus,
+                tax_status: taxstatus,
+                position_id: positionId,
+                payroll_group: payrollgroup,
+            }, { transaction } );
 
-        // ✅ salary schedule
-        const position = await db.Position.findByPk(positionId, { transaction, lock: transaction.LOCK.UPDATE });
-        if (!position) throw new Error("Position not found.");
+            // salary schedule
+            const position = await db.Position.findByPk(positionId, { transaction, lock: transaction.LOCK.UPDATE });
+            if (!position) throw new Error("Position not found.");
 
-        const amount = GetSalaryAmount(position);
+            const amount = GetSalaryAmount(position);
 
-        await db.SalarySchedule.create(
-            {
+            await db.SalarySchedule.create({
                 position_id: positionId,
                 employee_id: employee.id,
                 amount,
                 salary_type: position.salary_type,
                 salary_group: salarygroup,
+                employment_status: employmentstatus,
                 effective_date: dateHired,
-            },
-            { transaction }
-        );
+            }, { transaction } );
 
-        // ✅ mark position as filled
-        await position.update({ status: "Filled" }, { transaction });
+            // mark position as filled
+            await position.update({ status: "Filled" }, { transaction });
 
-        // ✅ shift
-        await db.EmployeeShift.create(
-            {
+            // shift
+            await db.EmployeeShift.create({
                 employee_id: employee.id,
                 shift_id: shiftId,
                 effective_from: effectiveFrom,
                 effective_to: effectiveTo?.trim() ? effectiveTo : null,
                 notes,
-            },
-            { transaction }
-        );
+            }, { transaction });
 
-        // ✅ copy applicant data (ALL WITH transaction)
-        if (applicantId) {
-            if (educations.length) {
-            await db.EmployeeEducation.bulkCreate(
-                educations.map((e) => ({
+            // photo
+            await db.EmployeePhoto.create({
                 employee_id: employee.id,
-                school_level: e.school_level,
-                school_id: e.school_id,
-                course_id: e.course_id,
-                start_date: e.start_date,
-                end_date: e.end_date,
-                })),
-                { transaction }
-            );
+                filename: 'default.png',
+                avatar: avatarBuffer
+            }, { transaction })
+
+            // copy applicant data (ALL WITH transaction)
+            if (applicantId) {
+                if (educations.length) {
+                    await db.EmployeeEducation.bulkCreate(
+                        educations.map((e) => ({
+                        employee_id: employee.id,
+                        school_level: e.school_level,
+                        school_id: e.school_id,
+                        course_id: e.course_id,
+                        start_date: e.start_date,
+                        end_date: e.end_date,
+                    })), { transaction } );
+                }
+
+                if (trainings.length) {
+                    await db.EmployeeTraining.bulkCreate(
+                        trainings.map((t) => ({
+                        employee_id: employee.id,
+                        title: t.title,
+                        type: t.type,
+                        start_date: t.start_date,
+                        end_date: t.end_date,
+                        hour: t.hour,
+                    })), { transaction } );
+                }
+
+                if (experiences.length) {
+                    await db.EmployeeExperience.bulkCreate(
+                        experiences.map((x) => ({
+                        employee_id: employee.id,
+                        position: x.position,
+                        description: x.description,
+                        start_date: x.start_date,
+                        end_date: x.end_date,
+                    })), { transaction });
+                }
+
+                if (documents.length) {
+                    await db.EmployeeDocument.bulkCreate(
+                        documents.map((f) => ({
+                        employee_id: employee.id,
+                        document: f.document,
+                        filename: f.filename,
+                    })), { transaction } );
+                }
+
+                // ✅ deactivate applicant
+                await db.Applicant.update({ 
+                    is_active: false 
+                }, { where: { 
+                    id: applicantId 
+                }, transaction } );
             }
 
-            if (trainings.length) {
-            await db.EmployeeTraining.bulkCreate(
-                trainings.map((t) => ({
-                employee_id: employee.id,
-                title: t.title,
-                type: t.type,
-                start_date: t.start_date,
-                end_date: t.end_date,
-                hour: t.hour,
-                })),
-                { transaction }
-            );
-            }
-
-            if (experiences.length) {
-            await db.EmployeeExperience.bulkCreate(
-                experiences.map((x) => ({
-                employee_id: employee.id,
-                position: x.position,
-                description: x.description,
-                start_date: x.start_date,
-                end_date: x.end_date,
-                })),
-                { transaction }
-            );
-            }
-
-            if (documents.length) {
-            await db.EmployeeDocument.bulkCreate(
-                documents.map((f) => ({
-                employee_id: employee.id,
-                document: f.document,
-                filename: f.filename,
-                })),
-                { transaction } // ✅ FIXED: missing before
-            );
-            }
-
-            // ✅ deactivate applicant
-            await db.Applicant.update(
-            { is_active: false },
-            { where: { id: applicantId }, transaction }
-            );
-        }
-
-        return { employeeId: employee.id, employeeNo: finalEmployeeNo };
+            return { employeeId: employee.id, employeeNo: finalEmployeeNo };
         });
 
         return res.status(201).json({
-        message: "Record Saved!",
-        data: result,
+            message: "Record Saved!",
+            data: result,
         });
     } catch (error) {
         return res.status(400).json({ error: error.message });
@@ -552,38 +544,58 @@ exports.Create = async (req, res) => {
  * Employee
  */
 exports.GetEmployeeRecord = async (req, res) => {
-  const id = parseInt(req.params.id, 10);
 
-  try {
+    const id = parseInt(req.params.id, 10);
+
+    try {
         const rows = await db.Employee.findOne({
             where: { id },
             include: [
-                { model: db.Employment, as: 'employment', include: [{ model: db.Position, as: 'position' }] },
-                { model: db.EmployeePhoto, as: 'photo', attributes: ['filename', 'avatar'] }
+                { 
+                    model: db.Employment, 
+                    as: 'employment', 
+                    include: [
+                        { 
+                            model: db.Position, 
+                            as: 'position' 
+                        }
+                    ]
+                },
+                { 
+                    model: db.EmployeePhoto, 
+                    as: 'photo', 
+                    attributes: [
+                        'filename', 'avatar'
+                    ] 
+                }
             ]
         });
 
-    if (!rows) return res.status(404).json({ error: 'Employee not found' });
+        if (!rows) return res.status(404).json({ error: 'Employee not found' });
 
-    const mime = "image/png";
-    // ✅ map only what you want
-    const record = {
-        id: rows.id,
-        first_name: rows.first_name,
-        middle_name: rows.middle_name,
-        last_name: rows.last_name,
-        suffix: rows.suffix,
-        email: rows.email,
-        contact_number: rows.contact_number,
-        address: rows.address,
-        employment: rows.employment,
-        photo: `data:${mime};base64,${rows.photo.avatar.toString("base64")}`
-    };
+        const mime = "image/png";
+        // map only what you want
+        const record = {
+            id: rows.id,
+            first_name: rows.first_name,
+            middle_name: rows.middle_name,
+            last_name: rows.last_name,
+            suffix: rows.suffix,
+            email: rows.email,
+            contact_number: rows.contact_number,
+            address: rows.address,
+            employment: rows.employment,
+            photo: `data:${mime};base64,${rows.photo.avatar.toString("base64")}`
+        };
 
-    return res.json({ record });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
+        return res.json({ 
+            record 
+        });
+    } catch (error) {
+        return res.status(500).json({ 
+            error: error.message 
+        });
+    }
 };
 exports.UpdateEmployee = async (req, res) => {
 
@@ -674,105 +686,109 @@ function getNextWeekday(date = new Date()) {
     return next.toISOString().slice(0, 10); // YYYY-MM-DD
 }
 exports.UpdateEmployment = async (req, res) => {
-  const { id } = req.params;
-  const transaction = await sequelize.transaction();
+    const { 
+        id 
+    } = req.params;
+    
+    const transaction = await sequelize.transaction();
 
-  const {
-    employeeNo,
-    dateHired,
-    employmentstatus,
-    tin,
-    sssNo,
-    philhealthNo,
-    pagibigNo
-  } = req.body;
+    const {
+        employeeNo,
+        dateHired,
+        employmentstatus,
+        tin,
+        sssNo,
+        philhealthNo,
+        pagibigNo
+    } = req.body;
 
-  try {
-    const employment = await db.Employment.findByPk(id, { transaction });
-    if (!employment) {
-      await transaction.rollback();
-      return res.status(500).json({
-        errors: [{
-          type: "field",
-          value: employeeNo,
-          msg: "Record not found!",
-          path: "employeeNo",
-          location: "body",
-        }],
-      });
-    }
+    try {
+        const employment = await db.Employment.findByPk(id, { transaction });
+        if (!employment) {
+            await transaction.rollback();
+            return res.status(500).json({
+                errors: [
+                    {
+                        type: "field",
+                        value: employeeNo,
+                        msg: "Record not found!",
+                        path: "employeeNo",
+                        location: "body",
+                    }
+                ],
+            });
+        }
 
-    const employeeId = employment.employee_id;
-    const prevEmploymentStatus = employment.employment_status;
+        const employeeId = employment.employee_id;
+        const prevEmploymentStatus = employment.employment_status;
 
-    const isEmploymentStatusChanged =
-      String(prevEmploymentStatus || "") !== String(employmentstatus || "");
+        const isEmploymentStatusChanged = String(prevEmploymentStatus || "") !== String(employmentstatus || "");
 
-    await employment.update({
-      employee_no: employeeNo,
-      date_hired: dateHired,
-      employment_status: employmentstatus,
-      tin,
-      sss_no: sssNo,
-      philhealth_no: philhealthNo,
-      pagibig_no: pagibigNo
-    }, { transaction });
-
-    if (isEmploymentStatusChanged) {
-
-      const latestBase = await db.SalarySchedule.findOne({
-        where: {
-          employee_id: employeeId,
-          is_premium: false,
-          is_active: true
-        },
-        order: [
-          ["effective_date", "DESC"],
-          ["createdAt", "DESC"]
-        ],
-        transaction,
-        lock: transaction.LOCK.UPDATE
-      });
-
-      if (latestBase) {
-
-        const newEffectiveDate = getNextWeekday(); // ✅ automatic
-
-        // Close previous schedule
-        await latestBase.update({
-          is_active: false,
-          end_date: newEffectiveDate
+        await employment.update({
+            employee_no: employeeNo,
+            date_hired: dateHired,
+            employment_status: employmentstatus,
+            tin,
+            sss_no: sssNo,
+            philhealth_no: philhealthNo,
+            pagibig_no: pagibigNo
         }, { transaction });
 
-        // Duplicate schedule
-        await db.SalarySchedule.create({
-          employee_id: latestBase.employee_id,
-          position_id: latestBase.position_id,
-          amount: latestBase.amount,
-          salary_type: latestBase.salary_type,
-          salary_group: latestBase.salary_group,
-          employment_status: employmentstatus,
-          effective_date: newEffectiveDate,
-          end_date: null,
-          notes: `Auto-generated due to Employment status change: ${prevEmploymentStatus} → ${employmentstatus}`,
-          is_premium: false,
-          is_active: true
-        }, { transaction });
-      }
+        if (isEmploymentStatusChanged) {
+
+            const latestBase = await db.SalarySchedule.findOne({
+                where: {
+                    employee_id: employeeId,
+                    is_premium: false,
+                    is_active: true
+                },
+                order: [
+                    ["effective_date", "DESC"],
+                    ["createdAt", "DESC"]
+                ],
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+
+            if (latestBase) {
+
+                const newEffectiveDate = getNextWeekday(); // automatic
+
+                // Close previous schedule
+                await latestBase.update({
+                    is_active: false,
+                    end_date: newEffectiveDate
+                }, { transaction });
+
+                // Duplicate schedule
+                await db.SalarySchedule.create({
+                    employee_id: latestBase.employee_id,
+                    position_id: latestBase.position_id,
+                    amount: latestBase.amount,
+                    salary_type: latestBase.salary_type,
+                    salary_group: latestBase.salary_group,
+                    employment_status: employmentstatus,
+                    effective_date: newEffectiveDate,
+                    end_date: null,
+                    notes: `Auto-generated due to Employment status change: ${prevEmploymentStatus} → ${employmentstatus}`,
+                    is_premium: false,
+                    is_active: true
+                }, { transaction });
+            }
+        }
+
+        await transaction.commit();
+
+        return res.status(201).json({
+            message: "Record Saved!"
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        return res.status(500).json({
+            error: error.message
+        });
     }
-
-    await transaction.commit();
-
-    return res.status(201).json({
-      message: "Record Saved!"
-    });
-
-  } catch (error) {
-    await transaction.rollback();
-    return res.status(500).json({
-      error: error.message
-    });
-  }
 };
 /**
  * Employment
@@ -1318,8 +1334,14 @@ exports.GetSignature = async (req, res) => {
             }
         });
 
+        if (!rows) {
+            return res.status(404).json({
+                message: "Signature record not found"
+            });
+        }
+
         const mime = "image/png";
-        // ✅ map only what you want
+        // map only what you want
         const record = {
             id: rows.id,
             signature: `data:${mime};base64,${rows.signature.toString("base64")}`

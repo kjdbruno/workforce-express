@@ -85,7 +85,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     avatar: {
-      type: DataTypes.STRING,
+      type: DataTypes.BLOB('long'),
       allowNull: false
     },
     failedLoginAttempts: {

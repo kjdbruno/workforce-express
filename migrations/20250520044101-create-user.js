@@ -30,7 +30,7 @@ module.exports = {
         allowNull: false
       },
       avatar: {
-        type: Sequelize.STRING,
+        type: Sequelize.BLOB('long'),
         allowNull: true
       },
       failedLoginAttempts: {

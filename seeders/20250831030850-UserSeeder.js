@@ -1,8 +1,10 @@
 'use strict';
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const users = require('./data/user.json');
 const { stat } = require('fs-extra');
+const fs = require('fs');
+const path = require('path');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -18,6 +20,9 @@ module.exports = {
     */
     const hashedPassword = await bcrypt.hash('Workforce@2025', 10);
 
+    const avatarPath = path.join(__dirname, '../public/default.png');
+    const avatarBuffer = fs.readFileSync(avatarPath);
+
     try {
       await queryInterface.bulkInsert('Users', [
         {
@@ -26,7 +31,7 @@ module.exports = {
           password: hashedPassword,
           role: 'SuperAdmin',
           status: 'Active',
-          avatar: '/avatar/default.png',
+          avatar: avatarBuffer,
           createdAt: new Date(),
           updatedAt: new Date()
         }

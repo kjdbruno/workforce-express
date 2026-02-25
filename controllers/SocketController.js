@@ -117,6 +117,61 @@ const GetApplicant = async (id) => {
     });
 };
 
+// Common helpers (use as-is)
+const pos = (n) => (n > 0 ? n : 0);
+
+const combineDayTime = (workDay, timeStr) => {
+    const t = (timeStr || "").trim();
+    if (!t) return moment.invalid();
+        const m = moment(`${workDay} ${t}`, ["YYYY-MM-DD HH:mm:ss", "YYYY-MM-DD HH:mm"], true);
+    if (!m.isValid() && t.length === 5) {
+        return moment(`${workDay} ${t}:00`, "YYYY-MM-DD HH:mm:ss", true);
+    }
+    return m;
+};
+
+const pickEffectiveEmployeeShift = (employeeShifts, workDayYMD) => {
+    const day = moment(workDayYMD, "YYYY-MM-DD", true);
+    const valid = (employeeShifts || [])
+        .filter((es) => es.is_active)
+        .filter((es) => {
+            const from = moment(es.effective_from, "YYYY-MM-DD", true);
+            const to = es.effective_to ? moment(es.effective_to, "YYYY-MM-DD", true) : null;
+            return from.isSameOrBefore(day, "day") && (!to || to.isSameOrAfter(day, "day"));
+        })
+        .sort((a, b) => moment(b.effective_from).diff(moment(a.effective_from)));
+    return valid[0] || null;
+};
+
+const overlapMinutes = (aStart, aEnd, bStart, bEnd) => {
+    const start = moment.max(aStart, bStart);
+    const end = moment.min(aEnd, bEnd);
+    const diff = end.diff(start, "minutes");
+    return diff > 0 ? diff : 0;
+};
+
+const getApprovedOvertimesForDay = async ({ employeeId, workDay, transaction }) => {
+    return db.EmployeeOvertimeApplication.findAll({
+        where: {
+            employee_id: employeeId,
+            status: "Approved",
+        },
+        include: [
+            {
+                model: db.Overtime,
+                as: "overtime",
+                required: true,
+                where: {
+                    date: workDay,
+                    status: "Approved",
+                    is_active: true,
+                },
+            },
+        ],
+        transaction,
+    });
+};
+
 module.exports = (_io) => {
     io = _io;
 
@@ -1604,6 +1659,670 @@ module.exports = (_io) => {
                 await transaction.rollback();
                 return res.status(500).json({ error: error.message });
             }
-        }
+        },
+        /**
+         * DTR
+         */
+        CreateAttendance: async (req, res) => {
+            const { 
+                dateStart, 
+                dateEnd 
+            } = req.body;
+
+            if (!dateStart || !dateEnd) {
+                return res.status(400).json({
+                    message: "dateStart and dateEnd are required.",
+                });
+            }
+
+            const start = moment(dateStart, "YYYY-MM-DD", true);
+            const end = moment(dateEnd, "YYYY-MM-DD", true);
+
+            if (!start.isValid() || !end.isValid()) {
+                return res.status(400).json({ 
+                    message: "Invalid date format. Use YYYY-MM-DD." 
+                });
+            }
+            if (end.isBefore(start)) {
+                return res.status(400).json({ 
+                    message: "dateEnd must be >= dateStart." 
+                });
+            }
+
+            const tx = await sequelize.transaction();
+
+            try {
+                // Read email template once
+                const templatePath = path.join(__dirname, "../templates/TimeLog.html");
+                const templateRaw = fs.readFileSync(templatePath, "utf8");
+
+                // Get all active employees with shifts
+                const employees = await db.Employee.findAll({
+                    where: { 
+                        status: "Active" 
+                    },
+                    include: [
+                        {
+                            model: db.EmployeeShift,
+                            as: "employeeShifts",
+                            required: true,
+                            where: { 
+                                is_active: true 
+                            },
+                            include: [
+                                {
+                                    model: db.Shift,
+                                    as: "shift",
+                                    include: [
+                                        { 
+                                            model: db.ShiftDay, 
+                                            as: "days" 
+                                        }
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                    transaction: tx,
+                });
+
+                if (!employees.length) {
+                    await tx.rollback();
+                    return res.status(400).json({
+                        message: "No active employees with shifts found.",
+                    });
+                }
+
+                let attendanceHeadersCreated = 0;
+                let attendanceDaysCreated = 0;
+
+                const year = new Date().getFullYear().toString();
+
+                // get latest once (outside loop)
+                const latest = await db.Attendance.findOne({
+                    where: {
+                        control_no: { 
+                            [Op.like]: `${year}-%` 
+                        },
+                    },
+                    order: [["control_no", "DESC"]],
+                    transaction: tx,
+                    lock: tx.LOCK.UPDATE,
+                });
+
+                let nextSeq = 1;
+                if (latest?.control_no) {
+                    const lastSeq = parseInt(latest.control_no.split("-")[1], 10);
+                    nextSeq = Number.isFinite(lastSeq) ? lastSeq + 1 : 1;
+                }
+
+                for (const emp of employees) {
+                    // Prevent duplicate Attendance header
+                    const existingHeader = await db.Attendance.findOne({
+                        where: {
+                            employee_id: emp.id,
+                            date_from: dateStart,
+                            date_to: dateEnd,
+                        },
+                        transaction: tx,
+                    });
+
+                    if (existingHeader) continue;
+
+                    const newNo = `${year}-${String(nextSeq).padStart(3, "0")}`;
+                    nextSeq++;
+
+                    // Create Attendance header ALWAYS
+                    const header = await db.Attendance.create(
+                        {
+                            control_no: newNo,
+                            employee_id: emp.id,
+                            date_from: dateStart,
+                            date_to: dateEnd,
+                            status: "Pending",
+                        },
+                        { transaction: tx }
+                    );
+
+                    attendanceHeadersCreated++;
+
+                    /**
+                     * GET EMPLOYEE LOGS (RAW) then EXTRACT TIME in Node.js
+                     */
+                    const logs = await db.EmployeeLog.findAll({
+                        where: {
+                            employee_id: emp.id,
+                            captured_at: {
+                                [Op.between]: [`${dateStart} 00:00:00`, `${dateEnd} 23:59:59`],
+                            },
+                        },
+                        attributes: ["captured_at"],
+                        order: [["captured_at", "ASC"]],
+                        raw: true,
+                        transaction: tx,
+                    });
+
+                    // Group logs per day: time_in = first, time_out = last
+                    const grouped = {};
+                    for (const log of logs) {
+                        const m = moment(log.captured_at);
+                        const work_day = m.format("YYYY-MM-DD");
+                        const time = m.format("HH:mm:ss");
+
+                        if (!grouped[work_day]) {
+                            grouped[work_day] = { time_in: time, time_out: time };
+                        } else {
+                            grouped[work_day].time_out = time;
+                        }
+                    }
+
+                    /**
+                     * CREATE EmployeeAttendance ONLY IF LOGS EXIST
+                     */
+                    const rowsToInsert = [];
+
+                    for (const work_day of Object.keys(grouped)) {
+                        const { time_in, time_out } = grouped[work_day];
+
+                        const effectiveES = pickEffectiveEmployeeShift(emp.employeeShifts, work_day);
+                        if (!effectiveES?.shift) continue;
+
+                        const shift = effectiveES.shift;
+
+                        const allowedDays = new Set((shift.days || []).map((d) => Number(d.day_of_week)));
+                        const dow = moment(work_day, "YYYY-MM-DD", true).isoWeekday(); // 1..7
+                        if (allowedDays.size && !allowedDays.has(dow)) continue;
+
+                        const actualIn = combineDayTime(work_day, time_in);
+                        const actualOut = combineDayTime(work_day, time_out);
+
+                        const shiftStart = combineDayTime(work_day, shift.start_time);
+                        let shiftEnd = combineDayTime(work_day, shift.end_time);
+                        if (shift.crosses_midnight) shiftEnd = shiftEnd.add(1, "day");
+
+                        const grace = Number(shift.grace_minutes) || 0;
+
+                        const late_minutes = pos(actualIn.diff(shiftStart.clone().add(grace, "minutes"), "minutes"));
+                        const undertime_minutes = pos(shiftEnd.diff(actualOut, "minutes"));
+
+                        // ✅ Overtime based on approved OT schedules
+                        const otApps = await getApprovedOvertimesForDay({
+                            employeeId: emp.id,
+                            workDay: work_day,
+                            transaction: tx,
+                        });
+
+                        let overtime_minutes = 0;
+                        for (const app of otApps) {
+                            const ot = app.overtime;
+                            if (!ot) continue;
+
+                            let otStart = combineDayTime(work_day, ot.time_start);
+                            let otEnd = combineDayTime(work_day, ot.time_end);
+
+                            if (otEnd.isBefore(otStart)) otEnd = otEnd.add(1, "day");
+                            overtime_minutes += overlapMinutes(actualIn, actualOut, otStart, otEnd);
+                        }
+
+                        rowsToInsert.push({
+                            attendance_id: header.id,
+                            work_day,
+                            time_in,
+                            time_out,
+                            late_minutes,
+                            undertime_minutes,
+                            overtime_minutes,
+                            is_locked: false,
+                            locked_at: null,
+                        });
+                    }
+
+                    if (rowsToInsert.length) {
+                        await db.EmployeeAttendance.bulkCreate(rowsToInsert, { transaction: tx });
+                        attendanceDaysCreated += rowsToInsert.length;
+                    }
+
+                    /**
+                     * SAVE SIGNATORIES ALWAYS
+                     */
+
+                    // Employee (order 1)
+                    const employeeAccount = await db.EmployeeAccount.findOne({
+                        where: { employee_id: emp.id },
+                        include: [
+                        {
+                            model: db.User,
+                            as: "user",
+                            where: { role: "employee" },
+                        },
+                        ],
+                        transaction: tx,
+                    });
+
+                    if (employeeAccount) {
+                        const employeeSignatories = await db.ApprovalSetting.findAll({
+                            where: {
+                                owner_id: employeeAccount.user_id,
+                                type: "TimeCard",
+                                order: 1,
+                                is_active: true,
+                            },
+                            order: [["order", "ASC"]],
+                            transaction: tx,
+                        });
+
+                        for (const sig of employeeSignatories) {
+                            await db.Approval.create({
+                                setting_id: sig.id,
+                                document_id: header.id,
+                                status: "Pending",
+                                signed_at: null,
+                                remarks: null,
+                                is_active: true,
+                                },
+                            { transaction: tx });
+                        }
+
+                        /**
+                         * Notification to approver
+                         */
+                        await db.Notification.create({
+                            sender_id: req.user?.id,
+                            receiver_id: employeeAccount.user_id,
+                            content: `Daily Time Record with Control No.: ${newNo} for ${dateStart} to ${dateEnd} need your approval`,
+                            status: "unread",
+                        });
+
+                        const [notificationCount, notifications] = await Promise.all([
+                            db.Notification.count({
+                                where: { receiver_id: employeeAccount.user_id, status: "unread" },
+                            }),
+                            db.Notification.findAll({
+                                where: { receiver_id: employeeAccount.user_id, status: "unread" },
+                                order: [["createdAt", "DESC"]],
+                            }),
+                        ]);
+
+                        io.to(`user:${employeeAccount.user_id}`).emit("EmitNotifications", {
+                            notifications,
+                            count: notificationCount,
+                        });
+                    }
+
+                    // Management (order >= 2)
+                    const managementAccount = await db.EmployeeAccount.findAll({
+                        include: [
+                            {
+                                model: db.User,
+                                as: "user",
+                                where: { 
+                                    role: "Management" 
+                                },
+                            },
+                        ],
+                        transaction: tx,
+                    });
+
+                    if (managementAccount) {
+                            const managementSignatories = await db.ApprovalSetting.findAll({
+                            where: {
+                                owner_id: employeeAccount.user_id,
+                                type: "TimeCard",
+                                order: { [Op.gte]: 2 },
+                                is_active: true,
+                            },
+                            order: [["order", "ASC"]],
+                            transaction: tx,
+                        });
+
+                        for (const sig of managementSignatories) {
+                            await db.Approval.create({
+                                setting_id: sig.id,
+                                document_id: header.id,
+                                status: "Pending",
+                                signed_at: null,
+                                remarks: null,
+                                is_active: true,
+                            }, { transaction: tx });
+                        }
+                    }
+
+                    // SEND EMAIL (inside loop)
+                    const mail = emp?.email;
+                    if (mail) {
+                        const control_no = header.control_no; //no re-query
+                        const firstname = emp?.first_name;
+                        const from = moment(dateStart).format("MMMM DD YYYY");
+                        const to = moment(dateEnd).format("MMMM DD YYYY");
+
+                        try {
+                            let htmlContent = templateRaw
+                                .replace(/{{\s*control_no\s*}}/g, control_no || "Control No")
+                                .replace(/{{\s*firstname\s*}}/g, firstname || "Employee")
+                                .replace(/{{\s*from\s*}}/g, from || "Date From")
+                                .replace(/{{\s*to\s*}}/g, to || "Date To");
+
+                            await transporter.sendMail({
+                                from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                                to: mail,
+                                subject: "Daily Time Record",
+                                html: htmlContent,
+                            });
+                        } catch (emailError) {
+                            console.error("Email sending failed:", emailError.message);
+                        }
+                    }
+                }
+
+                if (attendanceHeadersCreated === 0) {
+                    throw new Error("Nothing created. Either records exist or no employees found.");
+                }
+
+                await tx.commit();
+
+                return res.status(201).json({
+                    message: "Record Saved!",
+                    attendance_headers_created: attendanceHeadersCreated,
+                    attendance_days_created: attendanceDaysCreated,
+                });
+            } catch (error) {
+                await tx.rollback();
+                console.error(error);
+                return res.status(400).json({
+                    error: error.message,
+                });
+            }
+        },
+        ApproveAttendance: async (req, res) => {
+            const { 
+                id
+            } = req.params;
+            const { 
+                approvalid 
+            } = req.body;
+        
+            try {
+        
+                const attendance = await db.Attendance.findByPk(id);
+                
+                if (!attendance) {
+                    return res.status(500).json({
+                        errors: [{
+                            type: "field",
+                            value: id,
+                            msg: "Record not found!",
+                            path: "id",
+                            location: "body",
+                        }],
+                    });
+                }
+        
+                const approval = await db.Approval.findByPk(approvalid);
+        
+                await approval.update({
+                    status: 'Approved',
+                    signed_at: new Date()
+                })
+                
+                const totalCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'TimeCard'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true
+                    }
+                });
+                
+                const approvedCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'TimeCard'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: id,
+                        is_active: true,
+                        status: 'Approved'
+                    }
+                });
+                
+                if (totalCount === approvedCount) {
+                    await attendance.update({ status: 'Approved' });
+                    /**
+                     * Send Notification
+                     */
+                    const employeeid = attendance.employee_id;
+                    const accounts = await db.EmployeeAccount.findOne({
+                        where: {
+                            employee_id: employeeid
+                        }
+                    });
+                    await db.Notification.create({
+                        sender_id: req.user?.id,
+                        receiver_id: accounts?.user_id,
+                        content: `Daily Time Record with control number: ${attendance.control_no} has been approved.`,
+                        status: 'unread'
+                    });
+
+                    const [notificationCount, notifications] = await Promise.all([
+                        db.Notification.count({
+                            where: { receiver_id: accounts?.user_id, status: 'unread' }
+                        }),
+                        db.Notification.findAll({
+                            where: { receiver_id: accounts?.user_id, status: 'unread' },
+                            order: [['createdAt', 'DESC']]
+                        })
+                    ]);
+                    io.to(`user:${accounts?.user_id}`).emit('EmitNotifications', {
+                        notifications,
+                        count: notificationCount,
+                    });
+                }
+        
+                res.status(201).json({
+                    message: "Record Updated!"
+                });
+        
+            } catch (error) {
+        
+                res.status(400).json({ 
+                    error: error.message 
+                });
+        
+            }
+        },
+        OverideAttendance: async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const { signatories } = req.body;
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    const attendance = await db.Attendance.findByPk(id, { transaction });
+
+    if (!attendance) {
+      await transaction.rollback();
+      return res.status(404).json({
+        errors: [
+          {
+            type: "field",
+            value: id,
+            msg: "Record not found!",
+            path: "id",
+            location: "params",
+          },
+        ],
+      });
+    }
+
+    // ---- validate payload ----
+    if (!Array.isArray(signatories) || signatories.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({ message: "No signatories provided" });
+    }
+
+    const approvalIds = [
+      ...new Set(
+        signatories
+          .map((v) => Number(v))
+          .filter((v) => Number.isInteger(v) && v > 0)
+      ),
+    ];
+
+    if (approvalIds.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({ message: "Invalid signatories payload" });
+    }
+
+    // ---- fetch approvals (must be active) ----
+    const approvals = await db.Approval.findAll({
+      where: {
+        id: approvalIds,
+        is_active: true,
+      },
+      transaction,
+    });
+
+    if (approvals.length === 0) {
+      await transaction.rollback();
+      return res.status(404).json({ message: "No approvals found to override" });
+    }
+
+    // ensure approvals belong to this document
+    const invalid = approvals.some((a) => Number(a.document_id) !== Number(id));
+    if (invalid) {
+      await transaction.rollback();
+      return res
+        .status(400)
+        .json({ message: "Some approvals do not belong to this document." });
+    }
+
+    // ---- update approvals as overridden/approved ----
+    await db.Approval.update(
+      {
+        status: "Approved",
+        is_overide: true,
+        signed_at: new Date(),
+      },
+      {
+        where: { id: approvalIds },
+        transaction,
+      }
+    );
+
+    // ---- save override history ----
+    await db.ApprovalOveride.bulkCreate(
+      approvalIds.map((approval_id) => ({
+        approval_id,
+        user_id: req.user.id,
+      })),
+      { transaction }
+    );
+
+    // ---- if all required approvals are approved, approve attendance ----
+    const totalCount = await db.Approval.count({
+      include: [
+        {
+          model: db.ApprovalSetting,
+          as: "setting",
+          where: { type: "TimeCard" },
+        },
+      ],
+      where: {
+        document_id: id,
+        is_active: true,
+      },
+      transaction,
+    });
+
+    const approvedCount = await db.Approval.count({
+      include: [
+        {
+          model: db.ApprovalSetting,
+          as: "setting",
+          where: { type: "TimeCard" },
+        },
+      ],
+      where: {
+        document_id: id,
+        is_active: true,
+        status: "Approved",
+      },
+      transaction,
+    });
+
+    if (totalCount > 0 && totalCount === approvedCount) {
+      await attendance.update({ status: "Approved" }, { transaction });
+
+      // Send Notification
+      const employeeid = attendance.employee_id;
+
+      const accounts = await db.EmployeeAccount.findOne({
+        where: { employee_id: employeeid },
+        transaction,
+      });
+
+      if (employeeid) {
+        await db.Notification.create(
+          {
+            sender_id: req.user?.id,
+            receiver_id: employeeid,
+            content: `Daily Time Record with control number: ${attendance.control_no} has been approved.`,
+            status: "unread",
+          },
+          { transaction }
+        );
+
+        const [notificationCount, notifications] = await Promise.all([
+          db.Notification.count({
+            where: { receiver_id: employeeid, status: "unread" },
+            transaction,
+          }),
+          db.Notification.findAll({
+            where: { receiver_id: employeeid, status: "unread" },
+            order: [["createdAt", "DESC"]],
+            transaction,
+          }),
+        ]);
+
+        io.to(`user:${employeeid}`).emit("EmitNotifications", {
+          notifications,
+          count: notificationCount,
+        });
+      }
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      message: "Approval overridden successfully",
+      totalCount,
+      approvedCount,
+      attendanceStatus:
+        totalCount > 0 && totalCount === approvedCount
+          ? "Approved"
+          : attendance.status,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Failed to override approval",
+      error: error.message,
+    });
+  }
+},
     };
 };
