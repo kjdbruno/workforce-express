@@ -267,7 +267,7 @@ exports.GetManagement = async (req, res) => {
         const data = await db.User.findAll({
             where: {
                 status: 'Active',
-                role: ['Management', 'HR', 'Admin']
+                role: ['Management']
             },
             attributes: [
                 ['id', 'value'],

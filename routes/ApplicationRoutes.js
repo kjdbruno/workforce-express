@@ -10,12 +10,13 @@ const { ValidateForm } = require('../middlewares/ApplicationValidator');
 
 const { VerifyToken, AuthorizeRoles } = require('../middlewares/AuthMiddleware');
 
-const { GetAll, Create, Update, GetDetails, GeneratePDF, GetVacancy, GetCourse, GetSchool } = require('../controllers/ApplicationController');
+const { GetAll, Create, Update, GetDetails, GeneratePDF, GetVacancy, GetCourse, GetSchool, GenerateDocument } = require('../controllers/ApplicationController');
 
 router.get('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetAll);
 router.get('/:id/details', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GetDetails);
 router.post('/', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), UploadDocument, Create);
 router.post('/:id/update', VerifyToken, AuthorizeRoles('SuperAdmin', 'Admin', 'HR'), Update);
+router.get('/document/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GenerateDocument);
 
 router.get('/:id/pdf', VerifyToken, AuthorizeRoles('SuperAdmin', 'Management', 'Admin', 'HR'), GeneratePDF);
 

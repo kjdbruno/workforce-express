@@ -20,7 +20,8 @@ const io = socketIo(server, {
   pingInterval: 25000,
   pingTimeout: 5000,
     cors: {
-      origin: '*', // Change this to your frontend's origin http://localhost:9000
+      // origin: '*', // Change this to your frontend's origin http://localhost:9000
+      origin: 'https://hris-ccmi.com',
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type'],
       credentials: true, // Optional, if you need to support credentials
@@ -29,7 +30,8 @@ const io = socketIo(server, {
 
 // Middleware
 app.use(cors({
-  origin: '*', // Change this to your frontend's origin http://localhost:9000
+  // origin: '*', // Change this to your frontend's origin http://localhost:9000
+  origin: 'https://hris-ccmi.com',
   methods: ['GET', 'POST'],
   credentials: true, // Optional, if you need to support credentials
 }));
@@ -104,11 +106,7 @@ app.use('/api/log', require('./routes/LogRoutes'));
  */
 app.use('/api/portal', require('./routes/PortalRoutes'));
 
-// app.use(express.static('public'));
-// put near the top (after app = express())
-app.use('/uploads/avatar', express.static('/mnt/workforce/storage/avatar'));
-app.use('/uploads/documents', express.static('/mnt/workforce/storage/documents'));
-app.use('/uploads/signatures', express.static('/mnt/workforce/storage/signatures'));
+app.use(express.static('public'));
 
 require('./sockets')(io);
 
@@ -131,8 +129,7 @@ app.get('/', (req, res) => {
 app.get('*', (req, res, next) => {
   if (
     req.path.startsWith('/api') ||
-    req.path.startsWith('/portal') ||
-    req.path.startsWith('/uploads')
+    req.path.startsWith('/portal')
   ) return next();
 
   return res.sendFile(path.join(MainPath, 'index.html'));

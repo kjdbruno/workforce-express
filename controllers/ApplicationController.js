@@ -149,7 +149,7 @@ exports.GetDetails = async (req, res) => {
                     model: db.ApplicantDocument,
                     as: 'documents',
                     attributes: [
-                        'filename', 'document'
+                        'id', 'filename', 'document'
                     ]
                 },
                 {
@@ -565,6 +565,42 @@ exports.Update = async (req, res) => {
         return res.status(400).json({
         error: error.message
         });
+    }
+};
+
+exports.GenerateDocument = async (req, res) => {
+    const { 
+        id 
+    } = req.params;
+
+    try {
+        const doc = await db.ApplicantDocument.findOne({
+            where: {
+                id
+            },
+            order: [['createdAt', 'DESC']]
+        });
+
+        if (!doc) {
+            return res.status(404).json({ error: "No active document found" });
+        }
+
+        if (!doc.document) {
+            return res.status(404).json({ error: "Document file is empty" });
+        }
+
+        // Set correct headers
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `inline; filename="${doc.filename || "document.pdf"}"`
+        );
+
+        // ✅ Send BLOB directly
+        return res.send(doc.document);
+
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
     }
 };
 
