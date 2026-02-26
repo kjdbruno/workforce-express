@@ -19,7 +19,7 @@ module.exports = (_io) => {
                         username,
                         role: {
                             [Op.in]: ['SuperAdmin', 'Admin', 'Management', 'HR', 'Finance']
-                        }
+                        },
                     }
                 });
                 if (!user) {

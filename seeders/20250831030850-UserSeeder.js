@@ -18,24 +18,21 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    const hashedPassword = await bcrypt.hash('Workforce@2025', 10);
 
     const avatarPath = path.join(__dirname, '../public/default.png');
     const avatarBuffer = fs.readFileSync(avatarPath);
 
     try {
-      await queryInterface.bulkInsert('Users', [
-        {
-          name: 'Admin User',
-          username: 'SuperAdmin',
-          password: hashedPassword,
-          role: 'SuperAdmin',
-          status: 'Active',
-          avatar: avatarBuffer,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ]);
+      await queryInterface.bulkInsert('Users', users.map(s => ({
+        name: s.name,
+        username: s.username,
+        password: bcrypt.hashSync(s.password, 10),
+        role: s.role,
+        status: s.status,
+        avatar: avatarBuffer,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })), {});
     } catch (error) {
       console.error('Seeder error:', error);
       throw error;

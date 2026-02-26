@@ -141,7 +141,10 @@ module.exports = function (io) {
                 }),
             ]);
 
-            io.to(`user:${userId}`).emit('EmitNotifications', { count, notifications });
+            io.to(`user:${userId}`).emit('EmitNotifications', {
+                count,
+                notifications: notifications.map(n => n.get({ plain: true }))
+            });
         });
 
         // JOIN ROOM (kept for compatibility)
@@ -195,19 +198,29 @@ module.exports = function (io) {
     // THIS is the function that emits the online users list
     async function EmitOnlineUsers() {
         try {
-            const users = await db.UserLog.findAll({
-                where: { 
-                    is_online: true 
-                },
-                include: {
-                    model: db.User,
-                    as: 'User',
-                    // optional: limit fields
-                    // attributes: ['id','name','role','avatar','username','status']
-                },
-                order: [['updatedAt', 'DESC']],
+            const users = await db.User.findAll({
+            attributes: ['id', 'name', 'username', 'role', 'status', 'avatar'], // keep payload small
+            include: [
+                {
+                model: db.UserLog,
+                as: 'UserLog',
+                attributes: ['is_online', 'socket_id', 'updatedAt']
+                }
+            ]
             });
-            io.emit('EmitOnlineUsers', users);
+
+            const plainUsers = users.map(u => {
+                const user = u.get({ plain: true });
+                if (user.avatar) {
+                    const mime = "image/png"; // adjust if you store mime_type
+                    user.avatar = `data:${mime};base64,${Buffer.from(user.avatar).toString('base64')}`;
+                } else {
+                    user.avatar = null;
+                }
+
+                return user;
+            });
+            io.emit('EmitOnlineUsers', plainUsers);
         } catch (e) {
             console.log(e);
         }
@@ -216,15 +229,19 @@ module.exports = function (io) {
     async function EmitNotifications(receiverId) {
         const [notificationCount, notifications] = await Promise.all([
             db.Notification.count({
-                where: { receiver_id: receiverId, status: 'unread' },
+            where: { receiver_id: receiverId, status: 'unread' },
             }),
             db.Notification.findAll({
-                where: { receiver_id: receiverId, status: 'unread' },
-                order: [['createdAt', 'DESC']],
+            where: { receiver_id: receiverId, status: 'unread' },
+            order: [['createdAt', 'DESC']],
+            attributes: ['id', 'sender_id', 'receiver_id', 'content', 'status', 'createdAt'],
             }),
         ]);
+
+        const plainNotifications = notifications.map(n => n.get({ plain: true }));
+
         io.to(`user:${receiverId}`).emit('EmitNotifications', {
-            notifications,
+            notifications: plainNotifications,
             count: notificationCount,
         });
     }

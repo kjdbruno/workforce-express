@@ -1,38 +1,58 @@
 [
-    { 
-        "profileId": 1,
-        "username": "SuperAdministrator",
+    {
+        "name": "Admin User",
+        "username": "SuperAdmin",
+        "password": "Workforce@2025",
         "role": "SuperAdmin",
         "status": "Active"
     },
-    { 
-        "profileId": 2,
-        "username": "Administrator",
+    {
+        "name": "abegail malinao",
+        "username": "amalinao",
+        "password": "amalinao",
         "role": "Admin",
         "status": "Active"
     },
-    { 
-        "profileId": 3,
-        "username": "Supervisor",
-        "role": "Supervisor",
-        "status": "Active"
-    },
-    { 
-        "profileId": 4,
-        "username": "HumanResource",
+    {
+        "name": "Jilclotilde Ampe",
+        "username": "jampe",
+        "password": "jampe",
         "role": "HR",
         "status": "Active"
     },
-    { 
-        "profileId": 4,
-        "username": "Finance",
-        "role": "Finance",
+    {
+        "name": "Joy Ann Aranton",
+        "username": "jaaranton",
+        "password": "jaaranton",
+        "role": "HR",
         "status": "Active"
     },
-    { 
-        "profileId": 4,
-        "username": "Employee",
-        "role": "Employee",
+    {
+        "name": "Andrea Tabucanon",
+        "username": "atabucanon",
+        "password": "atabucanon",
+        "role": "HR",
+        "status": "Active"
+    },
+    {
+        "name": "April Joy Orpilla",
+        "username": "ajorpilla",
+        "password": "ajorpilla",
+        "role": "HR",
+        "status": "Active"
+    },
+    {
+        "name": "Jennelyn Junatas",
+        "username": "jjunatas",
+        "password": "jjunatas",
+        "role": "HR",
+        "status": "Active"
+    },
+    {
+        "name": "Rainalyn Salvan",
+        "username": "rsalvan",
+        "password": "rsalvan",
+        "role": "HR",
         "status": "Active"
     }
 ]
