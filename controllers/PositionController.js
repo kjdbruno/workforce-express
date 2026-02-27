@@ -85,23 +85,23 @@ exports.Create = async (req, res) => {
 
     try {
 
-        const exist = await db.Position.findOne({
-            where: { 
-                name 
-            }
-        });
+        // const exist = await db.Position.findOne({
+        //     where: { 
+        //         name 
+        //     }
+        // });
 
-        if (exist) {
-            return res.status(500).json({
-                errors: [{
-                    type: "field",
-                    value: name,
-                    msg: "Record already exists!",
-                    path: "name",
-                    location: "body",
-                }],
-            });
-        }
+        // if (exist) {
+        //     return res.status(500).json({
+        //         errors: [{
+        //             type: "field",
+        //             value: name,
+        //             msg: "Record already exists!",
+        //             path: "name",
+        //             location: "body",
+        //         }],
+        //     });
+        // }
 
         await db.Position.create({
             name,
