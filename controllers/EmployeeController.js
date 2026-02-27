@@ -882,8 +882,7 @@ exports.CreateSalary = async (req, res) => {
                 }, transaction
             })
 
-            employment.position_id = positionid;
-            employment.employment_status = employmentstatus;
+            employment.position_id = positionid
             await employment.save({ transaction })
         }
 
