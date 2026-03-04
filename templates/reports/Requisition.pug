@@ -160,12 +160,21 @@ html
                             span #{index + 1}
                             span &nbsp;
                             span #{q}
-        h3(style='text-transform: uppercase;') 3. Brief Job Description
+        h3(style='text-transform: uppercase;') 3. Job Benefits
+        table(style="font-size: 10px;")
+            tr
+                td(colspan="4")
+                    each b, index in benefits
+                        div 
+                            span #{index + 1}
+                            span &nbsp;
+                            span #{b}
+        h3(style='text-transform: uppercase;') 4. Brief Job Description
         table(style="font-size: 10px;")
             tr
                 td(style="height: 150px")= description
 
-        h3(style='text-transform: uppercase;') 4. Routing and Approval
+        h3(style='text-transform: uppercase;') 5. Routing and Approval
         table.noborder(style="font-size: 10px;")
             tr
                 each s, index in signatories

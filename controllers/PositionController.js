@@ -78,7 +78,8 @@ exports.Create = async (req, res) => {
         hourly,
         salarytype,
         description,
-        qualifications
+        qualifications,
+        benefits
     } = req.body;
 
     const transaction = await sequelize.transaction();
@@ -111,7 +112,8 @@ exports.Create = async (req, res) => {
             hourly_salary: hourly,
             salary_type : salarytype,
             description,
-            qualification: qualifications
+            qualification: qualifications,
+            benefit: benefits
         }, { transaction });
 
         await transaction.commit();
@@ -144,7 +146,8 @@ exports.Update = async (req, res) => {
         hourly,
         salarytype,
         description,
-        qualifications
+        qualifications,
+        benefits
     } = req.body;
 
     const transaction = await sequelize.transaction();
@@ -194,7 +197,8 @@ exports.Update = async (req, res) => {
             hourly_salary: hourly,
             salary_type: salarytype,
             description,
-            qualification: qualifications
+            qualification: qualifications,
+            benefit: benefits
         },  { transaction });
 
         await transaction.commit();

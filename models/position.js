@@ -78,6 +78,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.JSON,
       allowNull: false
     },
+    benefit: {
+      type: DataTypes.JSON,
+      allowNull: false
+    },
     status: {
       type: DataTypes.ENUM('Vacant', 'Requested', 'Approved', 'Filled'),
       defaultValue: 'Vacant'

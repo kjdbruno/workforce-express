@@ -89,11 +89,16 @@ exports.GetPosition = async (req, res) => {
                         model: db.Employee,
                         as: 'employee',
                         include: [
-                        {
-                            model: db.Employment,
-                            as: 'employment',
-                            include: [{ model: db.Position, as: 'position' }],
-                        },
+                            {
+                                model: db.Employment,
+                                as: 'employment',
+                                include: [
+                                    { 
+                                        model: db.Position, 
+                                        as: 'position' 
+                                    }
+                                ],
+                            },
                         ],
                     },
                 ],
@@ -119,6 +124,7 @@ exports.GetPosition = async (req, res) => {
                 ['name', 'label'],
                 'description',
                 'qualification',
+                'benefit',
                 'salary_type',
                 'status',
                 [
@@ -259,7 +265,7 @@ exports.GetDetails = async (req, res) => {
                     model: db.Position,
                     as: 'position',
                     attributes: [
-                        'name', 'salary_type', 'description', 'qualification',
+                        'name', 'salary_type', 'description', 'qualification', 'benefit',
                         [
                             sequelize.literal(`
                             CASE position.salary_type
@@ -371,33 +377,33 @@ exports.GetDetails = async (req, res) => {
 });
 
 const mappedApprovals = approvals.map(a => {
-  const row = a.toJSON();
+    const row = a.toJSON();
 
-  const originalUser = row?.setting?.approver || null;
-  const latestOverride = row?.overrides?.[0] || null;
-  const overrideUser = latestOverride?.user || null;
+    const originalUser = row?.setting?.approver || null;
+    const latestOverride = row?.overrides?.[0] || null;
+    const overrideUser = latestOverride?.user || null;
 
-  return {
+    return {
 
-    order: row?.setting?.order ?? null,
-    approver_id: originalUser?.id ?? null,
+        order: row?.setting?.order ?? null,
+        approver_id: originalUser?.id ?? null,
 
-    id: row.id,
-    status: row.status,
-    signed_at: row.signed_at,
-    is_overide: row.is_overide,
+        id: row.id,
+        status: row.status,
+        signed_at: row.signed_at,
+        is_overide: row.is_overide,
 
-    original_approver_name: getEmployeeName(originalUser),
-    original_approver_position: getEmployeePosition(originalUser),
-    original_signature: getSignature(originalUser),
+        original_approver_name: getEmployeeName(originalUser),
+        original_approver_position: getEmployeePosition(originalUser),
+        original_signature: getSignature(originalUser),
 
-    override_name: overrideUser ? getEmployeeName(overrideUser) : null,
-    override_position: overrideUser ? getEmployeePosition(overrideUser) : null,
-    override_signature: overrideUser ? getSignature(overrideUser) : null,
+        override_name: overrideUser ? getEmployeeName(overrideUser) : null,
+        override_position: overrideUser ? getEmployeePosition(overrideUser) : null,
+        override_signature: overrideUser ? getSignature(overrideUser) : null,
 
-    // optional: quick flag
-    is_overide: row.is_overide === true
-  };
+        // optional: quick flag
+        is_overide: row.is_overide === true
+    };
 });
 
 
@@ -416,23 +422,23 @@ const mappedApprovals = approvals.map(a => {
 };
 
 const getEmployeeName = (user) => {
-  const emp = user?.employeeAccount?.employee;
-  if (!emp) return '';
+    const emp = user?.employeeAccount?.employee;
+    if (!emp) return '';
 
-  const first = emp.first_name || emp.firstName || '';
-  const middleRaw = emp.middle_name || emp.middleName || '';
-  const last = emp.last_name || emp.lastName || '';
-  const suffix = emp.suffix || '';
+    const first = emp.first_name || emp.firstName || '';
+    const middleRaw = emp.middle_name || emp.middleName || '';
+    const last = emp.last_name || emp.lastName || '';
+    const suffix = emp.suffix || '';
 
-  const middleInitial = middleRaw
-    ? `${middleRaw.trim().charAt(0).toUpperCase()}.`
-    : '';
+    const middleInitial = middleRaw
+        ? `${middleRaw.trim().charAt(0).toUpperCase()}.`
+        : '';
 
-  return [first, middleInitial, last, suffix]
-    .filter(Boolean)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+    return [first, middleInitial, last, suffix]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 };
 
 const getSignature = (user) => {
@@ -442,11 +448,11 @@ const getSignature = (user) => {
 };
 
 const getEmployeePosition = (user) => {
-  return (
-    user?.employeeAccount?.employee?.employment?.position?.name ||
-    user?.employeeAccount?.employee?.employment?.position?.title ||
-    ''
-  );
+    return (
+        user?.employeeAccount?.employee?.employment?.position?.name ||
+        user?.employeeAccount?.employee?.employment?.position?.title ||
+        ''
+    );
 };
 
 
@@ -887,80 +893,80 @@ exports.GeneratePDF = async (req, res) => {
         }, transaction);
 
         const approvals = await db.Approval.findAll({
-  where: {
-    document_id: id,
-    is_active: true
-  },
-  include: [
-    {
-      model: db.ApprovalSetting,
-      as: 'setting',
-      where: { type: 'Vacancy' },
-      include: [
-        {
-          model: db.User,
-          as: 'approver',
-          attributes: ['id'],
-          include: [
-            {
-              model: db.EmployeeAccount,
-              as: 'employeeAccount',
-              include: [
-                {
-                  model: db.Employee,
-                  as: 'employee',
-                  include: [
-                    {
-                      model: db.Employment,
-                      as: 'employment',
-                      include: [{ model: db.Position, as: 'position' }]
-                    },
-                    { model: db.EmployeeSignature, as: 'signature' }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    where: {
+        document_id: id,
+        is_active: true
     },
-    {
-      model: db.ApprovalOveride,
-      as: 'overrides',
-      required: false,
-      include: [
+    include: [
         {
-          model: db.User,
-          as: 'user',
-          attributes: ['id'],
-          include: [
+        model: db.ApprovalSetting,
+        as: 'setting',
+        where: { type: 'Vacancy' },
+        include: [
             {
-              model: db.EmployeeAccount,
-              as: 'employeeAccount',
-              include: [
+            model: db.User,
+            as: 'approver',
+            attributes: ['id'],
+            include: [
                 {
-                  model: db.Employee,
-                  as: 'employee',
-                  include: [
+                model: db.EmployeeAccount,
+                as: 'employeeAccount',
+                include: [
                     {
-                      model: db.Employment,
-                      as: 'employment',
-                      include: [{ model: db.Position, as: 'position' }]
-                    },
-                    { model: db.EmployeeSignature, as: 'signature' }
-                  ]
+                    model: db.Employee,
+                    as: 'employee',
+                    include: [
+                        {
+                        model: db.Employment,
+                        as: 'employment',
+                        include: [{ model: db.Position, as: 'position' }]
+                        },
+                        { model: db.EmployeeSignature, as: 'signature' }
+                    ]
+                    }
+                ]
                 }
-              ]
+            ]
             }
-          ]
+        ]
+        },
+        {
+        model: db.ApprovalOveride,
+        as: 'overrides',
+        required: false,
+        include: [
+            {
+            model: db.User,
+            as: 'user',
+            attributes: ['id'],
+            include: [
+                {
+                model: db.EmployeeAccount,
+                as: 'employeeAccount',
+                include: [
+                    {
+                    model: db.Employee,
+                    as: 'employee',
+                    include: [
+                        {
+                        model: db.Employment,
+                        as: 'employment',
+                        include: [{ model: db.Position, as: 'position' }]
+                        },
+                        { model: db.EmployeeSignature, as: 'signature' }
+                    ]
+                    }
+                ]
+                }
+            ]
+            }
+        ]
         }
-      ]
-    }
-  ],
-  order: [
-    [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
-    [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
-  ]
+    ],
+    order: [
+        [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+        [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+    ]
 });
 
 
@@ -1052,6 +1058,7 @@ exports.GeneratePDF = async (req, res) => {
         const experience = result?.year_experience;
         const age = result?.age_range;
         const qualifications = result?.position?.qualification;
+        const benefits = result?.position?.benefit;
         const description = result?.position?.description;
 
         const mappedApprovals = approvals.map(a => {
@@ -1091,6 +1098,7 @@ exports.GeneratePDF = async (req, res) => {
             experience,
             age,
             qualifications,
+            benefits,
             description,
             signatories: mappedApprovals
         });

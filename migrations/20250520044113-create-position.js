@@ -48,6 +48,10 @@ module.exports = {
         type: Sequelize.JSON,
         allowNull: false
       },
+      benefit: {
+        type: Sequelize.JSON,
+        allowNull: false
+      },
       status: {
         type: Sequelize.ENUM('Vacant', 'Requested', 'Approved', 'Filled'),
         defaultValue: 'Vacant'
