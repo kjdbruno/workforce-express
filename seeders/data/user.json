@@ -5,54 +5,5 @@
         "password": "Workforce@2025",
         "role": "SuperAdmin",
         "status": "Active"
-    },
-    {
-        "name": "abegail malinao",
-        "username": "amalinao",
-        "password": "amalinao",
-        "role": "Admin",
-        "status": "Active"
-    },
-    {
-        "name": "Jilclotilde Ampe",
-        "username": "jampe",
-        "password": "jampe",
-        "role": "HR",
-        "status": "Active"
-    },
-    {
-        "name": "Joy Ann Aranton",
-        "username": "jaaranton",
-        "password": "jaaranton",
-        "role": "HR",
-        "status": "Active"
-    },
-    {
-        "name": "Andrea Tabucanon",
-        "username": "atabucanon",
-        "password": "atabucanon",
-        "role": "HR",
-        "status": "Active"
-    },
-    {
-        "name": "April Joy Orpilla",
-        "username": "ajorpilla",
-        "password": "ajorpilla",
-        "role": "HR",
-        "status": "Active"
-    },
-    {
-        "name": "Jennelyn Junatas",
-        "username": "jjunatas",
-        "password": "jjunatas",
-        "role": "HR",
-        "status": "Active"
-    },
-    {
-        "name": "Rainalyn Salvan",
-        "username": "rsalvan",
-        "password": "rsalvan",
-        "role": "HR",
-        "status": "Active"
     }
 ]
