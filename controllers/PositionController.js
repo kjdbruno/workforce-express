@@ -171,7 +171,7 @@ exports.Update = async (req, res) => {
     
         const exist = await db.Position.findOne({
             where: {
-                [Op.or]: [{ name }],
+                name,
                 id: { [Op.ne]: id },
             },
         });
