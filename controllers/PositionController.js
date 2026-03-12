@@ -169,26 +169,6 @@ exports.Update = async (req, res) => {
             });
         }
     
-        const exist = await db.Position.findOne({
-            where: {
-                name,
-                id: { [Op.ne]: id },
-            },
-        });
-        if (exist) {
-            return res.status(400).json({
-                errors: [
-                    {
-                        type: "manual",
-                        value: "",
-                        msg: "Record already in use!",
-                        path: "name",
-                        location: "body",
-                    },
-                ],
-            });
-        }
-    
         await position.update({ 
             name, 
             department_id: departmentId,
