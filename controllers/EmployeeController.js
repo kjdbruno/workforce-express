@@ -163,6 +163,12 @@ exports.GetPosition = async (req, res) => {
                     'amount'
                 ]
             ],
+            include: [
+                {
+                    model: db.Department,
+                    as: 'Departments'
+                }
+            ],
             order: [['id', 'ASC']]
         });
 
