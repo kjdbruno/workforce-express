@@ -1,5 +1,7 @@
 const { Op, Sequelize } = require("sequelize");
-const { SalarySchedule, Employee, Employment, Position } = require('../models');
+
+const db = require('../models');
+const { sequelize } = db;
 
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +14,7 @@ const puppeteer = require('puppeteer');
 
 exports.GetPosition = async (req, res) => {
     try {
-        const data = await Position.findAll({
+        const data = await db.Position.findAll({
             where: {
                 is_active: true
             },
@@ -37,6 +39,12 @@ exports.GetPosition = async (req, res) => {
                     'amount'
                 ]
             ],
+            include: [
+                {
+                    model: db.Department,
+                    as: 'department'
+                }
+            ],
             order: [['id', 'ASC']]
         });
 
@@ -58,7 +66,7 @@ exports.RemoveSalary = async (req, res) => {
     
     try {
 
-        const salary = await SalarySchedule.findByPk(id);
+        const salary = await db.SalarySchedule.findByPk(id);
 
         if (!salary) {
             return res.status(404).json({
@@ -92,13 +100,13 @@ exports.GenerateServicePDF = async (req, res) => {
     let browser;
     try {
 
-        const employee = await Employee.findOne({
+        const employee = await db.Employee.findOne({
             where: { 
                 id 
             },
             include: [
                 {
-                    model: Employment,
+                    model: db.Employment,
                     as: 'employment',
                     attributes: [
                         'employment_status',
@@ -106,7 +114,7 @@ exports.GenerateServicePDF = async (req, res) => {
                     ],
                     include: [
                         {
-                            model: Position,
+                            model: db.Position,
                             as: 'position',
                             attributes: [
                                 'name'
@@ -115,7 +123,7 @@ exports.GenerateServicePDF = async (req, res) => {
                     ]
                 },
                 {
-                    model: SalarySchedule,
+                    model: db.SalarySchedule,
                     as: 'salarySchedules',
                     attributes: [
                         'amount',
@@ -127,7 +135,7 @@ exports.GenerateServicePDF = async (req, res) => {
                     ],
                     include: [
                         {
-                            model: Position,
+                            model: db.Position,
                             as: 'position',
                             attributes: [
                                 'name'
