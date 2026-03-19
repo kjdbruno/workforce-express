@@ -13,11 +13,23 @@ const pug = require('pug');
 const puppeteer = require('puppeteer');
 
 exports.GetPosition = async (req, res) => {
+
+    const Page = parseInt(req.query.Page) || 1;
+    const Limit = parseInt(req.query.Limit) || 10;
+    const Filter = req.query.Filter ? req.query.Filter.trim() : "";
+    const Offset = (Page - 1) * Limit;
+
     try {
-        const data = await db.Position.findAll({
-            where: {
-                is_active: true
-            },
+        const where = {
+            status: 'Vacant',
+            is_active: true
+        };
+
+        if (Filter) {
+            where.name = { [Op.like]: `%${Filter}%` };
+        }
+
+        const { count, rows } = await db.Position.findAndCountAll({
             attributes: [
                 'id',
                 ['id', 'value'],
@@ -45,10 +57,20 @@ exports.GetPosition = async (req, res) => {
                     as: 'department'
                 }
             ],
-            order: [['id', 'ASC']]
+            where,
+            limit: Limit,
+            offset: Offset,
+            order: [['createdAt', 'DESC']]
         });
 
-        return res.status(200).json(data);
+        res.json({
+            data: rows,
+            meta: {
+                TotalItems: count,
+                TotalPages: Math.ceil(count / Limit),
+                CurrentPage: Page
+            }
+        });
     } catch (error) {
         res.status(500).json({
             error: error.message

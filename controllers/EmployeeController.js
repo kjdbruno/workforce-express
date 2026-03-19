@@ -185,12 +185,7 @@ exports.GetDepartment = async (req, res) => {
         const data = await db.Department.findAll({
             where: {
                 is_active: true
-            },
-            attributes: [
-                ['id', 'value'],
-                ['name', "label"]
-            ],
-            order: [['id', 'ASC']]
+            }
         });
         return res.status(200).json(data);
     } catch (error) {

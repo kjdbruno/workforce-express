@@ -221,9 +221,7 @@ exports.Disable = async (req, res) => {
 
         await position.update({ 
             is_active: false
-        }, { transaction });
-
-        await transaction.commit();
+        });
 
         res.status(200).json({
             message: "Record Disabled!", 
@@ -231,8 +229,6 @@ exports.Disable = async (req, res) => {
         });
 
     } catch (error) {
-
-        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
@@ -245,8 +241,6 @@ exports.Enable = async (req, res) => {
     const { 
         id 
     } = req.params;
-
-    const transaction = await sequelize.transaction();
   
     try {
 
@@ -266,17 +260,13 @@ exports.Enable = async (req, res) => {
 
         await position.update({ 
             is_active: true 
-        }, { transaction });
-
-        await transaction.commit();
+        });
 
         res.status(200).json({
             message: "Record Enabled!.", 
             data: position
         });
     } catch (error) {
-
-        await transaction.rollback();
         res.status(500).json({ 
             error: error.message 
         });
