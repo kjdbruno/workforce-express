@@ -21,7 +21,7 @@ const io = socketIo(server, {
   pingTimeout: 5000,
     cors: {
       // origin: '*', // Change this to your frontend's origin http://localhost:9000
-      origin: 'https://hris-ccmi.com',
+      origin: 'http://35.188.50.51:3000',
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type'],
       credentials: true, // Optional, if you need to support credentials
@@ -31,7 +31,7 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors({
   // origin: '*', // Change this to your frontend's origin http://localhost:9000
-  origin: 'https://hris-ccmi.com',
+  origin: 'http://35.188.50.51:3000',
   methods: ['GET', 'POST'],
   credentials: true, // Optional, if you need to support credentials
 }));
