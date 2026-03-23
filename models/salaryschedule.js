@@ -60,7 +60,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     salary_group: {
-      type: DataTypes.ENUM('HIRE', 'PROMO', 'MERIT', 'ANNUAL', 'COLA', 'PROB', 'ADJUST', 'GOVT'),
+      type: DataTypes.ENUM('HIRE', 'PROMO', 'MERIT', 'ANNUAL', 'COLA', 'PROB', 'ADJUST', 'GOVT', 'DEMOTION'),
       allowNull: false
       /**
        * HIRE = Hiring Rate

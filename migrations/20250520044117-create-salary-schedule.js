@@ -38,7 +38,7 @@ module.exports = {
         allowNull: false
       },
       salary_group: {
-        type: Sequelize.ENUM('HIRE', 'PROMO', 'MERIT', 'ANNUAL', 'COLA', 'PROB', 'ADJUST', 'GOVT'),
+        type: Sequelize.ENUM('HIRE', 'PROMO', 'MERIT', 'ANNUAL', 'COLA', 'PROB', 'ADJUST', 'GOVT', 'DEMOTION'),
         allowNull: false
         /**
          * HIRE = Hiring Rate
