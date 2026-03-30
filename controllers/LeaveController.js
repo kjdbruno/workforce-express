@@ -9,7 +9,7 @@ const sharp = require('sharp');
 const moment = require('moment');
 
 const pug = require('pug');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 exports.GetAll = async (req, res) => {
     const Page = parseInt(req.query.Page, 10) || 1;
@@ -981,11 +981,15 @@ exports.GenerateLeavePDF = async (req, res) => {
             signatories: mappedApprovals
         });
 
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        const browser = await puppeteer.launch({
+            executablePath: '/usr/bin/google-chrome',
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+            ],
         });
-
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
         await page.emulateMediaType('print');

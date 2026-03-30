@@ -8,7 +8,7 @@ const moment = require('moment');
 const transporter = require('../utils/mailer');
 
 const pug = require('pug');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 const db = require('../models');
 const { sequelize } = db;
@@ -3006,9 +3006,14 @@ exports.GenerateAttendancePDF = async (req, res) => {
             moment
         });
 
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        const browser = await puppeteer.launch({
+          executablePath: '/usr/bin/google-chrome',
+          headless: true,
+          args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+          ],
         });
 
         const page = await browser.newPage();

@@ -21,7 +21,11 @@ const io = socketIo(server, {
   pingTimeout: 5000,
     cors: {
       // origin: '*', // Change this to your frontend's origin http://localhost:9000
-      origin: 'https://hris-ccmi.com',
+      // origin: 'https://hris-ccmi.com',
+      origin: [
+        'https://hris-ccmi.com',
+        'https://portal.hris-ccmi.com'
+      ],
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type'],
       credentials: true, // Optional, if you need to support credentials
@@ -31,7 +35,11 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors({
   // origin: '*', // Change this to your frontend's origin http://localhost:9000
-  origin: 'https://hris-ccmi.com',
+  // origin: 'https://hris-ccmi.com',
+  origin: [
+    'https://hris-ccmi.com',
+    'https://portal.hris-ccmi.com'
+  ],
   methods: ['GET', 'POST'],
   credentials: true, // Optional, if you need to support credentials
 }));
@@ -111,28 +119,13 @@ app.use(express.static('public'));
 require('./sockets')(io);
 
 const MainPath   = path.join(__dirname, "..", "..", "workforce-quasar", "dist", "spa");
-const PortalPath = path.join(__dirname, "..", "..", "workforce-portal", "dist", "spa");
 
-// Serve Portal FIRST
-app.use('/portal', express.static(PortalPath));
-app.get('/portal/*', (req, res) => {
-  res.sendFile(path.join(PortalPath, 'index.html'));
-});
+// Serve static assets (JS, CSS, images)
+app.use(express.static(MainPath));
 
-// Serve Main NEXT
-app.use('/', express.static(MainPath));
-app.get('/', (req, res) => {
-  res.sendFile(path.join(MainPath, 'index.html'));
-});
-
-// Catch-all LAST (but exclude /api and /portal if you want)
-app.get('*', (req, res, next) => {
-  if (
-    req.path.startsWith('/api') ||
-    req.path.startsWith('/portal')
-  ) return next();
-
-  return res.sendFile(path.join(MainPath, 'index.html'));
+// SPA fallback (VERY IMPORTANT for Vue Router)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(MainPath, "index.html"));
 });
 
 // Start server

@@ -4,7 +4,7 @@ const os = require("os");
 const pug = require('pug');
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const transporter = require('../utils/mailer');
 

@@ -8,7 +8,7 @@ const moment = require('moment');
 const momentTz = require('moment-timezone')
 
 const pug = require('pug');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 const db = require('../models');
 const { sequelize } = db;

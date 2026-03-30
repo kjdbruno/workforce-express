@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const pug = require('pug');
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const transporter = require('../utils/mailer');
 
@@ -354,14 +354,14 @@ exports.CreateLeave = async (req, res) => {
 
         for (const sig of signatories) {
 
-            const isFirstApprover = sig.order === 1;
+            // const isFirstApprover = sig.order === 1;
 
             await db.Approval.create({
                 setting_id: sig.id,
                 document_id: leave.id,
-                status: isFirstApprover ? 'Approved' : 'Pending',
-                signed_at: isFirstApprover ? new Date() : null,
-                remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
+                status: 'Pending',
+                signed_at: null,
+                remarks: null,
                 is_active: true
             });
         }
@@ -914,9 +914,15 @@ exports.GenerateLeavePDF = async (req, res) => {
             signatories: mappedApprovals
         });
 
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        const browser = await puppeteer.launch({
+            executablePath: '/usr/bin/google-chrome',
+            // executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+            ],
         });
 
         const page = await browser.newPage();

@@ -7,7 +7,7 @@ const sharp = require('sharp');
 const moment = require('moment');
 
 const pug = require('pug');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 const db = require('../models');
 const { sequelize } = db;
@@ -637,9 +637,14 @@ exports.GenerateOvertimePDF = async (req, res) => {
             signatories
         });
 
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        const browser = await puppeteer.launch({
+            executablePath: '/usr/bin/google-chrome',
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+            ],
         });
 
         const page = await browser.newPage();

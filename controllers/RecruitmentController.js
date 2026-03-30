@@ -2,7 +2,7 @@ const { Op, Sequelize  } = require("sequelize");
 const pug = require('pug');
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const moment = require('moment');
 const db = require('../models');
 const { sequelize } = db;
@@ -1103,8 +1103,13 @@ exports.GeneratePDF = async (req, res) => {
             signatories: mappedApprovals
         });
         const browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            executablePath: '/usr/bin/google-chrome',
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+            ],
         });
         
         const page = await browser.newPage();
