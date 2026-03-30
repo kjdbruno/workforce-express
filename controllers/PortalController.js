@@ -257,9 +257,23 @@ exports.ScanFace = async (req, res) => {
             }
         });
 
+        const mime = "image/png";
+        // ✅ map only what you want
+        const record = {
+            id: employee.id,
+            photo: `data:${mime};base64,${employee.photo.avatar.toString("base64")}`,
+            employee_no: employee.employment?.employee_no,
+            first_name: employee.first_name,
+            middle_name: employee.middle_name,
+            last_name: employee.last_name,
+            suffix: employee.suffix,
+            position: employee.employment.position.name,
+            employment_status: employee.employment.employment_status
+        };
+
         res.json({
             match: true,
-            employee,
+            record,
             distance: minDistance,
         });
 
@@ -414,117 +428,120 @@ exports.GetLeave = async (req, res) => {
                 },
                 {
                     model: db.LeaveType,
-                    as: 'leaveType'
+                    as: 'leaveType',
+                    attributes: [
+                        'name'
+                    ]
                 }
             ]
         });
 
         const approvals = await db.Approval.findAll({
-          where: {
-            document_id: leave.id,
-            is_active: true
-          },
-          include: [
-            {
-              model: db.ApprovalSetting,
-              as: 'setting',
-              where: { type: 'Leave' },
-              include: [
-                {
-                  model: db.User,
-                  as: 'approver',
-                  attributes: ['id'],
-                  include: [
-                    {
-                      model: db.EmployeeAccount,
-                      as: 'employeeAccount',
-                      include: [
-                        {
-                          model: db.Employee,
-                          as: 'employee',
-                          include: [
-                            {
-                              model: db.Employment,
-                              as: 'employment',
-                              include: [{ model: db.Position, as: 'position' }]
-                            },
-                            { model: db.EmployeeSignature, as: 'signature' }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
+            where: {
+                document_id: leave.id,
+                is_active: true
             },
-            {
-              model: db.ApprovalOveride,
-              as: 'overrides',
-              required: false,
-              include: [
+            include: [
                 {
-                  model: db.User,
-                  as: 'user',
-                  attributes: ['id'],
-                  include: [
+                model: db.ApprovalSetting,
+                as: 'setting',
+                where: { type: 'Leave' },
+                include: [
                     {
-                      model: db.EmployeeAccount,
-                      as: 'employeeAccount',
-                      include: [
+                    model: db.User,
+                    as: 'approver',
+                    attributes: ['id'],
+                    include: [
                         {
-                          model: db.Employee,
-                          as: 'employee',
-                          include: [
+                        model: db.EmployeeAccount,
+                        as: 'employeeAccount',
+                        include: [
                             {
-                              model: db.Employment,
-                              as: 'employment',
-                              include: [{ model: db.Position, as: 'position' }]
-                            },
-                            { model: db.EmployeeSignature, as: 'signature' }
-                          ]
+                            model: db.Employee,
+                            as: 'employee',
+                            include: [
+                                {
+                                model: db.Employment,
+                                as: 'employment',
+                                include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                            ]
+                            }
+                        ]
                         }
-                      ]
+                    ]
                     }
-                  ]
+                ]
+                },
+                {
+                model: db.ApprovalOveride,
+                as: 'overrides',
+                required: false,
+                include: [
+                    {
+                    model: db.User,
+                    as: 'user',
+                    attributes: ['id'],
+                    include: [
+                        {
+                        model: db.EmployeeAccount,
+                        as: 'employeeAccount',
+                        include: [
+                            {
+                            model: db.Employee,
+                            as: 'employee',
+                            include: [
+                                {
+                                model: db.Employment,
+                                as: 'employment',
+                                include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                            ]
+                            }
+                        ]
+                        }
+                    ]
+                    }
+                ]
                 }
-              ]
-            }
-          ],
-          order: [
-            [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
-            [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
-          ]
+            ],
+            order: [
+                [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+                [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+            ]
         });
         
         const mappedApprovals = approvals.map(a => {
-          const row = a.toJSON();
-        
-          const originalUser = row?.setting?.approver || null;
-          const latestOverride = row?.overrides?.[0] || null;
-          const overrideUser = latestOverride?.user || null;
-        
-          return {
-        
-            order: row?.setting?.order ?? null,
-            approver_id: originalUser?.id ?? null,
-            description: row.setting?.description,
-        
-            id: row.id,
-            status: row.status,
-            signed_at: row.signed_at,
-            is_overide: row.is_overide,
-        
-            original_approver_name: getEmployeeName(originalUser),
-            original_approver_position: getEmployeePosition(originalUser),
-            original_signature: getSignature(originalUser),
-        
-            override_name: overrideUser ? getEmployeeName(overrideUser) : null,
-            override_position: overrideUser ? getEmployeePosition(overrideUser) : null,
-            override_signature: overrideUser ? getSignature(overrideUser) : null,
-        
-            // optional: quick flag
-            is_overide: row.is_overide === true
-          };
+            const row = a.toJSON();
+            
+            const originalUser = row?.setting?.approver || null;
+            const latestOverride = row?.overrides?.[0] || null;
+            const overrideUser = latestOverride?.user || null;
+            
+            return {
+            
+                order: row?.setting?.order ?? null,
+                approver_id: originalUser?.id ?? null,
+                description: row.setting?.description,
+            
+                id: row.id,
+                status: row.status,
+                signed_at: row.signed_at,
+                is_overide: row.is_overide,
+            
+                original_approver_name: getEmployeeName(originalUser),
+                original_approver_position: getEmployeePosition(originalUser),
+                original_signature: getSignature(originalUser),
+            
+                override_name: overrideUser ? getEmployeeName(overrideUser) : null,
+                override_position: overrideUser ? getEmployeePosition(overrideUser) : null,
+                override_signature: overrideUser ? getSignature(overrideUser) : null,
+            
+                // optional: quick flag
+                is_overide: row.is_overide === true
+            };
         });
 
         // 3️⃣ Combine vacancy + approvals
@@ -870,7 +887,7 @@ exports.GenerateLeavePDF = async (req, res) => {
                         description: row.setting?.description,
                         approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
                         position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
-                        signature: row.is_overide ? 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(overrideUser).signature}`)).toString('base64') : 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, `../public/${getSignature(originalUser).signature}`)).toString('base64'),
+                        signature: row.is_overide ? getSignature(overrideUser) : getSignature(originalUser),
                         date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
                         isSigned: isApproved,
                         isOveride: row.is_overide
@@ -947,8 +964,9 @@ const getEmployeeName = (user) => {
 };
 
 const getSignature = (user) => {
-  // return the whole signature object or just a field like signature.image/signature_path
-  return user?.employeeAccount?.employee?.signature || null;
+    const mime = "image/png";
+    const sign = user?.employeeAccount?.employee?.signature;
+    return `data:${mime};base64,${sign.signature.toString("base64")}`
 };
 
 const getEmployeePosition = (user) => {

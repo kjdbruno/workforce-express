@@ -10,7 +10,7 @@ const sharp = require('sharp');
 const moment = require('moment');
 
 const pug = require('pug');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 exports.GetPosition = async (req, res) => {
 
@@ -210,8 +210,13 @@ exports.GenerateServicePDF = async (req, res) => {
             moment
         });
         const browser = await puppeteer.launch({
-          headless: 'new',
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
+            executablePath: '/usr/bin/google-chrome',
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+            ],
         });
         
         const page = await browser.newPage();
