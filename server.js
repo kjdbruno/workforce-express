@@ -24,7 +24,7 @@ const io = socketIo(server, {
       // origin: 'https://hris-ccmi.com',
       origin: [
         'https://hris-ccmi.com',
-        'https://portal.hris-ccmi.com'
+        'https://hris-ccmi.com/api/portal/biometric'
       ],
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type'],
@@ -38,7 +38,7 @@ app.use(cors({
   // origin: 'https://hris-ccmi.com',
   origin: [
     'https://hris-ccmi.com',
-    'https://portal.hris-ccmi.com'
+    'https://hris-ccmi.com/api/portal/biometric'
   ],
   methods: ['GET', 'POST'],
   credentials: true, // Optional, if you need to support credentials
