@@ -24,11 +24,11 @@ const io = socketIo(server, {
       // origin: 'https://hris-ccmi.com',
       origin: [
         'https://hris-ccmi.com',
-        'https://hris-ccmi.com/api/portal/biometric'
+        'https://portal.hris-ccmi.com'
       ],
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type'],
-      credentials: true, // Optional, if you need to support credentials
+      // credentials: true, // Optional, if you need to support credentials
     }
 });
 
@@ -38,10 +38,10 @@ app.use(cors({
   // origin: 'https://hris-ccmi.com',
   origin: [
     'https://hris-ccmi.com',
-    'https://hris-ccmi.com/api/portal/biometric'
+    'https://portal.hris-ccmi.com'
   ],
   methods: ['GET', 'POST'],
-  credentials: true, // Optional, if you need to support credentials
+  // credentials: true, // Optional, if you need to support credentials
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
