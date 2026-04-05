@@ -26,8 +26,8 @@ const io = socketIo(server, {
       //   'https://hris-ccmi.com',
       //   'https://portal.hris-ccmi.com'
       // ],
-      // methods: ['GET', 'POST'],
-      // allowedHeaders: ['Content-Type'],
+      methods: ['GET', 'POST'],
+      allowedHeaders: ['Content-Type'],
       // credentials: true, // Optional, if you need to support credentials
     }
 });
@@ -43,8 +43,8 @@ app.use(cors({
   methods: ['GET', 'POST'],
   // credentials: true, // Optional, if you need to support credentials
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 loginResetJob(io);
 yearlyLeaveBalance(io);

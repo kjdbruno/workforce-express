@@ -287,6 +287,75 @@ exports.Create = async (req, res) => {
     } = req.body;
 
     try {
+        // check leave balance
+        const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+            where: {
+                employee_id: employeeid,
+                leave_type_id: typeid,
+                is_active: true
+            }
+        });
+        if (!leaveBalance) {
+            return res.status(404).json({
+                errors: [{
+                    type: "field",
+                    value: employeeid,
+                    msg: "Leave balance not found for employee!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
+        }
+        // Validate date range
+        if (moment(datestart).isAfter(moment(dateend))) {
+            return res.status(400).json({
+                errors: [{ msg: "Invalid date range!" }],
+            });
+        }
+        // Get holidays
+        const holidays = await db.Holiday.findAll({
+            where: {
+                date: { [Op.between]: [datestart, dateend] },
+                isActive: true
+            }
+        });
+
+        const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
+
+        // Compute leave days
+        const start = moment(datestart);
+        const end = moment(dateend);
+
+        let daysRequested = 0;
+
+        while (start.isSameOrBefore(end)) {
+            const day = start.day();
+            const formatted = start.format('YYYY-MM-DD');
+
+            if (day !== 0 && day !== 6 && !holidayDates.includes(formatted)) {
+                daysRequested++;
+            }
+
+            start.add(1, 'day');
+        }
+
+        // Prevent zero-day leave
+        if (daysRequested === 0) {
+            return res.status(400).json({
+                errors: [{ msg: "No valid leave days selected!" }],
+            });
+        }
+
+        // Check balance
+        const availableBalance = parseFloat(leaveBalance.balance);
+
+        if (daysRequested > availableBalance) {
+            return res.status(400).json({
+                errors: [{
+                    msg: `Insufficient leave balance! Available: ${availableBalance}, Requested: ${daysRequested}`
+                }],
+            });
+        }
         //control no
         const year = new Date().getFullYear().toString();
         const latest = await db.EmployeeLeaveApplication.findOne({
@@ -307,7 +376,9 @@ exports.Create = async (req, res) => {
         
         // get employee userid
         const account = await db.EmployeeAccount.findOne({
-            employee_id: employeeid
+            where: {
+                employee_id: employeeid
+            }
         });
 
         // save leave
@@ -333,12 +404,14 @@ exports.Create = async (req, res) => {
 
         for (const sig of signatories) {
 
+            const isFirstApprover = sig.order === 1;
+
             await db.Approval.create({
                 setting_id: sig.id,
                 document_id: leave.id,
-                status: 'Pending',
-                signed_at: null,
-                remarks: null,
+                status: isFirstApprover ? 'Approved' : 'Pending',
+                signed_at: isFirstApprover ? new Date() : null,
+                remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
                 is_active: true
             });
         }
@@ -365,7 +438,7 @@ exports.Approve = async (req, res) => {
 
     try {
 
-        // 1️⃣ Fetch the leave application
+        // Fetch the leave application
         const leave = await db.EmployeeLeaveApplication.findByPk(id, {
             include: [{ model: db.LeaveType, as: 'leaveType' }]
         });
@@ -382,13 +455,45 @@ exports.Approve = async (req, res) => {
             });
         }
 
-        // 2️⃣ Update the specific approval record
-        const approval = await db.Approval.findByPk(approvalid);
-        if (!approval) {
-            return res.status(404).json({ error: "Approval record not found!" });
+        // check leave balance
+        const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+            where: {
+                employee_id: leave.employee_id,
+                leave_type_id: leave.leave_type_id,
+                is_active: true
+            }
+        });
+
+        if (!leaveBalance) {
+            return res.status(404).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Leave balance not found for employee!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
         }
 
-        await approval.update({ status: 'Approved', signed_at: new Date() });
+        // check approval record
+        const approval = await db.Approval.findByPk(approvalid);
+        if (!approval) {
+            return res.status(404).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Approval Record not found!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
+        }
+
+        await approval.update({ 
+            status: 'Approved', 
+            signed_at: new Date() 
+        });
 
         const totalCount = await db.Approval.count({
             include: [
@@ -435,7 +540,7 @@ exports.Approve = async (req, res) => {
 
             const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
 
-            // 5️⃣ Compute leave days excluding weekends and holidays
+            // Compute leave days excluding weekends and holidays
             const start = moment(leave.date_from);
             const end = moment(leave.date_to);
             let daysUsed = 0;
@@ -451,19 +556,7 @@ exports.Approve = async (req, res) => {
                 start.add(1, 'day');
             }
 
-            // 6️⃣ Update EmployeeLeaveBalance
-            const leaveBalance = await db.EmployeeLeaveBalance.findOne({
-                where: {
-                    employee_id: leave.employee_id,
-                    leave_type_id: leave.leave_type_id,
-                    is_active: true
-                }
-            });
-
-            if (!leaveBalance) {
-                return res.status(400).json({ error: "Leave balance not found for employee!" });
-            }
-
+            // Update EmployeeLeaveBalance
             const newUsed = parseFloat(leaveBalance.used) + daysUsed;
             const newBalance = parseFloat(leaveBalance.earned) - newUsed;
 
@@ -941,24 +1034,23 @@ exports.GenerateLeavePDF = async (req, res) => {
 
         // Map approvals to the desired format
         const mappedApprovals = approvals.map(a => {
-                    const row = a.toJSON();
-        
-                    const originalUser = row?.setting?.approver || null;
-                    const latestOverride = row?.overrides?.[0] || null;
-                    const overrideUser = latestOverride?.user || null;
-                    const isApproved = row?.status === 'Approved';
-        
-                    return {
-        
-                        description: row.setting?.description,
-                        approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
-                        position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
-                        signature: row.is_overide ? getSignature(overrideUser) : getSignature(originalUser),
-                        date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
-                        isSigned: isApproved,
-                        isOveride: row.is_overide
-                    };
-                    });
+            const row = a.toJSON();
+
+            const originalUser = row?.setting?.approver || null;
+            const latestOverride = row?.overrides?.[0] || null;
+            const overrideUser = latestOverride?.user || null;
+            const isApproved = row?.status === 'Approved';
+
+            return {
+                description: row.setting?.description,
+                approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
+                position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
+                signature: row.is_overide ? getSignature(overrideUser) : getSignature(originalUser),
+                date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
+                isSigned: isApproved,
+                isOveride: row.is_overide
+            };
+        });
 
         // 6️⃣ Render PDF
         const templatePath = path.join(__dirname, '../templates/reports/Leave.pug');

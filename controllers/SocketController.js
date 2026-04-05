@@ -1987,31 +1987,31 @@ module.exports = (_io) => {
                         }
                     }
 
-                    // SEND EMAIL (inside loop)
-                    const mail = emp?.email;
-                    if (mail) {
-                        const control_no = header.control_no; //no re-query
-                        const firstname = emp?.first_name;
-                        const from = moment(dateStart).format("MMMM DD YYYY");
-                        const to = moment(dateEnd).format("MMMM DD YYYY");
+                    // // SEND EMAIL (inside loop)
+                    // const mail = emp?.email;
+                    // if (mail) {
+                    //     const control_no = header.control_no; //no re-query
+                    //     const firstname = emp?.first_name;
+                    //     const from = moment(dateStart).format("MMMM DD YYYY");
+                    //     const to = moment(dateEnd).format("MMMM DD YYYY");
 
-                        try {
-                            let htmlContent = templateRaw
-                                .replace(/{{\s*control_no\s*}}/g, control_no || "Control No")
-                                .replace(/{{\s*firstname\s*}}/g, firstname || "Employee")
-                                .replace(/{{\s*from\s*}}/g, from || "Date From")
-                                .replace(/{{\s*to\s*}}/g, to || "Date To");
+                    //     try {
+                    //         let htmlContent = templateRaw
+                    //             .replace(/{{\s*control_no\s*}}/g, control_no || "Control No")
+                    //             .replace(/{{\s*firstname\s*}}/g, firstname || "Employee")
+                    //             .replace(/{{\s*from\s*}}/g, from || "Date From")
+                    //             .replace(/{{\s*to\s*}}/g, to || "Date To");
 
-                            await transporter.sendMail({
-                                from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
-                                to: mail,
-                                subject: "Daily Time Record",
-                                html: htmlContent,
-                            });
-                        } catch (emailError) {
-                            console.error("Email sending failed:", emailError.message);
-                        }
-                    }
+                    //         await transporter.sendMail({
+                    //             from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+                    //             to: mail,
+                    //             subject: "Daily Time Record",
+                    //             html: htmlContent,
+                    //         });
+                    //     } catch (emailError) {
+                    //         console.error("Email sending failed:", emailError.message);
+                    //     }
+                    // }
                 }
 
                 if (attendanceHeadersCreated === 0) {

@@ -250,6 +250,19 @@ exports.ScanFace = async (req, res) => {
                 {
                     model: db.EmployeePhoto,
                     as: 'photo'
+                },
+                {
+                    model: db.EmployeeAccount,
+                    as: 'account',
+                    include: [
+                        {
+                            model: db.User,
+                            as: 'user',
+                            where: {
+                                role: 'Employee'
+                            }
+                        }
+                    ]
                 }
             ],  
             where: {
@@ -268,7 +281,8 @@ exports.ScanFace = async (req, res) => {
             last_name: employee.last_name,
             suffix: employee.suffix,
             position: employee.employment.position.name,
-            employment_status: employee.employment.employment_status
+            employment_status: employee.employment.employment_status,
+            user: employee.account
         };
 
         res.json({
@@ -283,11 +297,24 @@ exports.ScanFace = async (req, res) => {
 };
 
 exports.GetLeaveType = async (req, res) => {
+    const employeeId = req.query.employeeid;
     try {
         const data = await db.LeaveType.findAll({
             where: {
                 is_active: true
-            }
+            },
+            include: [
+                {
+                    model: db.EmployeeLeaveBalance,
+                    as: 'balances',
+                    attributes: [
+                        'balance'
+                    ],
+                    where: {
+                        employee_id: employeeId
+                    }
+                }
+            ]
         });
         return res.status(200).json(data);
     } catch (error) {
@@ -308,6 +335,76 @@ exports.CreateLeave = async (req, res) => {
     } = req.body;
 
     try {
+        // check leave balance
+        const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+            where: {
+                employee_id: employeeid,
+                leave_type_id: typeid,
+                is_active: true
+            }
+        });
+        if (!leaveBalance) {
+            return res.status(404).json({
+                errors: [{
+                    type: "field",
+                    value: employeeid,
+                    msg: "Leave balance not found for employee!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
+        }
+        // Validate date range
+        if (moment(datestart).isAfter(moment(dateend))) {
+            return res.status(400).json({
+                errors: [{ msg: "Invalid date range!" }],
+            });
+        }
+        // Get holidays
+        const holidays = await db.Holiday.findAll({
+            where: {
+                date: { [Op.between]: [datestart, dateend] },
+                isActive: true
+            }
+        });
+
+        const holidayDates = holidays.map(h => moment(h.date).format('YYYY-MM-DD'));
+
+        // Compute leave days
+        const start = moment(datestart);
+        const end = moment(dateend);
+
+        let daysRequested = 0;
+
+        while (start.isSameOrBefore(end)) {
+            const day = start.day();
+            const formatted = start.format('YYYY-MM-DD');
+
+            if (day !== 0 && day !== 6 && !holidayDates.includes(formatted)) {
+                daysRequested++;
+            }
+
+            start.add(1, 'day');
+        }
+
+        // Prevent zero-day leave
+        if (daysRequested === 0) {
+            return res.status(400).json({
+                errors: [{ msg: "No valid leave days selected!" }],
+            });
+        }
+
+        // Check balance
+        const availableBalance = parseFloat(leaveBalance.balance);
+
+        if (daysRequested > availableBalance) {
+            return res.status(400).json({
+                errors: [{
+                    msg: `Insufficient leave balance! Available: ${availableBalance}, Requested: ${daysRequested}`
+                }],
+            });
+        }
+
         //control no
         const year = new Date().getFullYear().toString();
         const latest = await db.EmployeeLeaveApplication.findOne({
@@ -328,9 +425,10 @@ exports.CreateLeave = async (req, res) => {
 
         // get employee userid
         const account = await db.EmployeeAccount.findOne({
-            employee_id: employeeid
+            where: {
+                employee_id: employeeid
+            }
         });
-
         // save leave
         const leave = await db.EmployeeLeaveApplication.create({
             control_no: newNo,
@@ -353,15 +451,15 @@ exports.CreateLeave = async (req, res) => {
         });
 
         for (const sig of signatories) {
-
-            // const isFirstApprover = sig.order === 1;
+        
+            const isFirstApprover = sig.order === 1;
 
             await db.Approval.create({
                 setting_id: sig.id,
                 document_id: leave.id,
-                status: 'Pending',
-                signed_at: null,
-                remarks: null,
+                status: isFirstApprover ? 'Approved' : 'Pending',
+                signed_at: isFirstApprover ? new Date() : null,
+                remarks: isFirstApprover ? 'Auto-approved (owner is first approver)' : null,
                 is_active: true
             });
         }
@@ -411,116 +509,155 @@ exports.CreateLeave = async (req, res) => {
     }
 };
 
-exports.GetLeave = async (req, res) => {
+exports.GetAllLeave = async (req, res) => {
 
-    const { controlno } = req.params;
+    const id = parseInt(req.query.id);
+    
+    const month = req.query.month;
+    const year = req.query.year;
+
+    const startDate = moment(`${year}-${month}-01`).startOf('month').format('YYYY-MM-DD');
+    const endDate = moment(`${year}-${month}-01`).endOf('month').format('YYYY-MM-DD');
 
     try {
-        
-        const leave = await db.EmployeeLeaveApplication.findOne({
-            where: { 
-                control_no: controlno 
-            },
+
+        const rows = await db.EmployeeLeaveApplication.findAll({
             include: [
-                {
-                    model: db.Employee,
-                    as: 'employee',
-                },
                 {
                     model: db.LeaveType,
-                    as: 'leaveType',
-                    attributes: [
-                        'name'
-                    ]
-                }
-            ]
-        });
-
-        const approvals = await db.Approval.findAll({
-            where: {
-                document_id: leave.id,
-                is_active: true
-            },
-            include: [
-                {
-                model: db.ApprovalSetting,
-                as: 'setting',
-                where: { type: 'Leave' },
-                include: [
-                    {
-                    model: db.User,
-                    as: 'approver',
-                    attributes: ['id'],
-                    include: [
-                        {
-                        model: db.EmployeeAccount,
-                        as: 'employeeAccount',
-                        include: [
-                            {
-                            model: db.Employee,
-                            as: 'employee',
-                            include: [
-                                {
-                                model: db.Employment,
-                                as: 'employment',
-                                include: [{ model: db.Position, as: 'position' }]
-                                },
-                                { model: db.EmployeeSignature, as: 'signature' }
-                            ]
-                            }
-                        ]
-                        }
-                    ]
-                    }
-                ]
-                },
-                {
-                model: db.ApprovalOveride,
-                as: 'overrides',
-                required: false,
-                include: [
-                    {
-                    model: db.User,
-                    as: 'user',
-                    attributes: ['id'],
-                    include: [
-                        {
-                        model: db.EmployeeAccount,
-                        as: 'employeeAccount',
-                        include: [
-                            {
-                            model: db.Employee,
-                            as: 'employee',
-                            include: [
-                                {
-                                model: db.Employment,
-                                as: 'employment',
-                                include: [{ model: db.Position, as: 'position' }]
-                                },
-                                { model: db.EmployeeSignature, as: 'signature' }
-                            ]
-                            }
-                        ]
-                        }
-                    ]
-                    }
-                ]
+                    as: 'leaveType'
                 }
             ],
-            order: [
+            where: {
+                employee_id: id,
+                [Op.and]: [
+                    { date_from: { [Op.lte]: endDate } }, // leave starts before or on endOfMonth
+                    { date_to: { [Op.gte]: startDate } }  // leave ends after or on startOfMonth
+                ]
+            },
+            order: [['date_from', 'DESC']]
+        });
+
+        res.json({
+            record: rows
+        });
+
+    } catch (error) {
+
+        res.status(500).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+exports.GetLeave = async (req, res) => {
+
+    const { id } = req.params;
+
+    try {
+            
+            const leave = await db.EmployeeLeaveApplication.findOne({
+                where: { 
+                    id 
+                },
+                include: [
+                    {
+                        model: db.Employee,
+                        as: 'employee',
+                    },
+                    {
+                        model: db.LeaveType,
+                        as: 'leaveType'
+                    }
+                ]
+            });
+    
+            const approvals = await db.Approval.findAll({
+              where: {
+                document_id: leave.id,
+                is_active: true
+              },
+              include: [
+                {
+                  model: db.ApprovalSetting,
+                  as: 'setting',
+                  where: { type: 'Leave' },
+                  include: [
+                    {
+                      model: db.User,
+                      as: 'approver',
+                      attributes: ['id'],
+                      include: [
+                        {
+                          model: db.EmployeeAccount,
+                          as: 'employeeAccount',
+                          include: [
+                            {
+                              model: db.Employee,
+                              as: 'employee',
+                              include: [
+                                {
+                                  model: db.Employment,
+                                  as: 'employment',
+                                  include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  model: db.ApprovalOveride,
+                  as: 'overrides',
+                  required: false,
+                  include: [
+                    {
+                      model: db.User,
+                      as: 'user',
+                      attributes: ['id'],
+                      include: [
+                        {
+                          model: db.EmployeeAccount,
+                          as: 'employeeAccount',
+                          include: [
+                            {
+                              model: db.Employee,
+                              as: 'employee',
+                              include: [
+                                {
+                                  model: db.Employment,
+                                  as: 'employment',
+                                  include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              order: [
                 [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
                 [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
-            ]
-        });
-        
-        const mappedApprovals = approvals.map(a => {
-            const row = a.toJSON();
+              ]
+            });
             
-            const originalUser = row?.setting?.approver || null;
-            const latestOverride = row?.overrides?.[0] || null;
-            const overrideUser = latestOverride?.user || null;
+            const mappedApprovals = approvals.map(a => {
+              const row = a.toJSON();
             
-            return {
+              const originalUser = row?.setting?.approver || null;
+              const latestOverride = row?.overrides?.[0] || null;
+              const overrideUser = latestOverride?.user || null;
+            
+              return {
             
                 order: row?.setting?.order ?? null,
                 approver_id: originalUser?.id ?? null,
@@ -541,24 +678,24 @@ exports.GetLeave = async (req, res) => {
             
                 // optional: quick flag
                 is_overide: row.is_overide === true
+              };
+            });
+    
+            // 3️⃣ Combine vacancy + approvals
+            const result = {
+                ...leave.toJSON(),
+                approvals: mappedApprovals
             };
-        });
-
-        // 3️⃣ Combine vacancy + approvals
-        const result = {
-            ...leave.toJSON(),
-            approvals: mappedApprovals
-        };
-
-        res.json({ result });
-
-    } catch (error) {
-
-        res.status(500).json({ 
-            error: error.message 
-        });
-
-    }
+    
+            res.json({ result });
+    
+        } catch (error) {
+    
+            res.status(500).json({ 
+                error: error.message 
+            });
+    
+        }
 };
 
 exports.Approve = async (req, res) => {
@@ -587,10 +724,39 @@ exports.Approve = async (req, res) => {
             });
         }
 
+        // check leave balance
+        const leaveBalance = await db.EmployeeLeaveBalance.findOne({
+            where: {
+                employee_id: leave.employee_id,
+                leave_type_id: leave.leave_type_id,
+                is_active: true
+            }
+        });
+
+        if (!leaveBalance) {
+            return res.status(404).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Leave balance not found for employee!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
+        }
+
         // 2️⃣ Update the specific approval record
         const approval = await db.Approval.findByPk(approvalid);
         if (!approval) {
-            return res.status(404).json({ error: "Approval record not found!" });
+            return res.status(404).json({
+                errors: [{
+                    type: "field",
+                    value: id,
+                    msg: "Approval record not found!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
         }
 
         await approval.update({ status: 'Approved', signed_at: new Date() });
@@ -657,18 +823,6 @@ exports.Approve = async (req, res) => {
             }
 
             // 6️⃣ Update EmployeeLeaveBalance
-            const leaveBalance = await db.EmployeeLeaveBalance.findOne({
-                where: {
-                    employee_id: leave.employee_id,
-                    leave_type_id: leave.leave_type_id,
-                    is_active: true
-                }
-            });
-
-            if (!leaveBalance) {
-                return res.status(400).json({ error: "Leave balance not found for employee!" });
-            }
-
             const newUsed = parseFloat(leaveBalance.used) + daysUsed;
             const newBalance = parseFloat(leaveBalance.earned) - newUsed;
 
@@ -744,6 +898,7 @@ exports.GenerateLeavePDF = async (req, res) => {
         const employment = employee.employment;
 
         // 2️⃣ Format employee info
+        const controlNo = leaveApp.control_no;
         const name = [
             employee.first_name,
             employee.middle_name ? `${employee.middle_name.charAt(0)}.` : '',
@@ -900,6 +1055,7 @@ exports.GenerateLeavePDF = async (req, res) => {
 
         const html = pug.renderFile(templatePath, {
             seal,
+            controlNo,
             name,
             departmentPosition,
             contactNo,
@@ -915,8 +1071,8 @@ exports.GenerateLeavePDF = async (req, res) => {
         });
 
         const browser = await puppeteer.launch({
-            executablePath: '/usr/bin/google-chrome',
-            // executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            // executablePath: '/usr/bin/google-chrome',
+            executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
             headless: true,
             args: [
                 '--no-sandbox',
@@ -981,4 +1137,1085 @@ const getEmployeePosition = (user) => {
     user?.employeeAccount?.employee?.employment?.position?.title ||
     ''
   );
+};
+
+/**
+ * 
+ * 
+ * 
+ * 
+ * DTR LOGS
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+exports.GetLog = async (req, res) => {
+    const id = parseInt(req.query.id, 10)
+    const month = Number(req.query.month)
+    const year = Number(req.query.year)
+
+    try {
+        if (!month || !year) {
+            return res.status(400).json({ error: 'Month and year are required' })
+        }
+
+        // Build date range
+        const startDate = moment({ year, month: month - 1 }).startOf('month').format('YYYY-MM-DD HH:mm:ss')
+        const endDate = moment({ year, month: month - 1 }).endOf('month').format('YYYY-MM-DD HH:mm:ss')
+
+        // 1️ Fetch ALL logs for employee in month
+        const logs = await db.EmployeeLog.findAll({
+            where: {
+                employee_id: id,
+                captured_at: { [Op.between]: [startDate, endDate] }
+            },
+            order: [['captured_at', 'ASC']]
+        })
+        // 2️ Approved leave applications
+        const leaves = await db.EmployeeLeaveApplication.findAll({
+            where: {
+                employee_id: id,
+                status: 'Approved',
+                date_from: { [Op.lte]: endDate },
+                date_to: { [Op.gte]: startDate }
+            },
+            include: [
+                { 
+                    model: db.LeaveType, 
+                    as: 'leaveType' 
+                }
+            ]
+        })
+
+        // 3️ Holidays
+        const holidays = await db.Holiday.findAll({
+            where: {
+                date: { [Op.between]: [startDate, endDate] },
+                isActive: true
+            }
+        })
+
+        // 4️ Approved overtime
+        const overtimes = await db.EmployeeOvertimeApplication.findAll({
+            where: {
+                employee_id: id,
+                status: 'Approved'
+            },
+            include: [
+                {
+                model: db.Overtime,
+                as: 'overtime',
+                where: {
+                    date: { [Op.between]: [startDate, endDate] },
+                    status: 'Approved'
+                }
+                }
+            ]
+        })
+
+        // 5️ Build lookup maps
+        const leaveMap = {}
+        leaves.forEach(leave => {
+            let d = moment(leave.date_from)
+            const end = moment(leave.date_to)
+            while (d.isSameOrBefore(end)) {
+                leaveMap[d.format('YYYY-MM-DD')] = leave.leaveType.name
+                d.add(1, 'day')
+            }
+        })
+
+        const holidayMap = {}
+        holidays.forEach(h => {
+            holidayMap[moment(h.date).format('YYYY-MM-DD')] = h.name
+        })
+
+        const overtimeMap = {}
+        overtimes.forEach(otApp => {
+            const ot = otApp.overtime
+            if (!overtimeMap[ot.date]) overtimeMap[ot.date] = []
+            overtimeMap[ot.date].push({
+                start: moment(ot.timeStart, 'HH:mm:ss').format('h:mm A'),
+                end: moment(ot.timeEnd, 'HH:mm:ss').format('h:mm A'),
+                description: ot.description
+            })
+        })
+
+        // 6️ Generate DTR
+        const result = []
+        let day = moment(startDate)
+        const endDay = moment(endDate)
+
+        while (day.isSameOrBefore(endDay)) {
+            const dateKey = day.format('YYYY-MM-DD')
+
+            const times = logs
+                .filter(l => moment(l.captured_at).format('YYYY-MM-DD') === dateKey)
+                .map(l => moment(l.captured_at).format('hh:mm A'))
+
+            const paddedTimes =
+                times.length < 4
+                    ? [...times, ...Array(4 - times.length).fill('')]
+                    : times.slice(0, 4)
+
+            result.push({
+                date: dateKey,
+                times: paddedTimes,
+                leaveType: leaveMap[dateKey] || '',
+                holiday: holidayMap[dateKey] || '',
+                overtime: overtimeMap[dateKey]?.length ? 'Overtime' : ''
+            })
+
+            day.add(1, 'day')
+        }
+
+        // 7️ Response
+        return res.json({
+            employee_id: id,
+            month,
+            year,
+            data: result
+        })
+
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({ error: error.message })
+    }
+}
+
+exports.GetAllAttendance = async (req, res) => {
+    const id = parseInt(req.query.id);
+    const month = parseInt(req.query.month, 10);
+    const year = parseInt(req.query.year, 10);
+
+    try {
+        if (!month || !year) {
+            return res.status(400).json({ error: 'month and year are required' })
+        }
+
+        // Month range
+        const startDate = moment(`${year}-${String(month).padStart(2, '0')}-01`, "YYYY-MM-DD")
+            .startOf("month")
+            .format("YYYY-MM-DD")
+
+        const endDate = moment(`${year}-${String(month).padStart(2, '0')}-01`, "YYYY-MM-DD")
+            .endOf("month")
+            .format("YYYY-MM-DD")
+
+        const rows = await db.Attendance.findAll({
+            where: {
+                employee_id: id,
+                [Op.and]: [
+                    { date_from: { [Op.lte]: endDate } },
+                    { date_to: { [Op.gte]: startDate } },
+                ],
+            }
+        })
+
+        return res.json({
+            result: rows
+        })
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+
+exports.GetAttendance = async (req, res) => {
+  const { id } = req.params;
+
+  // ✅ Helpers (display only)
+  const formatTime = (t) => (t ? moment(t, ["HH:mm:ss", "HH:mm"]).format("HH:mm") : "");
+  const formatTimeHHmmA = (t) => (t ? moment(t, ["HH:mm:ss", "HH:mm"]).format("hh:mm A") : "");
+  const toNum = (v, fallback = 0) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  try {
+    // 1️⃣ Attendance period + daily records
+    const attendance = await db.Attendance.findOne({
+      where: { id },
+      include: [
+        {
+          model: db.EmployeeAttendance,
+          as: "days",
+          separate: true,
+          order: [["work_day", "ASC"]],
+        },
+      ],
+    });
+
+    if (!attendance) return res.status(404).json({ error: "Attendance not found" });
+
+    const startDate = moment(attendance.date_from).format("YYYY-MM-DD");
+    const endDate = moment(attendance.date_to).format("YYYY-MM-DD");
+
+    // 1.5 EmployeeShift (kept, though you are not computing in this endpoint)
+    const employeeShifts = await db.EmployeeShift.findAll({
+      where: { employee_id: attendance.employee_id },
+      include: [
+        {
+          model: db.Shift,
+          as: "shift",
+          include: [{ model: db.ShiftDay, as: "days" }],
+        },
+      ],
+      order: [["effective_from", "DESC"]],
+    });
+
+    // 2️⃣ Leaves
+    const leaves = await db.EmployeeLeaveApplication.findAll({
+      where: {
+        employee_id: attendance.employee_id,
+        status: "Approved",
+        date_from: { [Op.lte]: endDate },
+        date_to: { [Op.gte]: startDate },
+      },
+      include: [{ model: db.LeaveType, as: "leaveType" }],
+    });
+
+    // 3️⃣ Holidays
+    const holidays = await db.Holiday.findAll({
+      where: {
+        date: { [Op.between]: [startDate, endDate] },
+        isActive: true,
+      },
+    });
+
+    // 4️⃣ Overtime apps for NOTES only
+    const overtimes = await db.EmployeeOvertimeApplication.findAll({
+      where: {
+        employee_id: attendance.employee_id,
+        status: "Approved",
+      },
+      include: [
+        {
+          model: db.Overtime,
+          as: "overtime",
+          required: true,
+          where: {
+            date: { [Op.between]: [startDate, endDate] },
+            status: "Approved",
+          },
+        },
+      ],
+    });
+
+    // 5️⃣ Adjustments (latest first) under this attendance header
+    const adjustments = await db.EmployeeAttendanceAdjustment.findAll({
+      include: [
+        {
+          model: db.EmployeeAttendance,
+          as: "attendance",
+          required: true,
+          where: { attendance_id: attendance.id },
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    // 6️⃣ Lookup maps
+    const leaveMap = {};
+    for (const leave of leaves) {
+      let d = moment(leave.date_from);
+      const e = moment(leave.date_to);
+      while (d.isSameOrBefore(e, "day")) {
+        leaveMap[d.format("YYYY-MM-DD")] = leave.leaveType?.name || "";
+        d.add(1, "day");
+      }
+    }
+
+    const holidayMap = {};
+    for (const h of holidays) {
+      holidayMap[moment(h.date).format("YYYY-MM-DD")] = h.name;
+    }
+
+    // overtimeMap for NOTES only
+    const overtimeMap = {};
+    for (const otApp of overtimes) {
+      const ot = otApp.overtime;
+      const key = moment(ot.date).format("YYYY-MM-DD");
+      if (!overtimeMap[key]) overtimeMap[key] = [];
+      overtimeMap[key].push({
+        start: ot.time_start ? formatTime(ot.time_start) : "",
+        end: ot.time_end ? formatTime(ot.time_end) : "",
+        description: ot.description || "",
+        status: ot.status,
+      });
+    }
+
+    // dayMap from EmployeeAttendance
+    const dayMap = {};
+    for (const d of attendance.days || []) {
+      dayMap[moment(d.work_day).format("YYYY-MM-DD")] = d;
+    }
+
+    // latest adjustment per employee_attendance_id
+    const adjustmentMap = {};
+    for (const adj of adjustments) {
+      if (!adjustmentMap[adj.employee_attendance_id]) {
+        adjustmentMap[adj.employee_attendance_id] = adj; // newest wins
+      }
+    }
+
+    // 8️⃣ Build results (NO COMPUTATION; base from EmployeeAttendance, override from Adjustment)
+    const logs = [];
+    let day = moment(startDate, "YYYY-MM-DD");
+    const endDay = moment(endDate, "YYYY-MM-DD");
+
+    while (day.isSameOrBefore(endDay, "day")) {
+      const formatted = day.format("YYYY-MM-DD");
+      const dtr = dayMap[formatted];
+
+      const notes = [];
+
+      if (holidayMap[formatted]) notes.push({ type: "holiday", name: holidayMap[formatted] });
+      if (leaveMap[formatted]) notes.push({ type: "leave", name: leaveMap[formatted] });
+
+      if (overtimeMap[formatted]?.length) {
+        overtimeMap[formatted].forEach((ot) => {
+          notes.push({
+            type: "overtime",
+            name: `ot (${formatTimeHHmmA(ot.start)} to ${formatTimeHHmmA(ot.end)})`,
+          });
+        });
+      }
+
+      const adjustment = dtr ? adjustmentMap[dtr.id] : null;
+      if (adjustment) notes.push({ type: "adjustment", name: adjustment.reason });
+
+      // time source: adjustment wins if present, else EmployeeAttendance
+      const originalTimeIn = formatTime(dtr?.time_in);
+      const originalTimeOut = formatTime(dtr?.time_out);
+
+      const adjustedTimeIn = adjustment ? formatTime(adjustment.adjusted_time_in) : null;
+      const adjustedTimeOut = adjustment ? formatTime(adjustment.adjusted_time_out) : null;
+
+      const finalTimeIn = adjustedTimeIn || originalTimeIn;
+      const finalTimeOut = adjustedTimeOut || originalTimeOut;
+
+      // ✅ BASE: EmployeeAttendance minutes
+      const baseLate = toNum(dtr?.late_minutes ?? dtr?.late ?? 0, 0);
+      const baseUndertime = toNum(dtr?.undertime_minutes ?? dtr?.undertime ?? 0, 0);
+      const baseOvertime = toNum(dtr?.overtime_minutes ?? dtr?.overtime ?? 0, 0);
+
+      // ✅ OVERRIDE: EmployeeAttendanceAdjustment computed minutes (your new fields)
+      const finalLate =
+        adjustment && adjustment.adjusted_late_minutes != null
+          ? toNum(adjustment.adjusted_late_minutes, baseLate)
+          : baseLate;
+
+      const finalUndertime =
+        adjustment && adjustment.adjusted_undertime_minutes != null
+          ? toNum(adjustment.adjusted_undertime_minutes, baseUndertime)
+          : baseUndertime;
+
+      const finalOvertime =
+        adjustment && adjustment.adjusted_overtime_minutes != null
+          ? toNum(adjustment.adjusted_overtime_minutes, baseOvertime)
+          : baseOvertime;
+
+      logs.push({
+        date: formatted,
+
+        attendance_id: dtr?.id || null,
+        adjustment_id: adjustment?.id || null,
+
+        time_in: finalTimeIn,
+        time_out: finalTimeOut,
+
+        original_time_in: originalTimeIn,
+        original_time_out: originalTimeOut,
+        adjusted_time_in: adjustedTimeIn,
+        adjusted_time_out: adjustedTimeOut,
+
+        // ✅ final values (adjustment overrides base)
+        late: finalLate,
+        undertime: finalUndertime,
+        overtime: finalOvertime,
+
+        notes,
+      });
+
+      day.add(1, "day");
+    }
+
+    const approvals = await db.Approval.findAll({
+              where: {
+                document_id: attendance.id,
+                is_active: true
+              },
+              include: [
+                {
+                  model: db.ApprovalSetting,
+                  as: 'setting',
+                  where: { type: 'TimeCard' },
+                  include: [
+                    {
+                      model: db.User,
+                      as: 'approver',
+                      attributes: ['id'],
+                      include: [
+                        {
+                          model: db.EmployeeAccount,
+                          as: 'employeeAccount',
+                          include: [
+                            {
+                              model: db.Employee,
+                              as: 'employee',
+                              include: [
+                                {
+                                  model: db.Employment,
+                                  as: 'employment',
+                                  include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  model: db.ApprovalOveride,
+                  as: 'overrides',
+                  required: false,
+                  include: [
+                    {
+                      model: db.User,
+                      as: 'user',
+                      attributes: ['id'],
+                      include: [
+                        {
+                          model: db.EmployeeAccount,
+                          as: 'employeeAccount',
+                          include: [
+                            {
+                              model: db.Employee,
+                              as: 'employee',
+                              include: [
+                                {
+                                  model: db.Employment,
+                                  as: 'employment',
+                                  include: [{ model: db.Position, as: 'position' }]
+                                },
+                                { model: db.EmployeeSignature, as: 'signature' }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              order: [
+                [{ model: db.ApprovalSetting, as: 'setting' }, 'order', 'ASC'],
+                [{ model: db.ApprovalOveride, as: 'overrides' }, 'createdAt', 'DESC'] // newest override first
+              ]
+            });
+            
+            const mappedApprovals = approvals.map(a => {
+              const row = a.toJSON();
+            
+              const originalUser = row?.setting?.approver || null;
+              const latestOverride = row?.overrides?.[0] || null;
+              const overrideUser = latestOverride?.user || null;
+            
+              return {
+            
+                order: row?.setting?.order ?? null,
+                approver_id: originalUser?.id ?? null,
+                description: row.setting?.description,
+            
+                id: row.id,
+                status: row.status,
+                signed_at: row.signed_at,
+                is_overide: row.is_overide,
+            
+                original_approver_name: getEmployeeName(originalUser),
+                original_approver_position: getEmployeePosition(originalUser),
+                original_signature: getSignature(originalUser),
+            
+                override_name: overrideUser ? getEmployeeName(overrideUser) : null,
+                override_position: overrideUser ? getEmployeePosition(overrideUser) : null,
+                override_signature: overrideUser ? getSignature(overrideUser) : null,
+            
+                // optional: quick flag
+                is_overide: row.is_overide === true
+              };
+            });
+
+            res.json({ logs, approvals: mappedApprovals, id: attendance.id });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.ApproveAttendance = async (req, res) => {
+
+    const { approvalId, attendanceId } = req.body;
+
+    try {
+
+        const attendance = await db.Attendance.findByPk(attendanceId);
+        
+        if (!attendance) {
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: attendanceId,
+                    msg: "Record not found!",
+                    path: "id",
+                    location: "body",
+                }],
+            });
+        }
+
+        const approval = await db.Approval.findByPk(approvalId);
+
+        await approval.update({
+            status: 'Approved',
+            signed_at: new Date()
+        })
+        
+                const totalCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'TimeCard'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: attendanceId,
+                        is_active: true
+                    }
+                });
+        
+                const approvedCount = await db.Approval.count({
+                    include: [
+                        {
+                            model: db.ApprovalSetting,
+                            as: 'setting',
+                            where: {
+                                type: 'TimeCard'
+                            }
+                        }
+                    ],
+                    where: {
+                        document_id: attendanceId,
+                        is_active: true,
+                        status: 'Approved'
+                    }
+                });
+        
+                if (totalCount === approvedCount) {
+                  await attendance.update({ status: 'Approved' });
+        }
+
+        res.status(201).json({
+            message: "Record Updated!"
+        });
+
+    } catch (error) {
+
+        res.status(400).json({ 
+            error: error.message 
+        });
+
+    }
+};
+
+exports.GenerateAttendancePDF = async (req, res) => {
+    const { 
+        id 
+    } = req.params;
+    let browser;
+
+    // ✅ Helpers
+    const formatTime = (t) => (t ? moment(t, ["HH:mm:ss", "HH:mm"]).format("HH:mm") : "");
+    const formatTimeHHmmA = (t) => (t ? moment(t, ["HH:mm:ss", "HH:mm"]).format("hh:mm A") : "");
+
+    try {
+        // 1 Attendance period + daily records
+        const attendance = await db.Attendance.findOne({
+            where: { 
+                id 
+            },
+            include: [
+                {
+                    model: db.EmployeeAttendance,
+                    as: "days",
+                    separate: true,
+                    order: [["work_day", "ASC"]],
+                },
+            ],
+        });
+
+        if (!attendance) return res.status(404).json({ error: "Attendance not found" });
+
+        const startDate = moment(attendance.date_from).format("YYYY-MM-DD");
+        const endDate = moment(attendance.date_to).format("YYYY-MM-DD");
+
+        // 1.5 Fetch EmployeeShift records (effective dating) + Shift + ShiftDays
+        // Shift hasMany ShiftDay as 'days' (day_of_week: 1=Mon..7=Sun)
+        const employeeShifts = await db.EmployeeShift.findAll({
+            where: { 
+                employee_id: attendance.employee_id 
+            },
+            include: [
+                {
+                    model: db.Shift,
+                    as: "shift",
+                    include: [
+                        { 
+                            model: db.ShiftDay, 
+                            as: "days" 
+                        }
+                    ],
+                },
+            ],
+            order: [["effective_from", "DESC"]],
+        });
+
+        // 2️ Leaves
+        const leaves = await db.EmployeeLeaveApplication.findAll({
+            where: {
+                employee_id: attendance.employee_id,
+                status: "Approved",
+                date_from: { [Op.lte]: endDate },
+                date_to: { [Op.gte]: startDate },
+            },
+            include: [
+                { 
+                    model: db.LeaveType, 
+                    as: "leaveType" 
+                }
+            ],
+        });
+
+        // 3️ Holidays
+        const holidays = await db.Holiday.findAll({
+            where: {
+                date: { [Op.between]: [startDate, endDate] },
+                isActive: true,
+            },
+        });
+
+        // 4️ Overtime applications (range) for NOTES (fast map)
+        const overtimes = await db.EmployeeOvertimeApplication.findAll({
+            where: {
+                employee_id: attendance.employee_id,
+                status: "Approved",
+            },
+            include: [
+                {
+                    model: db.Overtime,
+                    as: "overtime",
+                    required: true,
+                    where: {
+                        date: { [Op.between]: [startDate, endDate] },
+                        status: "Approved",
+                    },
+                },
+            ],
+        });
+
+        // 5 Adjustments (latest first)
+        const adjustments = await db.EmployeeAttendanceAdjustment.findAll({
+            include: [
+                {
+                    model: db.EmployeeAttendance,
+                    as: "attendance",
+                    required: true,
+                    where: { 
+                        attendance_id: attendance.id 
+                    },
+                },
+            ],
+            order: [["createdAt", "DESC"]],
+        });
+
+        // 6 Lookup maps
+        const leaveMap = {};
+        for (const leave of leaves) {
+            let d = moment(leave.date_from);
+            const end = moment(leave.date_to);
+            while (d.isSameOrBefore(end)) {
+                leaveMap[d.format("YYYY-MM-DD")] = leave.leaveType?.name || "";
+                d.add(1, "day");
+            }
+        }
+
+        const holidayMap = {};
+        for (const h of holidays) {
+            holidayMap[moment(h.date).format("YYYY-MM-DD")] = h.name;
+        }
+
+        // overtimeMap for remarks
+        const overtimeMap = {};
+        for (const otApp of overtimes) {
+            const ot = otApp.overtime;
+            const key = moment(ot.date).format("YYYY-MM-DD");
+            if (!overtimeMap[key]) overtimeMap[key] = [];
+            overtimeMap[key].push({
+                start: ot.time_start ? formatTime(ot.time_start) : "",
+                end: ot.time_end ? formatTime(ot.time_end) : "",
+                description: ot.description || "",
+                status: ot.status,
+            });
+        }
+
+        // dayMap
+        const dayMap = {};
+        for (const d of attendance.days || []) {
+            dayMap[moment(d.work_day).format("YYYY-MM-DD")] = d;
+        }
+
+        // latest adjustment per EmployeeAttendance.id
+        const adjustmentMap = {};
+        for (const adj of adjustments) {
+            if (!adjustmentMap[adj.employee_attendance_id]) {
+                adjustmentMap[adj.employee_attendance_id] = adj; // newest wins
+            }
+        }
+
+        // 7 Build results
+        const results = [];
+        let day = moment(startDate);
+        const endDay = moment(endDate);
+
+        while (day.isSameOrBefore(endDay)) {
+            const formatted = day.format("YYYY-MM-DD");
+            const dtr = dayMap[formatted];
+
+            const notes = [];
+
+            // notes: holiday/leave/overtime(adjusted note)
+            if (holidayMap[formatted]) notes.push({ type: "holiday", name: holidayMap[formatted] });
+            if (leaveMap[formatted]) notes.push({ type: "leave", name: leaveMap[formatted] });
+
+            if (overtimeMap[formatted]?.length) {
+                overtimeMap[formatted].forEach((ot) => {
+                    notes.push({
+                        type: "overtime",
+                        name: `ot (${formatTimeHHmmA(ot.start)} to ${formatTimeHHmmA(ot.end)})`,
+                    });
+                });
+            }
+
+            const adjustment = dtr ? adjustmentMap[dtr.id] : null;
+            if (adjustment) notes.push({ type: "adjustment", name: adjustment.reason });
+
+            // time source: latest adjustment OR attendance
+            const originalTimeIn = formatTime(dtr?.time_in);
+            const originalTimeOut = formatTime(dtr?.time_out);
+
+            const adjustedTimeIn = adjustment ? formatTime(adjustment.adjusted_time_in) : null;
+            const adjustedTimeOut = adjustment ? formatTime(adjustment.adjusted_time_out) : null;
+
+            const finalTimeIn = adjustedTimeIn || originalTimeIn;
+            const finalTimeOut = adjustedTimeOut || originalTimeOut;
+
+            // Shift for this date (effective dated)
+            const effective = pickEffectiveEmployeeShift(employeeShifts, formatted);
+            const shift = effective?.shift || null;
+
+            // default computed
+            let late = 0;
+            let undertime = 0;
+            let overtime = 0;
+
+            // compute only if we have shift + actual times + shift day matches
+            if (shift && finalTimeIn && finalTimeOut) {
+                // shift day validation (1=Mon..7=Sun)
+                const shiftDaySet = new Set((shift.days || []).map(sd => Number(sd.day_of_week)));
+                const isoDow = moment(formatted, "YYYY-MM-DD").isoWeekday();
+                const isShiftDay = shiftDaySet.size ? shiftDaySet.has(isoDow) : true;
+
+                // Scheduled times (rename if your Shift uses different columns)
+                const schedInStr = shift.time_in || shift.time_start || shift.timeStart || shift.start_time;
+                const schedOutStr = shift.time_out || shift.time_end || shift.timeEnd || shift.end_time;
+
+                const schedStart = combineDayTime(formatted, schedInStr);
+                const schedEnd = combineDayTime(formatted, schedOutStr);
+
+                // Actual times (adjustment OR attendance)
+                const actualStart = combineDayTime(formatted, finalTimeIn);
+                const actualEnd = combineDayTime(formatted, finalTimeOut);
+
+                // guard
+                const schedOk = schedStart.isValid() && schedEnd.isValid() && schedEnd.isAfter(schedStart);
+                const actualOk = actualStart.isValid() && actualEnd.isValid() && actualEnd.isAfter(actualStart);
+
+                const isHoliday = !!holidayMap[formatted];
+                const isLeave = !!leaveMap[formatted];
+
+                if (schedOk && actualOk && isShiftDay && !isHoliday && !isLeave) {
+                    // late: actual start after scheduled start
+                    late = pos(actualStart.diff(schedStart, "minutes"));
+
+                    // undertime: actual end before scheduled end
+                    undertime = pos(schedEnd.diff(actualEnd, "minutes"));
+
+                    // overtime: only count approved OT minutes that overlap actual work window
+                    // Uses your helper (day-level OT schedules)
+                    const approvedOTs = await getApprovedOvertimesForDay({
+                        employeeId: attendance.employee_id,
+                        workDay: formatted,
+                        transaction: null,
+                    });
+
+                    overtime = 0;
+                    for (const otApp of approvedOTs || []) {
+                        const ot = otApp.overtime;
+                        if (!ot) continue;
+
+                        const otStart = combineDayTime(formatted, ot.time_start || ot.timeStart);
+                        const otEnd = combineDayTime(formatted, ot.time_end || ot.timeEnd);
+
+                        if (otStart.isValid() && otEnd.isValid() && otEnd.isAfter(otStart)) {
+                            overtime += overlapMinutes(actualStart, actualEnd, otStart, otEnd);
+                        }
+                    }
+                }
+            }
+
+            results.push({
+                date: formatted,
+
+                // IDs
+                attendance_id: dtr?.id || null,
+                adjustment_id: adjustment?.id || null,
+
+                // display times (adjusted wins)
+                time_in: finalTimeIn,
+                time_out: finalTimeOut,
+
+                // optional audit fields
+                original_time_in: originalTimeIn,
+                original_time_out: originalTimeOut,
+                adjusted_time_in: adjustedTimeIn,
+                adjusted_time_out: adjustedTimeOut,
+
+                // ✅ computed using (adjustment OR attendance) + (effective shift + shiftday) + (approved OT overlap)
+                late,
+                undertime,
+                overtime,
+
+                notes,
+            });
+
+            day.add(1, "day");
+        }
+
+        // Approvals (unchanged)
+        const approvals = await db.Approval.findAll({
+            where: { 
+                document_id: id, 
+                is_active: true 
+            },
+            include: [
+                {
+                    model: db.ApprovalSetting,
+                    as: "setting",
+                    where: { 
+                        type: "TimeCard" 
+                    },
+                    include: [
+                        {
+                            model: db.User,
+                            as: "approver",
+                            attributes: ["id"],
+                            include: [
+                                {
+                                    model: db.EmployeeAccount,
+                                    as: "employeeAccount",
+                                    include: [
+                                        {
+                                            model: db.Employee,
+                                            as: "employee",
+                                            include: [
+                                                {
+                                                    model: db.Employment,
+                                                    as: "employment",
+                                                    include: [
+                                                        { 
+                                                            model: db.Position, 
+                                                            as: "position" 
+                                                        }
+                                                    ],
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
+                                                }
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            model: db.User,
+                            as: "owner",
+                            attributes: ["id"],
+                            include: [
+                                {
+                                    model: db.EmployeeAccount,
+                                    as: "employeeAccount",
+                                    include: [
+                                        {
+                                            model: db.Employee,
+                                            as: "employee",
+                                            include: [
+                                                {
+                                                    model: db.Employment,
+                                                    as: "employment",
+                                                    include: [
+                                                        { 
+                                                            model: db.Position, 
+                                                            as: "position" 
+                                                        }
+                                                    ],
+                                                },
+                                                {
+                                                    model: db.EmployeeSignature,
+                                                    as: 'signature'
+                                                }
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            order: [[{ model: db.ApprovalSetting, as: "setting" }, "order", "ASC"]],
+        });
+
+        // Map approvals to the desired format
+        const mappedApprovals = approvals.map(a => {
+            const row = a.toJSON();
+
+            const originalUser = row?.setting?.approver || null;
+            const latestOverride = row?.overrides?.[0] || null;
+            const overrideUser = latestOverride?.user || null;
+            const isApproved = row?.status === 'Approved';
+
+            return {
+                description: row.setting?.description,
+                approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
+                position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
+                signature: row.is_overide ? getSignature(overrideUser) : getSignature(originalUser),
+                date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
+                isSigned: isApproved,
+                isOveride: row.is_overide
+            };
+        });
+        // 8️⃣ Generate PDF
+        const monthName = moment(startDate).format("MMMM");
+        const templatePath = path.join(__dirname, '../templates/reports/DTR.pug');
+        const seal = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, '../templates/reports/logo.jpg')).toString('base64');
+
+        const html = pug.renderFile(templatePath, {
+            seal,
+            month: monthName,
+            logs: results,
+            signatories: mappedApprovals,
+            moment
+        });
+
+        const browser = await puppeteer.launch({
+        //   executablePath: '/usr/bin/google-chrome',
+        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          headless: true,
+          args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+          ],
+        });
+
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.emulateMediaType('print');
+
+        const pdfBuffer = await page.pdf({
+            width: '8.5in',
+            height: '11in',
+            landscape: false,
+            margin: { top: '25px', bottom: '25px', left: '25px', right: '25px' },
+            preferCSSPageSize: true,
+            printBackground: true
+        });
+
+        res.send(Buffer.from(pdfBuffer));
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (browser) await browser.close();
+    }
+};
+
+const pos = (n) => (n > 0 ? n : 0);
+
+const combineDayTime = (workDay, timeStr) => {
+  const t = (timeStr || "").trim();
+  if (!t) return moment.invalid();
+  const m = moment(`${workDay} ${t}`, ["YYYY-MM-DD HH:mm:ss", "YYYY-MM-DD HH:mm"], true);
+  if (!m.isValid() && t.length === 5) {
+    return moment(`${workDay} ${t}:00`, "YYYY-MM-DD HH:mm:ss", true);
+  }
+  return m;
+};
+
+const pickEffectiveEmployeeShift = (employeeShifts, workDayYMD) => {
+  const day = moment(workDayYMD, "YYYY-MM-DD", true);
+  const valid = (employeeShifts || [])
+    .filter((es) => es.is_active)
+    .filter((es) => {
+      const from = moment(es.effective_from, "YYYY-MM-DD", true);
+      const to = es.effective_to ? moment(es.effective_to, "YYYY-MM-DD", true) : null;
+      return from.isSameOrBefore(day, "day") && (!to || to.isSameOrAfter(day, "day"));
+    })
+    .sort((a, b) => moment(b.effective_from).diff(moment(a.effective_from)));
+  return valid[0] || null;
+};
+
+const overlapMinutes = (aStart, aEnd, bStart, bEnd) => {
+  const start = moment.max(aStart, bStart);
+  const end = moment.min(aEnd, bEnd);
+  const diff = end.diff(start, "minutes");
+  return diff > 0 ? diff : 0;
+};
+
+const getApprovedOvertimesForDay = async ({ employeeId, workDay, transaction }) => {
+  return db.EmployeeOvertimeApplication.findAll({
+    where: {
+      employee_id: employeeId,
+      status: "Approved",
+    },
+    include: [
+      {
+        model: db.Overtime,
+        as: "overtime",
+        required: true,
+        where: {
+          date: workDay,
+          status: "Approved",
+          is_active: true,
+        },
+      },
+    ],
+    transaction,
+  });
 };

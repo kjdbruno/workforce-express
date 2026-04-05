@@ -674,30 +674,30 @@ exports.Create = async (req, res) => {
           );
         }
       }
-      // send email
-      const mail = emp?.email;
-      const control_no = header?.control_no;
-      const firstname = emp?.first_name;
-      const from = moment(dateStart).format('MMMM DD YYYY');
-      const to = moment(dateEnd).format('MMMM DD YYYY');
-      try {
-          const templatePath = path.join(__dirname, '../templates/TimeLog.html');
-          let htmlContent = fs.readFileSync(templatePath, 'utf8');
-          htmlContent = htmlContent
-          .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
-          .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
-          .replace(/{{\s*from\s*}}/g, from || 'Date From')
-          .replace(/{{\s*to\s*}}/g, to || 'Date To')
+      // // send email
+      // const mail = emp?.email;
+      // const control_no = header?.control_no;
+      // const firstname = emp?.first_name;
+      // const from = moment(dateStart).format('MMMM DD YYYY');
+      // const to = moment(dateEnd).format('MMMM DD YYYY');
+      // try {
+      //     const templatePath = path.join(__dirname, '../templates/TimeLog.html');
+      //     let htmlContent = fs.readFileSync(templatePath, 'utf8');
+      //     htmlContent = htmlContent
+      //     .replace(/{{\s*control_no\s*}}/g, control_no || 'Control No')
+      //     .replace(/{{\s*firstname\s*}}/g, firstname || 'Applicant')
+      //     .replace(/{{\s*from\s*}}/g, from || 'Date From')
+      //     .replace(/{{\s*to\s*}}/g, to || 'Date To')
 
-          await transporter.sendMail({
-              from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
-              to: mail,
-              subject: 'Daily Time Record',
-              html: htmlContent,
-          });
-      } catch (emailError) {
-          console.error('Email sending failed:', emailError.message);
-      }
+      //     await transporter.sendMail({
+      //         from: `"Centurion Management Collection Inc." <${process.env.MAIL_USER}>`,
+      //         to: mail,
+      //         subject: 'Daily Time Record',
+      //         html: htmlContent,
+      //     });
+      // } catch (emailError) {
+      //     console.error('Email sending failed:', emailError.message);
+      // }
     }
 
     if (attendanceHeadersCreated === 0) {
@@ -2965,34 +2965,24 @@ exports.GenerateAttendancePDF = async (req, res) => {
         });
 
         // Map approvals to the desired format
-        const signatories = approvals.map((app) => {
-            const employee = app?.setting?.approver?.employeeAccount?.employee;
-            const profile = employee || {};
+        const mappedApprovals = approvals.map(a => {
+          const row = a.toJSON();
 
-            const position = employee?.employment?.position?.name;
-            // Format full name (First M. Last Suffix)
-            const first = profile?.first_name || '';
-            const middle = profile?.middle_name ? `${profile.middle_name.charAt(0)}.` : '';
-            const last = profile?.last_name || '';
-            const suffix = profile?.suffix ? ` ${profile.suffix}` : '';
-            const userName = `${first} ${middle} ${last}${suffix}`.replace(/\s+/g, ' ').trim();
+          const originalUser = row?.setting?.approver || null;
+          const latestOverride = row?.overrides?.[0] || null;
+          const overrideUser = latestOverride?.user || null;
+          const isApproved = row?.status === 'Approved';
 
-            // Only show signature & date if approval is approved
-            const isApproved = app?.status === 'Approved';
-            const signaturePath = employee?.signature?.signature; // Assuming approval setting stores the signature path
-
-            return {
-                description: app?.setting.description || '',
-                approver: userName,
-                position,
-                signature: isApproved && signaturePath
-                    ? 'data:image/png;base64,' +
-                    fs.readFileSync(path.join(__dirname, `../public/${signaturePath}`)).toString('base64')
-                    : null,
-                date: isApproved ? moment(app?.signed_at || app?.createdAt).format('MMMM DD, YYYY hh:mm A') : null,
-                isSigned: isApproved
-            };
-        });
+          return {
+              description: row.setting?.description,
+              approver: row.is_overide ? getEmployeeName(overrideUser) : getEmployeeName(originalUser),
+              position: row.is_overide ? getEmployeePosition(overrideUser) : getEmployeePosition(originalUser),
+              signature: row.is_overide ? getSignature(overrideUser) : getSignature(originalUser),
+              date: isApproved ? moment(row?.signed_at).format('MMMM DD, YYYY hh:mm A') : null,
+              isSigned: isApproved,
+              isOveride: row.is_overide
+          };
+      });
         // 8️⃣ Generate PDF
         const monthName = moment(startDate).format("MMMM");
         const templatePath = path.join(__dirname, '../templates/reports/DTR.pug');
@@ -3002,12 +2992,13 @@ exports.GenerateAttendancePDF = async (req, res) => {
             seal,
             month: monthName,
             logs: results,
-            signatories,
+            signatories: mappedApprovals,
             moment
         });
 
         const browser = await puppeteer.launch({
-          executablePath: '/usr/bin/google-chrome',
+          // executablePath: '/usr/bin/google-chrome',
+          executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
           headless: true,
           args: [
               '--no-sandbox',
