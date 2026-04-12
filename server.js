@@ -20,12 +20,12 @@ const io = socketIo(server, {
   pingInterval: 25000,
   pingTimeout: 5000,
     cors: {
-      origin: '*', // Change this to your frontend's origin http://localhost:9000
+      // origin: '*', // Change this to your frontend's origin http://localhost:9000
       // origin: 'https://hris-ccmi.com',
-      // origin: [
-      //   'https://hris-ccmi.com',
-      //   'https://portal.hris-ccmi.com'
-      // ],
+      origin: [
+        'https://hris-ccmi.com',
+        'https://portal.hris-ccmi.com'
+      ],
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type'],
       // credentials: true, // Optional, if you need to support credentials
@@ -34,12 +34,12 @@ const io = socketIo(server, {
 
 // Middleware
 app.use(cors({
-  origin: '*', // Change this to your frontend's origin http://localhost:9000
+  // origin: '*', // Change this to your frontend's origin http://localhost:9000
   // origin: 'https://hris-ccmi.com',
-  // origin: [
-  //   'https://hris-ccmi.com',
-  //   'https://portal.hris-ccmi.com'
-  // ],
+  origin: [
+    'https://hris-ccmi.com',
+    'https://portal.hris-ccmi.com'
+  ],
   methods: ['GET', 'POST'],
   // credentials: true, // Optional, if you need to support credentials
 }));

@@ -3,7 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const os = require("os");
 
-const { User, Profile, ProfilePhoto } = require('../models');
+const db = require('../models');
+const { sequelize } = db;
 
 let io;
 
@@ -14,12 +15,13 @@ module.exports = (_io) => {
         login: async (req, res) => {
             const { username, password } = req.body;
             try {
-                const user = await User.findOne({
+                const user = await db.User.findOne({
                     where: { 
                         username,
                         role: {
                             [Op.in]: ['SuperAdmin', 'Admin', 'Management', 'HR', 'Finance']
                         },
+                        status: 'Active'
                     }
                 });
                 if (!user) {
@@ -95,7 +97,7 @@ module.exports = (_io) => {
                 user.failedLoginAttempts = 0;
                 await user.save();
 
-                const profile = await User.findOne({
+                const profile = await db.User.findOne({
                     where: {
                         id: user.id
                     },
@@ -121,7 +123,7 @@ module.exports = (_io) => {
         EmployeeLogin: async (req, res) => {
             const { username, password } = req.body;
             try {
-                const user = await User.findOne({
+                const user = await db.User.findOne({
                     where: { 
                         username,
                         role: 'Employee'
@@ -200,32 +202,6 @@ module.exports = (_io) => {
                 user.failedLoginAttempts = 0;
                 await user.save();
 
-                const profile = await User.findOne({
-                    where: {
-                        id: user.id
-                    },
-                    include: [
-                        {
-                            model: Profile,
-                            as: 'profile',
-                            attributes: [
-                                'firstname', 'middlename', 'lastname', 'suffix'
-                            ],
-                            include: [
-                                {
-                                    model: ProfilePhoto,
-                                    as: 'photos',
-                                    attributes: [
-                                        'file'
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    attributes: [
-                        'id', 'username', 'role', 'status'
-                    ]
-                })
                 const token = jwt.sign({ 
                     id: user.id,
                     role: user.role
@@ -233,7 +209,6 @@ module.exports = (_io) => {
                     expiresIn: "8h" 
                 });
                 res.json({ 
-                    user: profile, 
                     token 
                 });
             } catch (error) {
