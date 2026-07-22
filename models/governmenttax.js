@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class EmployeeFace extends Model {
+  class GovernmentTax extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,40 +11,37 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // EmployeeFace → Employee
-      EmployeeFace.belongsTo(models.Employee, {
-        foreignKey: 'employee_id',
-        as: 'employee'
-      });
     }
   }
-  EmployeeFace.init({
+  GovernmentTax.init({
     id: {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    employee_id: {
+    effectivity_year: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Employees',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    },
-    descriptor: {
-      type: DataTypes.JSON('long'),
       allowNull: false
     },
-    image_file: {
-      type: DataTypes.BLOB('long'),
+    tax_status: {
+      type: DataTypes.ENUM('S', 'ME', 'S1', 'S2', 'S3', 'S4', 'ME1', 'ME2', 'ME3', 'ME4', 'Z'),
       allowNull: false
     },
-    samples: {
-      type: DataTypes.JSON,
+    range_from: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    range_to: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    base_tax: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
+    },
+    excess_rate: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     is_active: {
@@ -53,9 +50,9 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'EmployeeFace',
-    tableName: 'EmployeeFaces',
+    modelName: 'GovernmentTax',
+    tableName: 'GovernmentTaxes',
     timestamps: true
   });
-  return EmployeeFace;
+  return GovernmentTax;
 };

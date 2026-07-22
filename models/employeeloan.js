@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class EmployeeFace extends Model {
+  class EmployeeLoan extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,14 +11,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // EmployeeFace → Employee
-      EmployeeFace.belongsTo(models.Employee, {
-        foreignKey: 'employee_id',
-        as: 'employee'
-      });
     }
   }
-  EmployeeFace.init({
+  EmployeeLoan.init({
     id: {
       allowNull: false,
       autoIncrement: true,
@@ -35,16 +30,16 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    descriptor: {
-      type: DataTypes.JSON('long'),
+    amount: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
-    image_file: {
-      type: DataTypes.BLOB('long'),
+    deduction: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
-    samples: {
-      type: DataTypes.JSON,
+    balance: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     is_active: {
@@ -53,9 +48,9 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'EmployeeFace',
-    tableName: 'EmployeeFaces',
+    modelName: 'EmployeeLoan',
+    tableName: 'EmployeeLoans',
     timestamps: true
   });
-  return EmployeeFace;
+  return EmployeeLoan;
 };

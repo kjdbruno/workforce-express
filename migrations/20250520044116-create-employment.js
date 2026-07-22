@@ -19,6 +19,11 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
       },
+      biometric_no: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        unique: true
+      },
       employee_no: {
         type: Sequelize.STRING,
         allowNull: false,

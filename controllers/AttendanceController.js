@@ -2790,65 +2790,52 @@ exports.GenerateAttendancePDF = async (req, res) => {
             const effective = pickEffectiveEmployeeShift(employeeShifts, formatted);
             const shift = effective?.shift || null;
 
-            // default computed
-            let late = 0;
-            let undertime = 0;
-            let overtime = 0;
+            // helper
+            const toNum = (v, fallback = 0) => {
+                const n = Number(v);
+                return Number.isFinite(n) ? n : fallback;
+            };
 
-            // compute only if we have shift + actual times + shift day matches
-            if (shift && finalTimeIn && finalTimeOut) {
-                // shift day validation (1=Mon..7=Sun)
-                const shiftDaySet = new Set((shift.days || []).map(sd => Number(sd.day_of_week)));
-                const isoDow = moment(formatted, "YYYY-MM-DD").isoWeekday();
-                const isShiftDay = shiftDaySet.size ? shiftDaySet.has(isoDow) : true;
+            // ============================================
+            // BASE VALUES FROM EmployeeAttendance
+            // ============================================
 
-                // Scheduled times (rename if your Shift uses different columns)
-                const schedInStr = shift.time_in || shift.time_start || shift.timeStart || shift.start_time;
-                const schedOutStr = shift.time_out || shift.time_end || shift.timeEnd || shift.end_time;
+            const baseLate = toNum(
+                dtr?.late_minutes ?? dtr?.late ?? 0,
+                0
+            );
 
-                const schedStart = combineDayTime(formatted, schedInStr);
-                const schedEnd = combineDayTime(formatted, schedOutStr);
+            const baseUndertime = toNum(
+                dtr?.undertime_minutes ?? dtr?.undertime ?? 0,
+                0
+            );
 
-                // Actual times (adjustment OR attendance)
-                const actualStart = combineDayTime(formatted, finalTimeIn);
-                const actualEnd = combineDayTime(formatted, finalTimeOut);
+            const baseOvertime = toNum(
+                dtr?.overtime_minutes ?? dtr?.overtime ?? 0,
+                0
+            );
 
-                // guard
-                const schedOk = schedStart.isValid() && schedEnd.isValid() && schedEnd.isAfter(schedStart);
-                const actualOk = actualStart.isValid() && actualEnd.isValid() && actualEnd.isAfter(actualStart);
+            // ============================================
+            // OVERRIDE USING ADJUSTMENT
+            // ============================================
 
-                const isHoliday = !!holidayMap[formatted];
-                const isLeave = !!leaveMap[formatted];
+            const late =
+                adjustment &&
+                adjustment.adjusted_late_minutes != null
+                    ? toNum(adjustment.adjusted_late_minutes, baseLate)
+                    : baseLate;
 
-                if (schedOk && actualOk && isShiftDay && !isHoliday && !isLeave) {
-                    // late: actual start after scheduled start
-                    late = pos(actualStart.diff(schedStart, "minutes"));
+            const undertime =
+                adjustment &&
+                adjustment.adjusted_undertime_minutes != null
+                    ? toNum(adjustment.adjusted_undertime_minutes, baseUndertime)
+                    : baseUndertime;
 
-                    // undertime: actual end before scheduled end
-                    undertime = pos(schedEnd.diff(actualEnd, "minutes"));
-
-                    // overtime: only count approved OT minutes that overlap actual work window
-                    // Uses your helper (day-level OT schedules)
-                    const approvedOTs = await getApprovedOvertimesForDay({
-                        employeeId: attendance.employee_id,
-                        workDay: formatted,
-                        transaction: null,
-                    });
-
-                    overtime = 0;
-                    for (const otApp of approvedOTs || []) {
-                        const ot = otApp.overtime;
-                        if (!ot) continue;
-
-                        const otStart = combineDayTime(formatted, ot.time_start || ot.timeStart);
-                        const otEnd = combineDayTime(formatted, ot.time_end || ot.timeEnd);
-
-                        if (otStart.isValid() && otEnd.isValid() && otEnd.isAfter(otStart)) {
-                            overtime += overlapMinutes(actualStart, actualEnd, otStart, otEnd);
-                        }
-                    }
-                }
-            }
+            const overtime =
+                adjustment &&
+                adjustment.adjusted_overtime_minutes != null
+                    ? toNum(adjustment.adjusted_overtime_minutes, baseOvertime)
+                    : baseOvertime;
 
             results.push({
                 date: formatted,

@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class EmployeeFace extends Model {
+  class GovernmentPhilhealth extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,40 +11,41 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // EmployeeFace → Employee
-      EmployeeFace.belongsTo(models.Employee, {
-        foreignKey: 'employee_id',
-        as: 'employee'
-      });
     }
   }
-  EmployeeFace.init({
+  GovernmentPhilhealth.init({
     id: {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    employee_id: {
+    effectivity_year: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Employees',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    },
-    descriptor: {
-      type: DataTypes.JSON('long'),
       allowNull: false
     },
-    image_file: {
-      type: DataTypes.BLOB('long'),
+    range_from: {
+      type: DataTypes.DECIMA(10, 2),
       allowNull: false
     },
-    samples: {
-      type: DataTypes.JSON,
+    range_to: {
+      type: DataTypes.DECIMA(10, 2),
+      allowNull: false
+    },
+    premium_rate: {
+      type: DataTypes.DECIMA(10, 2),
+      allowNull: false
+    },
+    employee_share: {
+      type: DataTypes.DECIMA(10, 2),
+      allowNull: false
+    },
+    employer_share: {
+      type: DataTypes.DECIMA(10, 2),
+      allowNull: false
+    },
+    monthly_premium: {
+      type: DataTypes.DECIMA(10, 2),
       allowNull: false
     },
     is_active: {
@@ -53,9 +54,9 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'EmployeeFace',
-    tableName: 'EmployeeFaces',
+    modelName: 'GovernmentPhilhealth',
+    tableName: 'GovernmentPhilhealths',
     timestamps: true
   });
-  return EmployeeFace;
+  return GovernmentPhilhealth;
 };

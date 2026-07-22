@@ -2,33 +2,35 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeFaces', {
+    await queryInterface.createTable('GovernmentTaxes', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      employee_id: {
+      effectivity_year: {
         type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Employees',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      descriptor: {
-        type: Sequelize.JSON('long'),
         allowNull: false
       },
-      samples: {
-        type: Sequelize.JSON,
+      tax_status: {
+        type: Sequelize.ENUM('S', 'ME', 'S1', 'S2', 'S3', 'S4', 'ME1', 'ME2', 'ME3', 'ME4', 'Z'),
         allowNull: false
       },
-      image_file: {
-        type: Sequelize.BLOB('long'),
+      range_from: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
+      },
+      range_to: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
+      },
+      base_tax: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
+      },
+      excess_rate: {
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       is_active: {
@@ -48,6 +50,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeFaces');
+    await queryInterface.dropTable('GovernmentTaxes');
   }
 };

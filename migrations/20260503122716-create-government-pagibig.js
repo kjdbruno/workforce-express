@@ -2,33 +2,43 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeFaces', {
+    await queryInterface.createTable('GovernmentPagibigs', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      employee_id: {
+      effectivity_year: {
         type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Employees',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      descriptor: {
-        type: Sequelize.JSON('long'),
         allowNull: false
       },
-      samples: {
-        type: Sequelize.JSON,
+      range_from: {
+        type: Sequelize.DECIMA(10, 2),
         allowNull: false
       },
-      image_file: {
-        type: Sequelize.BLOB('long'),
+      range_to: {
+        type: Sequelize.DECIMA(10, 2),
+        allowNull: false
+      },
+      employee_rate: {
+        type: Sequelize.DECIMA(10, 2),
+        allowNull: false
+      },
+      employer_rate: {
+        type: Sequelize.DECIMA(10, 2),
+        allowNull: false
+      },
+      employee_share: {
+        type: Sequelize.DECIMA(10, 2),
+        allowNull: false
+      },
+      employer_share: {
+        type: Sequelize.DECIMA(10, 2),
+        allowNull: false
+      },
+      max_contribution: {
+        type: Sequelize.DECIMA(10, 2),
         allowNull: false
       },
       is_active: {
@@ -48,6 +58,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeFaces');
+    await queryInterface.dropTable('GovernmentPagibigs');
   }
 };

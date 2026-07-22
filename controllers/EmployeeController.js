@@ -1436,38 +1436,88 @@ exports.CreateSignature = async (req, res) => {
 /**
  * Face Recognition
  */
+// exports.CreateBiometric = async (req, res) => {
+//     const { id } = req.params;
+//     const { descriptor, imageBase64 } = req.body;
+
+//     try {
+
+//         if (!imageBase64) {
+//         return res.status(400).json({ message: "Image is required." });
+//         }
+
+//         // Remove data:image/...;base64, prefix if exists
+//         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+//         // Convert Base64 string to Buffer (BLOB)
+//         const imageBuffer = Buffer.from(base64Data, "base64");
+
+//         const face = await db.EmployeeFace.findOne({
+//             where: { 
+//                 employee_id: id 
+//             }
+//         });
+
+//         if (face) {
+//             await face.update({
+//                 descriptor: JSON.stringify(descriptor),
+//                 image_file: imageBuffer,   // ✅ SAVE AS BLOB
+//             });
+//         } else {
+//             await db.EmployeeFace.create({
+//                 employee_id: id,
+//                 descriptor: JSON.stringify(descriptor),
+//                 image_file: imageBuffer,   // ✅ SAVE AS BLOB
+//             });
+//         }
+
+//         return res.status(201).json({
+//             message: "Record Saved!",
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: error.message });
+//     }
+// };
 exports.CreateBiometric = async (req, res) => {
     const { id } = req.params;
-    const { descriptor, imageBase64 } = req.body;
+    const { descriptor, samples, imageBase64 } = req.body;
 
     try {
-
         if (!imageBase64) {
-        return res.status(400).json({ message: "Image is required." });
+            return res.status(400).json({ message: "Image is required." });
+        }
+        if (!descriptor) {
+            return res.status(400).json({ message: "Descriptor is required." });
         }
 
-        // Remove data:image/...;base64, prefix if exists
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-
-        // Convert Base64 string to Buffer (BLOB)
         const imageBuffer = Buffer.from(base64Data, "base64");
 
+        // Store the averaged descriptor as before (for quick/simple matching),
+        // plus the raw samples array so matching can check min-distance across
+        // all captured angles/lighting conditions instead of just one average.
+        const samplesToStore = Array.isArray(samples) && samples.length > 0
+            ? samples
+            : [descriptor];
+
         const face = await db.EmployeeFace.findOne({
-            where: { 
-                employee_id: id 
-            }
+            where: { employee_id: id }
         });
 
         if (face) {
             await face.update({
                 descriptor: JSON.stringify(descriptor),
-                image_file: imageBuffer,   // ✅ SAVE AS BLOB
+                samples: JSON.stringify(samplesToStore),
+                image_file: imageBuffer,
             });
         } else {
             await db.EmployeeFace.create({
                 employee_id: id,
                 descriptor: JSON.stringify(descriptor),
-                image_file: imageBuffer,   // ✅ SAVE AS BLOB
+                samples: JSON.stringify(samplesToStore),
+                image_file: imageBuffer,
             });
         }
 

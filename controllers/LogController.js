@@ -6,6 +6,7 @@ const multer = require('multer');
 const sharp = require('sharp');
 const moment = require('moment');
 const momentTz = require('moment-timezone')
+const XLSX = require('xlsx');
 
 const pug = require('pug');
 const puppeteer = require('puppeteer-core');
@@ -168,17 +169,51 @@ exports.GetLog = async (req, res) => {
         let day = moment(startDate)
         const endDay = moment(endDate)
 
+        // while (day.isSameOrBefore(endDay)) {
+        //     const dateKey = day.format('YYYY-MM-DD')
+
+        //     const times = logs
+        //         .filter(l => moment(l.captured_at).format('YYYY-MM-DD') === dateKey)
+        //         .map(l => moment(l.captured_at).format('hh:mm A'))
+
+        //     const paddedTimes =
+        //         times.length < 10
+        //             ? [...times, ...Array(10 - times.length).fill('')]
+        //             : times.slice(0, 10)
+
+        //     result.push({
+        //         date: dateKey,
+        //         times: paddedTimes,
+        //         leaveType: leaveMap[dateKey] || '',
+        //         holiday: holidayMap[dateKey] || '',
+        //         overtime: overtimeMap[dateKey]?.length ? 'Overtime' : ''
+        //     })
+
+        //     day.add(1, 'day')
+        // }
+
+        // First pass: determine the max number of time punches across all days
+        let maxTimes = 0;
+        const tempDay = day.clone();
+        while (tempDay.isSameOrBefore(endDay)) {
+            const dateKey = tempDay.format('YYYY-MM-DD');
+            const count = logs.filter(l => moment(l.captured_at).format('YYYY-MM-DD') === dateKey).length;
+            if (count > maxTimes) maxTimes = count;
+            tempDay.add(1, 'day');
+        }
+
+        // Second pass: build the result, padding every day to maxTimes
         while (day.isSameOrBefore(endDay)) {
-            const dateKey = day.format('YYYY-MM-DD')
+            const dateKey = day.format('YYYY-MM-DD');
 
             const times = logs
                 .filter(l => moment(l.captured_at).format('YYYY-MM-DD') === dateKey)
-                .map(l => moment(l.captured_at).format('hh:mm A'))
+                .map(l => moment(l.captured_at).format('hh:mm A'));
 
             const paddedTimes =
-                times.length < 4
-                    ? [...times, ...Array(4 - times.length).fill('')]
-                    : times.slice(0, 4)
+                times.length < maxTimes
+                    ? [...times, ...Array(maxTimes - times.length).fill('')]
+                    : times;
 
             result.push({
                 date: dateKey,
@@ -186,9 +221,9 @@ exports.GetLog = async (req, res) => {
                 leaveType: leaveMap[dateKey] || '',
                 holiday: holidayMap[dateKey] || '',
                 overtime: overtimeMap[dateKey]?.length ? 'Overtime' : ''
-            })
+            });
 
-            day.add(1, 'day')
+            day.add(1, 'day');
         }
 
         // 7️ Response
@@ -203,4 +238,151 @@ exports.GetLog = async (req, res) => {
         console.error(error)
         return res.status(500).json({ error: error.message })
     }
+}
+
+exports.ImportLog = async (req, res) => {
+
+    if (!req.file) {
+        return res.status(400).json({
+            error: 'No file uploaded. Attach the xlsx under field name "file".'
+        });
+    }
+
+    const transaction = await sequelize.transaction();
+
+    try {
+        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: null });
+
+        if (!rows.length) {
+            await transaction.rollback();
+            return res.status(400).json({ error: 'Excel file is empty.' });
+        }
+
+        // Cache biometric_no -> employee_id lookups so we don't hit the DB once per row
+        const employmentCache = new Map();
+        const skipped = [];
+        const toInsert = [];
+
+        for (const row of rows) {
+            // Spreadsheet "Emp ID" matches Employment.biometric_no
+            const biometricNo = parseInt(row['Emp ID'], 10);
+
+            if (isNaN(biometricNo)) {
+                skipped.push({
+                    empCode: row['Emp ID'],
+                    name: `${row['First Name'] || ''} ${row['Last Name'] || ''}`.trim(),
+                    reason: 'Invalid/non-numeric Emp ID'
+                });
+                continue;
+            }
+
+            if (!employmentCache.has(biometricNo)) {
+                const employment = await db.Employment.findOne({
+                    where: { biometric_no: biometricNo },
+                    transaction
+                });
+                employmentCache.set(biometricNo, employment || null);
+            }
+
+            const employment = employmentCache.get(biometricNo);
+
+            if (!employment) {
+                skipped.push({
+                    empCode: biometricNo,
+                    name: `${row['First Name'] || ''} ${row['Last Name'] || ''}`.trim(),
+                    reason: 'No Employment record found for this biometric_no'
+                });
+                continue;
+            }
+
+            const capturedAt = parseDateTime(row['Date'], row['Time']);
+
+            if (!capturedAt) {
+                skipped.push({
+                    empCode: biometricNo,
+                    reason: `Invalid date/time: ${row['Date']} ${row['Time']}`
+                });
+                continue;
+            }
+
+            toInsert.push({
+                employee_id: employment.employee_id,
+                captured_at: capturedAt,
+                // Placeholder values — spreadsheet has no data for these fields
+                recognition_score: 1.0000,
+                liveness_passed: true,
+                camera_id: 'IMPORTED',
+                device_id: 'IMPORTED',
+                source: 'Kiosk',
+                geo_lat: 0,
+                geo_lng: 0,
+                image_path: Buffer.from(''),
+                image_hash: '0'.repeat(64),
+                payload_hash: '0'.repeat(64)
+            });
+        }
+
+        if (!toInsert.length) {
+            await transaction.rollback();
+            return res.status(400).json({
+                error: 'No valid rows to import.',
+                skipped
+            });
+        }
+
+        const created = await db.EmployeeLog.bulkCreate(toInsert, { transaction });
+
+        await transaction.commit();
+
+        return res.status(201).json({
+            message: 'Import complete.',
+            totalRows: rows.length,
+            createdCount: created.length,
+            skippedCount: skipped.length,
+            skipped
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        return res.status(400).json({ error: error.message });
+    }
+};
+
+function parseDateTime(dateVal, timeVal) {
+    if (!dateVal || !timeVal) return null;
+ 
+    // xlsx may hand back Date objects or strings depending on cell formatting
+    let datePart;
+    if (dateVal instanceof Date) {
+        datePart = dateVal;
+    } else {
+        datePart = new Date(dateVal);
+    }
+ 
+    if (isNaN(datePart.getTime())) return null;
+ 
+    let hours = 0, minutes = 0, seconds = 0;
+ 
+    if (timeVal instanceof Date) {
+        hours = timeVal.getUTCHours();
+        minutes = timeVal.getUTCMinutes();
+        seconds = timeVal.getUTCSeconds();
+    } else if (typeof timeVal === 'string') {
+        const parts = timeVal.split(':').map(Number);
+        [hours, minutes, seconds] = [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+    }
+ 
+    const combined = new Date(
+        datePart.getFullYear(),
+        datePart.getMonth(),
+        datePart.getDate(),
+        hours,
+        minutes,
+        seconds
+    );
+ 
+    return isNaN(combined.getTime()) ? null : combined;
 }

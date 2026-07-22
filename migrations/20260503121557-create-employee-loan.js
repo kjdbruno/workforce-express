@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('EmployeeFaces', {
+    await queryInterface.createTable('EmployeeLoans', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -19,16 +19,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      descriptor: {
-        type: Sequelize.JSON('long'),
+      amount: {
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
-      samples: {
-        type: Sequelize.JSON,
+      deduction: {
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
-      image_file: {
-        type: Sequelize.BLOB('long'),
+      balance: {
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       is_active: {
@@ -48,6 +48,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('EmployeeFaces');
+    await queryInterface.dropTable('EmployeeLoans');
   }
 };

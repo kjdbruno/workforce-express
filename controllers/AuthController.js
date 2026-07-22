@@ -202,6 +202,15 @@ module.exports = (_io) => {
                 user.failedLoginAttempts = 0;
                 await user.save();
 
+                const profile = await db.User.findOne({
+                    where: {
+                        id: user.id
+                    },
+                    attributes: [
+                        'id', 'username', 'name', 'role', 'status', 'avatar'
+                    ]
+                })
+
                 const token = jwt.sign({ 
                     id: user.id,
                     role: user.role
@@ -209,7 +218,8 @@ module.exports = (_io) => {
                     expiresIn: "8h" 
                 });
                 res.json({ 
-                    token 
+                    token, 
+                    user: profile
                 });
             } catch (error) {
                 console.error("Login error:", error); // Log the error for debugging

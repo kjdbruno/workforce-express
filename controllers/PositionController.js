@@ -104,8 +104,38 @@ exports.Create = async (req, res) => {
         //     });
         // }
 
+        // Generate Position Code
+        const department = await db.Department.findByPk(departmentId, { transaction });
+
+        const alias = department.alias.toUpperCase();
+
+        const lastPosition = await db.Position.findOne({
+            where: {
+                department_id: departmentId,
+                code: {
+                    [Op.like]: `${alias}-%`
+                }
+            },
+            order: [['id', 'DESC']],
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
+
+        let nextNumber = 1;
+
+        if (lastPosition && lastPosition.code) {
+            const parts = lastPosition.code.split('-');
+            const lastNumber = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(lastNumber)) {
+                nextNumber = lastNumber + 1;
+            }
+        }
+
+        const code = `${alias}-${String(nextNumber).padStart(4, '0')}`;
+
         await db.Position.create({
             name,
+            code,
             department_id: departmentId,
             monthly_salary: monthly,
             daily_salary: daily,
