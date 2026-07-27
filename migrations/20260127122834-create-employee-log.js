@@ -24,14 +24,6 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      recognition_score: {
-        type: Sequelize.DECIMAL(5, 4),
-        allowNull: true
-      },
-      liveness_passed: {
-        type: Sequelize.BOOLEAN,
-        allowNull: true
-      },
       camera_id: {
         type: Sequelize.STRING,
         allowNull: false
@@ -55,14 +47,6 @@ module.exports = {
       image_path: {
         type: Sequelize.BLOB('long'),
         allowNull: true
-      },
-      image_hash: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      payload_hash: {
-        type: Sequelize.STRING,
-        allowNull: false
       },
       createdAt: {
         allowNull: false,

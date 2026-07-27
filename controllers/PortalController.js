@@ -222,7 +222,145 @@ const sha256File = (filePath) =>
 // };
 
 // Distance threshold — same scale face-api uses (~0.5–0.6 typical for "same person")
+// const MATCH_THRESHOLD = 0.55;
+
+// exports.ScanBiometric = async (req, res) => {
+//     try {
+//         const {
+//             descriptor,
+//             geo_lat,
+//             geo_lng,
+//             camera_id,
+//             device_id,
+//             image_hash,
+//             payload_hash,
+//             source,
+//             captured_at,
+//         } = req.body;
+
+//         if (!descriptor) {
+//             return res.status(400).json({ message: "Descriptor is required." });
+//         }
+
+//         let incomingDescriptor;
+//         try {
+//             incomingDescriptor = JSON.parse(descriptor);
+//         } catch {
+//             return res.status(400).json({ message: "Invalid descriptor format." });
+//         }
+
+//         // Pull every enrolled face record
+//         const allFaces = await db.EmployeeFace.findAll({
+//             include: [{ model: db.Employee, as: 'employee' }] // adjust alias to your association
+//         });
+
+//         let bestMatch = null;
+//         let bestDistance = Infinity;
+
+//         for (const face of allFaces) {
+//             // Prefer matching against every raw sample (more robust across devices);
+//             // fall back to the single averaged descriptor if samples aren't present
+//             let candidateDescriptors = [];
+//             try {
+//                 candidateDescriptors = face.samples
+//                     ? JSON.parse(face.samples)
+//                     : [JSON.parse(face.descriptor)];
+//             } catch {
+//                 continue; // skip corrupted rows rather than crash the whole scan
+//             }
+
+//             for (const sample of candidateDescriptors) {
+//                 const distance = euclideanDistance(incomingDescriptor, sample);
+//                 if (distance < bestDistance) {
+//                     bestDistance = distance;
+//                     bestMatch = face;
+//                 }
+//             }
+//         }
+
+//         const isMatch = bestMatch && bestDistance <= MATCH_THRESHOLD;
+
+//         if (!isMatch) {
+//             return res.status(200).json({
+//                 match: false,
+//                 distance: bestDistance === Infinity ? null : bestDistance,
+//                 liveness_passed: true, // liveness already validated client-side before this call
+//             });
+//         }
+
+//         // Create the time-in/time-out log entry
+//         const log = await db.EmployeeLog.create({
+//             employee_id: bestMatch.employee_id,
+//             geo_lat: geo_lat || null,
+//             geo_lng: geo_lng || null,
+//             camera_id: camera_id || null,
+//             device_id: device_id || null,
+//             image_hash: image_hash || null,
+//             payload_hash: payload_hash || null,
+//             source: source || 'Web',
+//             captured_at: captured_at ? new Date(captured_at) : new Date(),
+//         });
+
+//         return res.status(201).json({
+//             match: true,
+//             employee: bestMatch.employee, // { first_name, middle_name, last_name, ... }
+//             log: { captured_at: log.captured_at },
+//             distance: bestDistance,
+//             liveness_passed: true,
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ error: error.message });
+//     }
+// };
+
 const MATCH_THRESHOLD = 0.55;
+const DESCRIPTOR_LENGTH = 128;
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB decoded — the frontend now sends a downscaled image
+
+// NOTE: this endpoint expects a plain JSON body (no multipart/no multer needed).
+// Base64 images inflate ~33% over their binary size, so raise the JSON body limit
+// on this route, e.g.:
+//   app.use(express.json({ limit: '5mb' }));
+// or, if you only want the larger limit on this one route:
+//   router.post('/portal/biometric', express.json({ limit: '5mb' }), ScanBiometric);
+
+function euclideanDistance(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+        return Infinity;
+    }
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) {
+        const diff = a[i] - b[i];
+        sum += diff * diff;
+    }
+    return Math.sqrt(sum);
+}
+
+// Some ORMs/drivers auto-parse JSON columns into arrays already; only JSON.parse strings.
+function parseDescriptorField(value) {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return JSON.parse(value);
+    throw new Error('Unrecognized descriptor field type');
+}
+
+// Accepts either a full data URL ("data:image/jpeg;base64,...") or a bare base64 string.
+// Used only to validate format/size before storing the string as-is.
+function decodeBase64Image(imageBase64) {
+    const match = /^data:image\/(jpeg|jpg|png);base64,([A-Za-z0-9+/=]+)$/i.exec(imageBase64 || '');
+    const payload = match ? match[2] : imageBase64;
+
+    if (!payload || !/^[A-Za-z0-9+/=]+$/.test(payload)) {
+        return null;
+    }
+
+    try {
+        return Buffer.from(payload, 'base64');
+    } catch {
+        return null;
+    }
+}
 
 exports.ScanBiometric = async (req, res) => {
     try {
@@ -232,26 +370,41 @@ exports.ScanBiometric = async (req, res) => {
             geo_lng,
             camera_id,
             device_id,
-            image_hash,
-            payload_hash,
+            image_path, // base64 image itself
             source,
             captured_at,
         } = req.body;
 
         if (!descriptor) {
-            return res.status(400).json({ message: "Descriptor is required." });
+            return res.status(400).json({ message: 'Descriptor is required.' });
+        }
+
+        if (!image_path) {
+            return res.status(400).json({ message: 'Captured image is required.' });
         }
 
         let incomingDescriptor;
         try {
-            incomingDescriptor = JSON.parse(descriptor);
+            incomingDescriptor = parseDescriptorField(descriptor);
         } catch {
-            return res.status(400).json({ message: "Invalid descriptor format." });
+            return res.status(400).json({ message: 'Invalid descriptor format.' });
+        }
+
+        if (!Array.isArray(incomingDescriptor) || incomingDescriptor.length !== DESCRIPTOR_LENGTH) {
+            return res.status(400).json({ message: `Descriptor must be an array of ${DESCRIPTOR_LENGTH} numbers.` });
+        }
+
+        const imageBuffer = decodeBase64Image(image_path);
+        if (!imageBuffer) {
+            return res.status(400).json({ message: 'Invalid image data.' });
+        }
+        if (imageBuffer.length > MAX_IMAGE_BYTES) {
+            return res.status(413).json({ message: 'Captured image is too large.' });
         }
 
         // Pull every enrolled face record
         const allFaces = await db.EmployeeFace.findAll({
-            include: [{ model: db.Employee, as: 'employee' }] // adjust alias to your association
+            include: [{ model: db.Employee, as: 'employee' }], // adjust alias to your association
         });
 
         let bestMatch = null;
@@ -263,8 +416,8 @@ exports.ScanBiometric = async (req, res) => {
             let candidateDescriptors = [];
             try {
                 candidateDescriptors = face.samples
-                    ? JSON.parse(face.samples)
-                    : [JSON.parse(face.descriptor)];
+                    ? parseDescriptorField(face.samples)
+                    : [parseDescriptorField(face.descriptor)];
             } catch {
                 continue; // skip corrupted rows rather than crash the whole scan
             }
@@ -284,19 +437,19 @@ exports.ScanBiometric = async (req, res) => {
             return res.status(200).json({
                 match: false,
                 distance: bestDistance === Infinity ? null : bestDistance,
-                liveness_passed: true, // liveness already validated client-side before this call
+                // Liveness was only checked client-side before this request was made — the server
+                // has no independent confirmation, so this should not be treated as a verified guarantee.
+                liveness_passed: true,
             });
         }
 
-        // Create the time-in/time-out log entry
         const log = await db.EmployeeLog.create({
             employee_id: bestMatch.employee_id,
             geo_lat: geo_lat || null,
             geo_lng: geo_lng || null,
             camera_id: camera_id || null,
             device_id: device_id || null,
-            image_hash: image_hash || null,
-            payload_hash: payload_hash || null,
+            image_path: image_path, // base64 image itself
             source: source || 'Web',
             captured_at: captured_at ? new Date(captured_at) : new Date(),
         });
@@ -310,8 +463,8 @@ exports.ScanBiometric = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: error.message });
+        console.error('ScanBiometric error:', error);
+        return res.status(500).json({ message: 'Something went wrong processing the scan.' });
     }
 };
 
