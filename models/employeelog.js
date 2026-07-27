@@ -42,11 +42,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     recognition_score: {
       type: DataTypes.DECIMAL(5, 4),
-      allowNull: false
+      allowNull: true
     },
     liveness_passed: {
       type: DataTypes.BOOLEAN,
-      allowNull: false
+      allowNull: true
     },
     camera_id: {
       type: DataTypes.STRING,
@@ -70,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     image_path: {
       type: DataTypes.BLOB('long'),
-      allowNull: false
+      allowNull: true
     },
     image_hash: {
       type: DataTypes.CHAR(64),

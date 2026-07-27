@@ -26,11 +26,11 @@ module.exports = {
       },
       recognition_score: {
         type: Sequelize.DECIMAL(5, 4),
-        allowNull: false
+        allowNull: true
       },
       liveness_passed: {
         type: Sequelize.BOOLEAN,
-        allowNull: false
+        allowNull: true
       },
       camera_id: {
         type: Sequelize.STRING,
@@ -54,7 +54,7 @@ module.exports = {
       },
       image_path: {
         type: Sequelize.BLOB('long'),
-        allowNull: false
+        allowNull: true
       },
       image_hash: {
         type: Sequelize.STRING,

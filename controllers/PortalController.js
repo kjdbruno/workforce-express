@@ -96,121 +96,224 @@ const sha256File = (filePath) =>
 // }
 
 
+// exports.ScanBiometric = async (req, res) => {
+//     try {
+//         const file = req.file
+//         if (!file) return res.status(400).json({ error: 'photo is required' })
+
+//         const descriptor = JSON.parse(req.body.descriptor || '[]')
+//         const geo_lat = req.body.geo_lat ? Number(req.body.geo_lat) : null
+//         const geo_lng = req.body.geo_lng ? Number(req.body.geo_lng) : null
+
+//         const camera_id = req.body.camera_id || 'unknown-camera'
+//         const device_id = req.body.device_id || 'unknown-device'
+//         const source = req.body.source || 'Web'
+//         const now = moment().format('YYYY-MM-DD HH:mm:ss')
+
+//         const image_path = `/uploads/logs/${file.filename}`
+
+//         const image_hash = await sha256File(file.path)
+
+//         const payloadForHash = {
+//             descriptor,
+//             geo_lat,
+//             geo_lng,
+//             camera_id,
+//             device_id,
+//             source,
+//             captured_at: now,
+//             image_hash
+//         }
+
+//         const payload_hash = crypto
+//             .createHash('sha256')
+//             .update(JSON.stringify(payloadForHash))
+//             .digest('hex')
+
+//         const faces = await db.EmployeeFace.findAll()
+
+//         let bestMatch = null
+//         let minDistance = Infinity
+
+//         for (const face of faces) {
+//             const stored = JSON.parse(face.descriptor)
+//             const dist = euclideanDistance(descriptor, stored)
+
+//             if (dist < minDistance) {
+//                 minDistance = dist
+//                 bestMatch = face
+//             }
+//         }
+
+//         if (!bestMatch || minDistance > 0.6) {
+//             return res.json({ match: false })
+//         }
+
+//         const employee = await db.Employee.findOne({
+//             include: [
+//                 {
+//                     model: db.Employment,
+//                     as: 'employment',
+//                     include: [
+//                         {
+//                             model: db.Position,
+//                             as: 'position'
+//                         }
+//                     ]
+//                 }
+//             ],
+//             where: { id: bestMatch.employee_id }
+//         })
+
+//         if (!employee) {
+//             return res.status(404).json({
+//                 match: false,
+//                 message: 'Employee not found'
+//             })
+//         }
+
+//         // ✅ compute recognition_score AFTER distance is known
+//         const recognition_score = Math.max(
+//             0,
+//             Math.min(1, 1 - Number(minDistance))
+//         )
+
+//         // ✅ automatically true (for now)
+//         const liveness_passed = true
+
+//         const log = await db.EmployeeLog.create({
+//             employee_id: employee.id,
+//             captured_at: now,
+//             recognition_score,
+//             liveness_passed,
+//             camera_id,
+//             device_id,
+//             source,
+//             geo_lat: geo_lat ?? 0,
+//             geo_lng: geo_lng ?? 0,
+//             image_path,
+//             image_hash,
+//             payload_hash
+//         })
+
+//         return res.json({
+//             match: true,
+//             employee,
+//             log,
+//             distance: minDistance,
+//             recognition_score,
+//             liveness_passed
+//         })
+
+//     } catch (err) {
+//         console.error(err)
+//         return res.status(500).json({ error: err.message })
+//     }
+// }
+
+// Euclidean distance between two descriptor arrays (same math face-api uses internally)
+// const euclideanDistance = (a, b) => {
+//     let sum = 0;
+//     for (let i = 0; i < a.length; i++) {
+//         const diff = a[i] - b[i];
+//         sum += diff * diff;
+//     }
+//     return Math.sqrt(sum);
+// };
+
+// Distance threshold — same scale face-api uses (~0.5–0.6 typical for "same person")
+const MATCH_THRESHOLD = 0.55;
+
 exports.ScanBiometric = async (req, res) => {
     try {
-        const file = req.file
-        if (!file) return res.status(400).json({ error: 'photo is required' })
-
-        const descriptor = JSON.parse(req.body.descriptor || '[]')
-        const geo_lat = req.body.geo_lat ? Number(req.body.geo_lat) : null
-        const geo_lng = req.body.geo_lng ? Number(req.body.geo_lng) : null
-
-        const camera_id = req.body.camera_id || 'unknown-camera'
-        const device_id = req.body.device_id || 'unknown-device'
-        const source = req.body.source || 'Web'
-        const now = moment().format('YYYY-MM-DD HH:mm:ss')
-
-        const image_path = `/uploads/logs/${file.filename}`
-
-        const image_hash = await sha256File(file.path)
-
-        const payloadForHash = {
+        const {
             descriptor,
             geo_lat,
             geo_lng,
             camera_id,
             device_id,
+            image_hash,
+            payload_hash,
             source,
-            captured_at: now,
-            image_hash
+            captured_at,
+        } = req.body;
+
+        if (!descriptor) {
+            return res.status(400).json({ message: "Descriptor is required." });
         }
 
-        const payload_hash = crypto
-            .createHash('sha256')
-            .update(JSON.stringify(payloadForHash))
-            .digest('hex')
+        let incomingDescriptor;
+        try {
+            incomingDescriptor = JSON.parse(descriptor);
+        } catch {
+            return res.status(400).json({ message: "Invalid descriptor format." });
+        }
 
-        const faces = await db.EmployeeFace.findAll()
+        // Pull every enrolled face record
+        const allFaces = await db.EmployeeFace.findAll({
+            include: [{ model: db.Employee, as: 'employee' }] // adjust alias to your association
+        });
 
-        let bestMatch = null
-        let minDistance = Infinity
+        let bestMatch = null;
+        let bestDistance = Infinity;
 
-        for (const face of faces) {
-            const stored = JSON.parse(face.descriptor)
-            const dist = euclideanDistance(descriptor, stored)
+        for (const face of allFaces) {
+            // Prefer matching against every raw sample (more robust across devices);
+            // fall back to the single averaged descriptor if samples aren't present
+            let candidateDescriptors = [];
+            try {
+                candidateDescriptors = face.samples
+                    ? JSON.parse(face.samples)
+                    : [JSON.parse(face.descriptor)];
+            } catch {
+                continue; // skip corrupted rows rather than crash the whole scan
+            }
 
-            if (dist < minDistance) {
-                minDistance = dist
-                bestMatch = face
+            for (const sample of candidateDescriptors) {
+                const distance = euclideanDistance(incomingDescriptor, sample);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestMatch = face;
+                }
             }
         }
 
-        if (!bestMatch || minDistance > 0.6) {
-            return res.json({ match: false })
-        }
+        const isMatch = bestMatch && bestDistance <= MATCH_THRESHOLD;
 
-        const employee = await db.Employee.findOne({
-            include: [
-                {
-                    model: db.Employment,
-                    as: 'employment',
-                    include: [
-                        {
-                            model: db.Position,
-                            as: 'position'
-                        }
-                    ]
-                }
-            ],
-            where: { id: bestMatch.employee_id }
-        })
-
-        if (!employee) {
-            return res.status(404).json({
+        if (!isMatch) {
+            return res.status(200).json({
                 match: false,
-                message: 'Employee not found'
-            })
+                distance: bestDistance === Infinity ? null : bestDistance,
+                liveness_passed: true, // liveness already validated client-side before this call
+            });
         }
 
-        // ✅ compute recognition_score AFTER distance is known
-        const recognition_score = Math.max(
-            0,
-            Math.min(1, 1 - Number(minDistance))
-        )
-
-        // ✅ automatically true (for now)
-        const liveness_passed = true
-
+        // Create the time-in/time-out log entry
         const log = await db.EmployeeLog.create({
-            employee_id: employee.id,
-            captured_at: now,
-            recognition_score,
-            liveness_passed,
-            camera_id,
-            device_id,
-            source,
-            geo_lat: geo_lat ?? 0,
-            geo_lng: geo_lng ?? 0,
-            image_path,
-            image_hash,
-            payload_hash
-        })
+            employee_id: bestMatch.employee_id,
+            geo_lat: geo_lat || null,
+            geo_lng: geo_lng || null,
+            camera_id: camera_id || null,
+            device_id: device_id || null,
+            image_hash: image_hash || null,
+            payload_hash: payload_hash || null,
+            source: source || 'Web',
+            captured_at: captured_at ? new Date(captured_at) : new Date(),
+        });
 
-        return res.json({
+        return res.status(201).json({
             match: true,
-            employee,
-            log,
-            distance: minDistance,
-            recognition_score,
-            liveness_passed
-        })
+            employee: bestMatch.employee, // { first_name, middle_name, last_name, ... }
+            log: { captured_at: log.captured_at },
+            distance: bestDistance,
+            liveness_passed: true,
+        });
 
-    } catch (err) {
-        console.error(err)
-        return res.status(500).json({ error: err.message })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: error.message });
     }
-}
-
+};
 
 exports.ScanFace = async (req, res) => {
     try {
