@@ -328,7 +328,7 @@ const io = socketIo(server, {
 });
 
 // Middleware
-app.use(cors({
+app.use('*', cors({
   // origin: '*', // Change this to your frontend's origin http://localhost:9000
   // origin: 'https://hris-ccmi.com',
   origin: [
