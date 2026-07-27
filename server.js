@@ -333,9 +333,13 @@ app.use(cors({
         'https://hris-ccmi.com',
         'https://portal.hris-ccmi.com'
     ],
-    methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization'],
-    credentials: true
+    credentials: true,
+    methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Api'
+    ]
 }));
 
 app.options('*', cors());
