@@ -413,15 +413,15 @@ app.use(express.static('public'));
 
 require('./sockets')(io);
 
-const MainPath   = path.join(__dirname, "..", "..", "workforce-quasar", "dist", "spa");
+// const MainPath   = path.join(__dirname, "..", "..", "workforce-quasar", "dist", "spa");
 
-// Serve static assets (JS, CSS, images)
-app.use(express.static(MainPath));
+// // Serve static assets (JS, CSS, images)
+// app.use(express.static(MainPath));
 
-// SPA fallback (VERY IMPORTANT for Vue Router)
-app.get("*", (req, res) => {
-  res.sendFile(path.join(MainPath, "index.html"));
-});
+// // SPA fallback (VERY IMPORTANT for Vue Router)
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(MainPath, "index.html"));
+// });
 
 // Start server
 server.listen(process.env.PORT, () => {
