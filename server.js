@@ -333,7 +333,7 @@ app.use(cors({
         'https://hris-ccmi.com',
         'https://portal.hris-ccmi.com'
     ],
-    credentials: true,
+    // credentials: true,
     methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
     allowedHeaders: [
         'Content-Type',
