@@ -371,8 +371,7 @@ exports.ScanBiometric = async (req, res) => {
             camera_id,
             device_id,
             image_path, // base64 image itself
-            source,
-            captured_at,
+            source
         } = req.body;
 
         if (!descriptor) {
@@ -451,7 +450,7 @@ exports.ScanBiometric = async (req, res) => {
             device_id: device_id || null,
             image_path: image_path, // base64 image itself
             source: source || 'Web',
-            captured_at: captured_at ? new Date(captured_at) : new Date(),
+            captured_at: new Date()
         });
 
         return res.status(201).json({
