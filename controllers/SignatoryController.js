@@ -477,3 +477,390 @@ const GetApprovalSetting = async (id) => {
         }
     });
 };
+
+// ─────────────────────────────────────────────────────────────
+// Department-scoped signatories
+//
+// "Vacancy" is stored as a normal chain with an explicit owner_id
+// (the picked owner is the department's vacancy requester).
+//
+// "Leave" / "TimeCard" / "Overtime" are stored as *templates*
+// (owner_id IS NULL) describing the order >= 2 approver chain.
+// Order 1 for those types is always the employee themselves and
+// is created automatically when their EmployeeAccount is created
+// (see EmployeeController.CreateAccount).
+// ─────────────────────────────────────────────────────────────
+
+const AUTO_SELF_TYPES = ['Leave', 'TimeCard', 'Overtime'];
+
+exports.GetDepartmentSignatory = async (req, res) => {
+    const { id: department_id } = req.params;
+
+    try {
+        const rows = await db.ApprovalSetting.findAll({
+            include: [
+                {
+                    model: db.User,
+                    as: "owner",
+                    attributes: ["id"],
+                    include: [
+                        {
+                            model: db.EmployeeAccount,
+                            as: "employeeAccount",
+                            attributes: ["id"],
+                            include: [
+                                {
+                                    model: db.Employee,
+                                    as: "employee",
+                                    attributes: ["first_name", "middle_name", "last_name", "suffix"],
+                                    include: [
+                                        {
+                                            model: db.Employment,
+                                            as: "employment",
+                                            attributes: ["id"],
+                                            include: [{ model: db.Position, as: "position", attributes: ["name"] }],
+                                        },
+                                        { model: db.EmployeeSignature, as: "signature", attributes: ["signature"] },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    model: db.User,
+                    as: "approver",
+                    attributes: ["id"],
+                    include: [
+                        {
+                            model: db.EmployeeAccount,
+                            as: "employeeAccount",
+                            attributes: ["id"],
+                            include: [
+                                {
+                                    model: db.Employee,
+                                    as: "employee",
+                                    attributes: ["first_name", "middle_name", "last_name", "suffix"],
+                                    include: [
+                                        {
+                                            model: db.Employment,
+                                            as: "employment",
+                                            attributes: ["id"],
+                                            include: [{ model: db.Position, as: "position", attributes: ["name"] }],
+                                        },
+                                        { model: db.EmployeeSignature, as: "signature", attributes: ["signature"] },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            where: {
+                department_id,
+                // only the department-level config, not the per-employee chains
+                // that were auto-generated for Leave/TimeCard/Overtime
+                [Op.or]: [
+                    { type: 'Vacancy' },
+                    { owner_id: null }
+                ]
+            },
+            order: [["type", "ASC"], ["order", "ASC"], ["createdAt", "DESC"]],
+        });
+
+        const map = new Map();
+
+        rows.forEach((row) => {
+            const r = row.toJSON();
+            const type = r.type || "Unknown";
+
+            if (!map.has(type)) {
+                map.set(type, {
+                    id: r.id,
+                    isActive: r.is_active,
+                    type,
+                    signatories: [],
+                });
+            }
+
+            const approverSigBlob = r?.approver?.employeeAccount?.employee?.signature?.signature;
+            if (approverSigBlob) {
+                r.approver.employeeAccount.employee.signature.signature =
+                    `data:image/png;base64,${Buffer.from(approverSigBlob).toString("base64")}`;
+            } else if (r?.approver?.employeeAccount?.employee?.signature) {
+                r.approver.employeeAccount.employee.signature.signature = null;
+            }
+
+            const ownerSigBlob = r?.owner?.employeeAccount?.employee?.signature?.signature;
+            if (ownerSigBlob) {
+                r.owner.employeeAccount.employee.signature.signature =
+                    `data:image/png;base64,${Buffer.from(ownerSigBlob).toString("base64")}`;
+            } else if (r?.owner?.employeeAccount?.employee?.signature) {
+                r.owner.employeeAccount.employee.signature.signature = null;
+            }
+
+            map.get(type).signatories.push({
+                id: r.id,
+                order: r.order,
+                description: r.description,
+                owner_id: r.owner_id,
+                approver_id: r.approver_id,
+                approver: r.approver,
+                owner: r.owner,
+                is_active: r.is_active,
+                createdAt: r.createdAt,
+                updatedAt: r.updatedAt,
+            });
+        });
+
+        return res.status(200).json(Array.from(map.values()));
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// Create (or fully replace) a department's signatory chain for one `type`.
+// Called every time the Department dialog is saved — whatever is currently
+// on the form for that type becomes the department's chain, whether that
+// means creating it for the first time, editing it, or clearing it out.
+exports.CreateDepartmentSignatory = async (req, res) => {
+
+    const { id: department_id } = req.params;
+
+    const {
+        type,
+        ownerid,
+        signatories
+    } = req.body;
+
+    const sign = Array.isArray(signatories)
+        ? signatories
+        : JSON.parse(signatories || "[]");
+
+    const isVacancy = type === 'Vacancy';
+    const validSign = sign.filter(s => Number(s.approverid));
+
+    const transaction = await sequelize.transaction();
+
+    try {
+
+        if (isVacancy && !ownerid && validSign.length) {
+            await transaction.rollback();
+            return res.status(500).json({
+                errors: [{
+                    type: "field",
+                    value: ownerid,
+                    msg: "owner is required",
+                    path: "ownerid",
+                    location: "body",
+                }],
+            });
+        }
+
+        // Replace whatever this department currently has for this type —
+        // the submitted form is always the new source of truth.
+        await db.ApprovalSetting.destroy({
+            where: {
+                department_id,
+                type,
+                [Op.or]: [
+                    { type: 'Vacancy' },
+                    { owner_id: null }
+                ]
+            },
+            transaction
+        });
+
+        if (!(isVacancy && !ownerid)) {
+            const records = [];
+
+            // Vacancy keeps an explicit order-1 "requested by" record for the chosen owner.
+            // Leave/TimeCard/Overtime have no owner here — order 1 belongs to whichever
+            // employee the chain later gets applied to (see EmployeeController.CreateAccount).
+            if (isVacancy) {
+                records.push({
+                    type,
+                    department_id,
+                    owner_id: ownerid,
+                    approver_id: ownerid,
+                    description: "requested by",
+                    order: 1
+                });
+            }
+
+            let nextOrder = 2;
+            for (const s of validSign) {
+                records.push({
+                    type,
+                    department_id,
+                    owner_id: isVacancy ? ownerid : null,
+                    approver_id: Number(s.approverid),
+                    description: s.description || null,
+                    order: Number(s.order) || nextOrder
+                });
+                nextOrder++;
+            }
+
+            if (records.length) {
+                await db.ApprovalSetting.bulkCreate(records, { transaction });
+            }
+        }
+
+        // cascade the updated template to every employee already carrying
+        // this department's Leave/TimeCard/Overtime approval chain
+        if (AUTO_SELF_TYPES.includes(type)) {
+            await SyncDepartmentApprovalSettings(department_id, type, transaction);
+        }
+
+        await transaction.commit();
+
+        res.status(201).json({
+            message: "Record Saved!"
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.status(400).json({
+            error: error.message
+        });
+
+    }
+};
+
+// Disable/enable a department's signatory chain for one `type` without
+// deleting it — toggles is_active on the department-level record(s) only
+// (the Vacancy owner chain, or the Leave/TimeCard/Overtime template).
+exports.DisableDepartmentSignatory = async (req, res) => {
+
+    const { id: department_id, type } = req.params;
+
+    const transaction = await sequelize.transaction();
+
+    try {
+
+        await db.ApprovalSetting.update(
+            { is_active: false },
+            {
+                where: {
+                    department_id,
+                    type,
+                    [Op.or]: [
+                        { type: 'Vacancy' },
+                        { owner_id: null }
+                    ]
+                },
+                transaction
+            }
+        );
+
+        await transaction.commit();
+
+        res.status(200).json({
+            message: "Record Disabled!"
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.status(500).json({
+            error: error.message
+        });
+
+    }
+};
+
+exports.EnableDepartmentSignatory = async (req, res) => {
+
+    const { id: department_id, type } = req.params;
+
+    const transaction = await sequelize.transaction();
+
+    try {
+
+        await db.ApprovalSetting.update(
+            { is_active: true },
+            {
+                where: {
+                    department_id,
+                    type,
+                    [Op.or]: [
+                        { type: 'Vacancy' },
+                        { owner_id: null }
+                    ]
+                },
+                transaction
+            }
+        );
+
+        await transaction.commit();
+
+        res.status(200).json({
+            message: "Record Enabled!"
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.status(500).json({
+            error: error.message
+        });
+
+    }
+};
+
+// Re-applies a department's current active order>=2 template for `type`
+// onto every employee that already has that department's chain applied.
+const SyncDepartmentApprovalSettings = async (department_id, type, transaction) => {
+
+    const template = await db.ApprovalSetting.findAll({
+        where: { department_id, type, owner_id: null, is_active: true },
+        order: [['order', 'ASC']],
+        transaction
+    });
+
+    const owners = await db.ApprovalSetting.findAll({
+        where: { department_id, type, owner_id: { [Op.ne]: null }, order: 1 },
+        attributes: ['owner_id'],
+        transaction
+    });
+
+    const ownerIds = [...new Set(owners.map(o => o.owner_id))];
+    if (!ownerIds.length) return;
+
+    await db.ApprovalSetting.destroy({
+        where: {
+            department_id,
+            type,
+            owner_id: { [Op.in]: ownerIds },
+            order: { [Op.gt]: 1 }
+        },
+        transaction
+    });
+
+    if (!template.length) return;
+
+    const records = [];
+    for (const ownerId of ownerIds) {
+        for (const t of template) {
+            records.push({
+                type,
+                department_id,
+                owner_id: ownerId,
+                approver_id: t.approver_id,
+                description: t.description,
+                order: t.order,
+                is_active: true
+            });
+        }
+    }
+
+    if (records.length) {
+        await db.ApprovalSetting.bulkCreate(records, { transaction });
+    }
+};
+
+exports.SyncDepartmentApprovalSettings = SyncDepartmentApprovalSettings;

@@ -2984,8 +2984,8 @@ exports.GenerateAttendancePDF = async (req, res) => {
         });
 
         const browser = await puppeteer.launch({
-          // executablePath: '/usr/bin/google-chrome',
-          executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          executablePath: '/usr/bin/google-chrome',
+          // executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
           headless: true,
           args: [
               '--no-sandbox',

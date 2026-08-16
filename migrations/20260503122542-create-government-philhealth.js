@@ -14,27 +14,27 @@ module.exports = {
         allowNull: false
       },
       range_from: {
-        type: Sequelize.DECIMA(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       range_to: {
-        type: Sequelize.DECIMA(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       premium_rate: {
-        type: Sequelize.DECIMA(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       employee_share: {
-        type: Sequelize.DECIMA(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       employer_share: {
-        type: Sequelize.DECIMA(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       monthly_premium: {
-        type: Sequelize.DECIMA(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       is_active: {

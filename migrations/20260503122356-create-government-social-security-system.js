@@ -14,11 +14,11 @@ module.exports = {
         allowNull: false
       },
       range_from: {
-        type: Sequelize.DECIMA(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       range_to: {
-        type: Sequelize.DDECIMAL(10, 2),
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false
       },
       monthly_salary_credit: {

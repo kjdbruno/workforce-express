@@ -25,27 +25,27 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     range_from: {
-      type: DataTypes.DECIMA(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     range_to: {
-      type: DataTypes.DECIMA(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     premium_rate: {
-      type: DataTypes.DECIMA(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     employee_share: {
-      type: DataTypes.DECIMA(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     employer_share: {
-      type: DataTypes.DECIMA(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     monthly_premium: {
-      type: DataTypes.DECIMA(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     is_active: {

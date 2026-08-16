@@ -17,6 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'department_id',
         as: 'positions'
       });
+
+      // Department → ApprovalSetting (signatories)
+      Department.hasMany(models.ApprovalSetting, {
+        foreignKey: 'department_id',
+        as: 'signatories'
+      });
     }
   }
   Department.init({

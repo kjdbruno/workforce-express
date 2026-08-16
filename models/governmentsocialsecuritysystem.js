@@ -25,11 +25,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     range_from: {
-      type: DataTypes.DECIMA(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     range_to: {
-      type: DataTypes.DDECIMAL(10, 2),
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     monthly_salary_credit: {

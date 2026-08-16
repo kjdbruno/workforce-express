@@ -16,6 +16,10 @@ const QR = require('qrcode-base64')
 const db = require('../models');
 const { sequelize } = db;
 
+// biometric_no is an INTEGER column, but employee_no is formatted like
+// "2026-001" — strip the non-digit characters so the fallback is a valid int.
+const DeriveBiometricNo = (employeeNo) => Number(String(employeeNo).replace(/\D/g, ''));
+
 exports.GetAll = async (req, res) => {
     const Page = parseInt(req.query.Page) || 1;
     const Limit = parseInt(req.query.Limit) || 10;
@@ -379,6 +383,7 @@ exports.Create = async (req, res) => {
 
         // employment
         employeeNo,
+        biometricNo,
         dateHired,
         positionId,
         employmentstatus,
@@ -453,6 +458,7 @@ exports.Create = async (req, res) => {
             await db.Employment.create({
                 employee_id: employee.id,
                 employee_no: finalEmployeeNo,
+                biometric_no: (biometricNo?.trim() ? biometricNo.trim() : DeriveBiometricNo(finalEmployeeNo)),
                 date_hired: dateHired,
                 tin,
                 sss_no: sssNo,
@@ -720,6 +726,7 @@ exports.UpdateEmployment = async (req, res) => {
 
     const {
         employeeNo,
+        biometricNo,
         dateHired,
         employmentstatus,
         tin,
@@ -750,8 +757,11 @@ exports.UpdateEmployment = async (req, res) => {
 
         const isEmploymentStatusChanged = String(prevEmploymentStatus || "") !== String(employmentstatus || "");
 
+        const finalEmployeeNo = employeeNo?.trim() ? employeeNo.trim() : employment.employee_no;
+
         await employment.update({
-            employee_no: employeeNo,
+            employee_no: finalEmployeeNo,
+            biometric_no: (biometricNo?.trim() ? biometricNo.trim() : DeriveBiometricNo(finalEmployeeNo)),
             date_hired: dateHired,
             employment_status: employmentstatus,
             tin,
@@ -1159,6 +1169,12 @@ exports.CreateAccount = async (req, res) => {
         const existingIds = existingAccounts.map(e => e.id);
         const sentIds = accs.filter(a => a.id).map(a => a.id);
 
+        const employment = await db.Employment.findOne({
+            where: { employee_id: id },
+            include: [{ model: db.Position, as: 'position', attributes: ['id', 'department_id'] }]
+        });
+        const departmentId = employment?.position?.department_id || null;
+
         for (const acc of accs) {
             let user;
 
@@ -1203,9 +1219,54 @@ exports.CreateAccount = async (req, res) => {
                 await db.EmployeeAccount.create({
                     employee_id: id,
                     user_id: user.id,
-                    is_management: (acc.role === 'SuperAdmin' || acc.role === 'Admin' || acc.role === 'Managment' || acc.role === 'HR' || acc.role === 'Finance') ? true : false,
+                    is_management: (acc.role === 'SuperAdmin' || acc.role === 'Admin' || acc.role === 'Management' || acc.role === 'HR' || acc.role === 'Finance') ? true : false,
                     is_active: true
                 }, { transaction });
+
+                // Auto-provision the Leave/TimeCard/Overtime approval chains for
+                // this employee: they are always order 1 ("requested by"), followed
+                // by their department's currently active order>=2 signatory template.
+                if (departmentId) {
+                    const AUTO_SELF_TYPES = ['Leave', 'TimeCard', 'Overtime'];
+
+                    for (const type of AUTO_SELF_TYPES) {
+                        const alreadyExists = await db.ApprovalSetting.findOne({
+                            where: { type, owner_id: user.id },
+                            transaction
+                        });
+                        if (alreadyExists) continue;
+
+                        const template = await db.ApprovalSetting.findAll({
+                            where: { department_id: departmentId, type, owner_id: null, is_active: true },
+                            order: [['order', 'ASC']],
+                            transaction
+                        });
+
+                        const records = [{
+                            type,
+                            department_id: departmentId,
+                            owner_id: user.id,
+                            approver_id: user.id,
+                            description: "requested by",
+                            order: 1,
+                            is_active: true
+                        }];
+
+                        for (const t of template) {
+                            records.push({
+                                type,
+                                department_id: departmentId,
+                                owner_id: user.id,
+                                approver_id: t.approver_id,
+                                description: t.description,
+                                order: t.order,
+                                is_active: true
+                            });
+                        }
+
+                        await db.ApprovalSetting.bulkCreate(records, { transaction });
+                    }
+                }
             }
         }
 
@@ -1215,7 +1276,7 @@ exports.CreateAccount = async (req, res) => {
         if (toDeactivate.length > 0) {
         await db.EmployeeAccount.update(
             { is_active: false },
-            { where: { id: toDeactivate } }, transaction
+            { where: { id: toDeactivate }, transaction }
         );
         }
 
@@ -2173,6 +2234,7 @@ exports.GenerateIdPDF = async (req, res) => {
         });
         const browser = await puppeteer.launch({
             executablePath: '/usr/bin/google-chrome',
+            // executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
             headless: true,
             args: [
                 '--no-sandbox',
